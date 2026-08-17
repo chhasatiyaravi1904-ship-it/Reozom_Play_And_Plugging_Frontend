@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx eslint *)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const c=JSON.parse\\(d\\);console.log\\('parser:',c.languageOptions && c.languageOptions.parser\\);console.log\\('parserOptions:',JSON.stringify\\(c.languageOptions && c.languageOptions.parserOptions\\)\\);}\\)\")",
+      "Bash(node -p \"require\\('./node_modules/vue-eslint-parser/package.json'\\).version\")",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"vite.*5183\")",
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq *5183*\")",
+      "Bash(jobs -l)",
+      "Bash(npx vue-tsc *)",
+      "Bash(npx vitest *)"
+    ]
+  }
+}

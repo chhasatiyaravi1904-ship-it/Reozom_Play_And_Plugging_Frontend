@@ -1,0 +1,54 @@
+@import 'tailwindcss';
+
+/*
+ * Radius convention (applied via utility classes, not tokens):
+ *   controls (button, input, select, textarea, checkbox/radio, badge, dropzone) -> rounded-lg
+ *   surfaces (card, modal, dropdown/menu panel)                                 -> rounded-xl
+ *   circular (avatar, icon button, step circle, pill badge)                     -> rounded-full
+ */
+
+@theme {
+  --font-sans:
+    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+
+  --color-primary: #0f6b5c;
+  --color-primary-hover: #0b564a;
+  --color-primary-active: #094539;
+  --color-primary-soft: #eaf3f0;
+  --color-success: #16a34a;
+  --color-success-soft: #eef6ea;
+  --color-warning: #b45309;
+  --color-warning-soft: #fdf3e7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fbeaea;
+  --color-info: #3b6ea5;
+  --color-info-soft: #eaf1f7;
+
+  --color-surface: #ffffff;
+  --color-surface-raised: #f7f5f2;
+  --color-fg: #292420;
+  --color-fg-muted: #78716c;
+  --color-fg-disabled: #d6d3ce;
+  --color-border: #e7e2da;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #1c1917;
+    --color-surface-raised: #27221e;
+    --color-primary-soft: #16332c;
+    --color-success-soft: #1c2e17;
+    --color-warning-soft: #2e2210;
+    --color-danger-soft: #2e1616;
+    --color-info-soft: #16232e;
+    --color-fg: #f5f2ee;
+    --color-fg-muted: #a39d95;
+    --color-fg-disabled: #57504a;
+    --color-border: #3a332c;
+  }
+}
+
+body {
+  @apply bg-surface text-fg font-sans text-[15px] antialiased transition-colors duration-500;
+}
