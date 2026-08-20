@@ -117,6 +117,11 @@ const router = createRouter({
           name: 'admin-counties',
           component: () => import('@/views/admin/AdminCountiesView.vue'),
         },
+        {
+          path: 'cities',
+          name: 'admin-cities',
+          component: () => import('@/views/admin/AdminCitiesView.vue'),
+        },
       ],
     },
     {

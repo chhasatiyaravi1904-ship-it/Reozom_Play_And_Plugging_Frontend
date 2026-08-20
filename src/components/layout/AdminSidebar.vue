@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
 import {
+  Building,
   Building2,
   FileText,
   Flag,
@@ -46,6 +47,7 @@ const navGroups = [
       { label: 'MLS', to: '/admin/mls', icon: Network },
       { label: 'State', to: '/admin/states', icon: Flag },
       { label: 'County', to: '/admin/counties', icon: MapPin },
+      { label: 'City', to: '/admin/cities', icon: Building },
     ],
   },
 ]
