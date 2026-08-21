@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-vue-next'
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-vue-next'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import PageHeader from '@/components/ui/PageHeader.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToastStore } from '@/stores/toast'
 
@@ -37,27 +36,27 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <div class="mb-6 flex items-center gap-2 text-primary">
-      <ShieldCheck class="h-5 w-5" />
-      <span class="text-sm font-semibold tracking-wide uppercase">Admin Portal</span>
-    </div>
-
-    <PageHeader
-      title="Sign in to Reozom Admin"
-      description="For platform admins and agents/brokers only."
-    />
+    <h1 class="text-2xl font-bold tracking-tight text-fg">Welcome back</h1>
+    <p class="mt-2 text-sm text-fg-muted">
+      Sign in to manage listings, workflows, MLS routing, and disclosures.
+    </p>
 
     <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
-      <BaseInput
-        v-model="form.email"
-        type="email"
-        label="Email address"
-        placeholder="you@reozom.com"
-        required
-        autocomplete="email"
-      />
+      <div class="relative">
+        <Mail class="pointer-events-none absolute top-8 left-3 h-4 w-4 text-fg-muted" />
+        <BaseInput
+          v-model="form.email"
+          type="email"
+          label="Email address"
+          placeholder="you@reozom.com"
+          required
+          autocomplete="email"
+          class="h-12 pl-10"
+        />
+      </div>
 
       <div class="relative">
+        <Lock class="pointer-events-none absolute top-8 left-3 h-4 w-4 text-fg-muted" />
         <BaseInput
           v-model="form.password"
           :type="showPassword ? 'text' : 'password'"
@@ -65,10 +64,11 @@ async function handleSubmit() {
           placeholder="••••••••"
           required
           autocomplete="current-password"
+          class="h-12 pl-10 pr-10"
         />
         <button
           type="button"
-          class="absolute top-8 right-3 text-fg-muted outline-none hover:text-fg"
+          class="absolute top-8 right-3 flex h-8 w-8 items-center justify-center text-fg-muted outline-none hover:text-fg"
           :aria-label="showPassword ? 'Hide password' : 'Show password'"
           @click="showPassword = !showPassword"
         >
@@ -76,20 +76,29 @@ async function handleSubmit() {
         </button>
       </div>
 
+      <div class="flex justify-end">
+        <RouterLink
+          to="/auth/forgot-password"
+          class="text-sm font-medium text-primary hover:underline"
+        >
+          Forgot password?
+        </RouterLink>
+      </div>
+
       <p v-if="accessError" class="text-sm text-danger">{{ accessError }}</p>
       <p v-else-if="error" class="text-sm text-danger">{{ error }}</p>
 
-      <BaseButton type="submit" block :loading="status === 'loading'">
+      <BaseButton type="submit" size="lg" block :loading="status === 'loading'">
         Sign In
         <ArrowRight class="ml-1.5 h-4 w-4" />
       </BaseButton>
     </form>
 
     <p class="mt-6 text-center text-sm text-fg-muted">
-      Looking for the seller site?
-      <RouterLink to="/auth/login" class="font-medium text-primary hover:underline"
-        >Go to seller login</RouterLink
-      >
+      Looking for the seller portal?
+      <RouterLink to="/auth/login" class="font-medium text-primary hover:underline">
+        Go to Seller Login →
+      </RouterLink>
     </p>
   </div>
 </template>

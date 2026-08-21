@@ -57,12 +57,7 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      component: () => import('@/layouts/AuthLayout.vue'),
-      props: {
-        tagline: 'Admin Portal',
-        quote: '"Configure listing workflows, county/MLS routing, and disclosures — all in one place."',
-        quoteDescription: 'Built for platform admins, brokers, and agents.',
-      },
+      component: () => import('@/layouts/AdminAuthLayout.vue'),
       meta: { guestOnly: true },
       children: [
         {
