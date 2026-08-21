@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { AdminUserRole } from '@/services/adminUsersData'
+import { roleBadgeConfig } from '@/components/admin/UserRoleBadge.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -16,24 +17,15 @@ const props = withDefaults(
 const initials = computed(() => {
   if (!props.name) return '?'
   const parts = props.name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+  if (parts.length === 1) return (parts[0]?.charAt(0) || '?').toUpperCase()
+  const first = parts[0]?.charAt(0) || ''
+  const last = parts[parts.length - 1]?.charAt(0) || ''
+  return (first + last).toUpperCase()
 })
 
-const colorScheme = computed(() => {
-  switch (props.role) {
-    case 'admin':
-      return 'bg-purple-100/80 text-purple-700 ring-purple-600/20'
-    case 'agent':
-      return 'bg-blue-100/80 text-blue-700 ring-blue-600/20'
-    case 'seller':
-      return 'bg-amber-100/80 text-amber-800 ring-amber-600/20'
-    case 'buyer':
-      return 'bg-teal-100/80 text-teal-800 ring-teal-600/20'
-    default:
-      return 'bg-slate-100 text-slate-700 ring-slate-400/20'
-  }
-})
+const colorScheme = computed(() =>
+  props.role ? roleBadgeConfig[props.role].avatarClasses : 'bg-surface-raised text-fg-muted ring-border',
+)
 
 const sizeClasses = computed(() => {
   switch (props.size) {

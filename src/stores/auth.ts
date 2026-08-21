@@ -49,24 +49,27 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(payload: RegisterPayload) {
+  async function register(payload: RegisterPayload): Promise<'active' | 'pending' | false> {
     status.value = 'loading'
     error.value = null
     try {
       const { data } = await authService.register(payload)
-      setSession(data.token, data.user)
       status.value = 'idle'
-      return true
+      if (data.pendingApproval || !data.token) {
+        return 'pending'
+      }
+      setSession(data.token, data.user)
+      return 'active'
     } catch (err) {
       if (import.meta.env.DEV && isNetworkError(err)) {
         setSession('demo-token', {
           ...sampleUser,
-          fullName: payload.fullName,
+          fullName: `${payload.firstName} ${payload.lastName}`.trim(),
           email: payload.email,
           phone: payload.phone,
         })
         status.value = 'idle'
-        return true
+        return 'active'
       }
       status.value = 'error'
       error.value = extractErrorMessage(err)

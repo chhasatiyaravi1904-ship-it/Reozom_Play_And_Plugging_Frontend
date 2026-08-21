@@ -1,47 +1,51 @@
+<script lang="ts">
+import type { AdminUserRole } from '@/services/adminUsersData'
+
+export interface RoleBadgeConfig {
+  label: string
+  badgeClasses: string
+  avatarClasses: string
+}
+
+export const roleBadgeConfig: Record<AdminUserRole, RoleBadgeConfig> = {
+  admin: {
+    label: 'Admin',
+    badgeClasses: 'bg-violet-50 text-violet-700 border-violet-200/80 ring-violet-600/10',
+    avatarClasses: 'bg-violet-100/80 text-violet-700 ring-violet-600/20',
+  },
+  agent: {
+    label: 'Agent',
+    badgeClasses: 'bg-blue-50 text-blue-700 border-blue-200/80 ring-blue-600/10',
+    avatarClasses: 'bg-blue-100/80 text-blue-700 ring-blue-600/20',
+  },
+  seller: {
+    label: 'Seller',
+    badgeClasses: 'bg-amber-50 text-amber-800 border-amber-200/80 ring-amber-600/10',
+    avatarClasses: 'bg-amber-100/80 text-amber-800 ring-amber-600/20',
+  },
+  buyer: {
+    label: 'Buyer',
+    badgeClasses: 'bg-teal-50 text-teal-800 border-teal-200/80 ring-teal-600/10',
+    avatarClasses: 'bg-teal-100/80 text-teal-800 ring-teal-600/20',
+  },
+}
+</script>
+
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AdminUserRole } from '@/services/adminUsersData'
 
 const props = defineProps<{
   role: AdminUserRole
 }>()
 
-const roleConfig = computed(() => {
-  switch (props.role) {
-    case 'admin':
-      return {
-        label: 'Admin',
-        classes: 'bg-purple-50 text-purple-700 border-purple-200/80 ring-purple-600/10',
-      }
-    case 'agent':
-      return {
-        label: 'Agent',
-        classes: 'bg-blue-50 text-blue-700 border-blue-200/80 ring-blue-600/10',
-      }
-    case 'seller':
-      return {
-        label: 'Seller',
-        classes: 'bg-amber-50 text-amber-800 border-amber-200/80 ring-amber-600/10',
-      }
-    case 'buyer':
-      return {
-        label: 'Buyer',
-        classes: 'bg-teal-50 text-teal-800 border-teal-200/80 ring-teal-600/10',
-      }
-    default:
-      return {
-        label: props.role,
-        classes: 'bg-slate-50 text-slate-700 border-slate-200 ring-slate-600/10',
-      }
-  }
-})
+const config = computed(() => roleBadgeConfig[props.role])
 </script>
 
 <template>
   <span
     class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium tracking-tight ring-1 capitalize"
-    :class="roleConfig.classes"
+    :class="config.badgeClasses"
   >
-    {{ roleConfig.label }}
+    {{ config.label }}
   </span>
 </template>

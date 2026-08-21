@@ -61,27 +61,27 @@ function onPerPageChange(event: Event) {
 
 <template>
   <div
-    class="flex flex-col gap-3 border-t border-slate-200/80 bg-slate-50/40 px-4 sm:px-6 py-3 sm:flex-row sm:items-center sm:justify-between"
+    class="flex flex-col gap-3 border-t border-border bg-surface-raised px-4 sm:px-6 py-3 sm:flex-row sm:items-center sm:justify-between"
   >
     <!-- Range + rows-per-page -->
-    <div class="flex items-center gap-4 text-xs text-slate-500">
+    <div class="flex items-center gap-4 text-xs text-fg-muted">
       <span>
-        Showing <strong class="text-slate-700">{{ rangeStart }}–{{ rangeEnd }}</strong> of
-        <strong class="text-slate-700">{{ totalItems }}</strong> {{ itemLabel }}
+        Showing <strong class="text-fg">{{ rangeStart }}–{{ rangeEnd }}</strong> of
+        <strong class="text-fg">{{ totalItems }}</strong> {{ itemLabel }}
       </span>
 
       <div class="flex items-center gap-1.5">
-        <label for="per-page-select" class="text-slate-500">Rows:</label>
+        <label for="per-page-select" class="text-fg-muted">Rows:</label>
         <div class="relative">
           <select
             id="per-page-select"
             :value="perPage"
-            class="appearance-none rounded-lg border border-slate-200 bg-white py-1 pl-2.5 pr-6 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 focus:border-[#0f6b5c] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/20"
+            class="focus-ring appearance-none rounded-lg border border-border bg-surface py-1 pl-2.5 pr-6 text-xs font-medium text-fg shadow-xs hover:bg-surface-raised transition-colors"
             @change="onPerPageChange"
           >
             <option v-for="opt in perPageOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
-          <ChevronDown class="pointer-events-none absolute inset-y-0 right-0 my-auto mr-1.5 h-3 w-3 text-slate-400" />
+          <ChevronDown class="pointer-events-none absolute inset-y-0 right-0 my-auto mr-1.5 h-3 w-3 text-fg-muted" />
         </div>
       </div>
     </div>
@@ -90,7 +90,7 @@ function onPerPageChange(event: Event) {
     <div v-if="totalPages > 1" class="flex items-center gap-1">
       <button
         type="button"
-        class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-800 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        class="focus-ring inline-flex h-7 w-7 items-center justify-center rounded-lg text-fg-muted hover:bg-surface hover:text-fg disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
         :disabled="page === 1"
         aria-label="Previous page"
         @click="goToPage(page - 1)"
@@ -99,15 +99,15 @@ function onPerPageChange(event: Event) {
       </button>
 
       <template v-for="(item, idx) in pageItems" :key="idx">
-        <span v-if="item === 'ellipsis'" class="px-1.5 text-xs text-slate-400">…</span>
+        <span v-if="item === 'ellipsis'" class="px-1.5 text-xs text-fg-muted">…</span>
         <button
           v-else
           type="button"
-          class="inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-xs font-medium transition-colors"
+          class="focus-ring inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-xs font-medium transition-colors"
           :class="
             item === page
-              ? 'bg-[#0f6b5c] text-white'
-              : 'text-slate-600 hover:bg-white hover:text-slate-900'
+              ? 'bg-primary text-white'
+              : 'text-fg-muted hover:bg-surface hover:text-fg'
           "
           @click="goToPage(item)"
         >
@@ -117,7 +117,7 @@ function onPerPageChange(event: Event) {
 
       <button
         type="button"
-        class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-800 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        class="focus-ring inline-flex h-7 w-7 items-center justify-center rounded-lg text-fg-muted hover:bg-surface hover:text-fg disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
         :disabled="page === totalPages"
         aria-label="Next page"
         @click="goToPage(page + 1)"

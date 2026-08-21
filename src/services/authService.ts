@@ -1,12 +1,12 @@
 import api from './api'
-import type { AuthResponse, LoginPayload, RegisterPayload, User } from '@/types/auth'
+import type { AuthResponse, LoginPayload, RegisterPayload, RegisterResult, User } from '@/types/auth'
 
 export const login = (payload: LoginPayload) => {
   return api.post<AuthResponse>('/auth/login', payload)
 }
 
 export const register = (payload: RegisterPayload) => {
-  return api.post<AuthResponse>('/auth/register', payload)
+  return api.post<RegisterResult>('/auth/register', payload)
 }
 
 export const logout = () => {

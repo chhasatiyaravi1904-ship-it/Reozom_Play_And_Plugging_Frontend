@@ -5,6 +5,12 @@
  *   controls (button, input, select, textarea, checkbox/radio, badge, dropzone) -> rounded-lg
  *   surfaces (card, modal, dropdown/menu panel)                                 -> rounded-xl
  *   circular (avatar, icon button, step circle, pill badge)                     -> rounded-full
+ *   icon-in-a-box (empty-state icon, modal header icon)                        -> rounded-lg (never rounded-2xl)
+ *
+ * Shadow convention:
+ *   controls (button, input, select, resting)     -> shadow-xs
+ *   dropdown / menu / detail panels                -> shadow-lg
+ *   modal panels                                    -> shadow-lg (not shadow-xl/2xl)
  */
 
 @theme {
@@ -24,6 +30,8 @@
   --color-danger-soft: #fbeaea;
   --color-info: #3b6ea5;
   --color-info-soft: #eaf1f7;
+  --color-caution: #c2410c;
+  --color-caution-soft: #fff0e6;
 
   --color-surface: #ffffff;
   --color-surface-raised: #f7f5f2;
@@ -42,6 +50,7 @@
     --color-warning-soft: #2e2210;
     --color-danger-soft: #2e1616;
     --color-info-soft: #16232e;
+    --color-caution-soft: #2e1a0f;
     --color-fg: #f5f2ee;
     --color-fg-muted: #a39d95;
     --color-fg-disabled: #57504a;
@@ -51,4 +60,10 @@
 
 body {
   @apply bg-surface text-fg font-sans text-[15px] antialiased transition-colors duration-500;
+}
+
+@layer components {
+  .focus-ring {
+    @apply outline-none focus-visible:ring-3 focus-visible:ring-primary/30;
+  }
 }

@@ -3,6 +3,8 @@ export type UserRole = 'admin' | 'agent' | 'seller' | 'buyer'
 export interface User {
   id: number
   fullName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string
   role?: UserRole
@@ -15,8 +17,6 @@ export interface User {
   officeNumber?: string | null
   extension?: string | null
   profileFinished?: boolean
-  /** Fine-grained admin-portal permissions from the RBAC layer — separate
-   * from `role`, which only gates which portal a user can enter. */
   permissions?: string[]
 }
 
@@ -26,9 +26,15 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  fullName: string
+  userType: 'agent' | 'seller' | 'buyer'
+  firstName: string
+  lastName: string
   email: string
   phone: string
+  streetAddress: string
+  city: string
+  state: string
+  zip: string
   password: string
   passwordConfirmation: string
 }
@@ -36,4 +42,10 @@ export interface RegisterPayload {
 export interface AuthResponse {
   token: string
   user: User
+}
+
+export interface RegisterResult {
+  token?: string
+  user: User
+  pendingApproval?: boolean
 }
