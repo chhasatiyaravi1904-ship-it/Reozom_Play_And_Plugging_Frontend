@@ -6,7 +6,6 @@ import {
   FileText,
   Flag,
   LayoutDashboard,
-  LogOut,
   MapPin,
   Network,
   ShieldCheck,
@@ -14,7 +13,6 @@ import {
   Workflow,
   X,
 } from 'lucide-vue-next'
-import { useAuth } from '@/composables/useAuth'
 
 defineProps<{
   open?: boolean
@@ -25,7 +23,6 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const { user, logout } = useAuth()
 
 const navGroups = [
   {
@@ -54,11 +51,6 @@ const navGroups = [
 
 function isItemActive(path: string) {
   return route.path === path || route.path.startsWith(path + '/')
-}
-
-async function handleLogout() {
-  emit('close')
-  await logout()
 }
 </script>
 
@@ -134,37 +126,6 @@ async function handleLogout() {
         </div>
       </div>
     </nav>
-
-    <!-- Bottom Admin User Profile & Sign Out -->
-    <div class="border-t border-border bg-surface-raised p-3">
-      <div class="flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5">
-        <span
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary-active ring-2 ring-primary/15"
-        >
-          {{ (user?.fullName || 'Admin').charAt(0).toUpperCase() }}
-        </span>
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-xs font-semibold text-fg">
-            {{ user?.fullName || 'Admin User' }}
-          </p>
-          <div class="flex items-center gap-1.5">
-            <span class="h-1.5 w-1.5 rounded-full bg-success"></span>
-            <p class="truncate text-[11px] font-medium text-fg-muted capitalize">
-              {{ user?.role || 'Administrator' }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="focus-ring mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-fg-muted transition-colors hover:border-danger/30 hover:bg-danger-soft hover:text-danger"
-        @click="handleLogout"
-      >
-        <LogOut class="h-3.5 w-3.5" />
-        <span>Sign out</span>
-      </button>
-    </div>
   </aside>
 </template>
 
