@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ChevronDown, KeyRound, LogOut, UserRound } from 'lucide-vue-next'
 import ActionMenu from '@/components/ui/ActionMenu.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToastStore } from '@/stores/toast'
 
+const router = useRouter()
 const { user, logout } = useAuth()
 const toast = useToastStore()
+
+const isLoggingOut = ref(false)
 
 const menuItems = [
   { label: 'Profile', icon: UserRound, value: 'profile' },
@@ -13,11 +18,18 @@ const menuItems = [
   { label: 'Logout', icon: LogOut, value: 'logout', destructive: true },
 ]
 
-function handleSelect(value: string) {
-  if (value === 'logout') {
-    logout()
-  } else {
+async function handleSelect(value: string) {
+  if (value !== 'logout') {
     toast.info('This isn’t available yet.')
+    return
+  }
+
+  isLoggingOut.value = true
+  try {
+    await logout()
+    await router.push({ name: 'admin-login' })
+  } finally {
+    isLoggingOut.value = false
   }
 }
 </script>
@@ -27,10 +39,11 @@ function handleSelect(value: string) {
     <template #trigger="{ toggle, isOpen }">
       <button
         type="button"
-        class="focus-ring flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-1.5 transition-colors hover:bg-surface-raised"
+        class="focus-ring flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-1.5 transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-70"
         :class="{ 'bg-surface-raised': isOpen }"
         aria-label="Admin account menu"
         :aria-expanded="isOpen"
+        :disabled="isLoggingOut"
         @click="toggle"
       >
         <span
@@ -40,11 +53,17 @@ function handleSelect(value: string) {
         </span>
         <span class="hidden min-w-0 text-left sm:block">
           <span class="block truncate text-sm font-semibold text-fg">
-            {{ user?.fullName || 'Admin User' }}
+            {{ isLoggingOut ? 'Signing out…' : user?.fullName || 'Admin User' }}
           </span>
           <span class="block truncate text-xs text-fg-muted">{{ user?.email || user?.role }}</span>
         </span>
+        <span
+          v-if="isLoggingOut"
+          class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-fg-muted/30 border-t-fg-muted"
+          aria-hidden="true"
+        ></span>
         <ChevronDown
+          v-else
           class="h-4 w-4 shrink-0 text-fg-muted transition-transform"
           :class="{ 'rotate-180': isOpen }"
         />
