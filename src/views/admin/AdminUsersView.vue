@@ -14,6 +14,8 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
+  BadgeCheck,
+  CircleAlert,
 } from 'lucide-vue-next'
 import type { AdminUserItem, AdminUserRole } from '@/services/adminUsersData'
 import * as userService from '@/services/userService'
@@ -24,6 +26,8 @@ import AddEditUserModal from '@/components/admin/AddEditUserModal.vue'
 import ViewUserModal from '@/components/admin/ViewUserModal.vue'
 import ChangeRoleModal from '@/components/admin/ChangeRoleModal.vue'
 import DeleteUserModal from '@/components/admin/DeleteUserModal.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import Breadcrumb from '@/components/ui/Breadcrumb.vue'
 import Tabs from '@/components/ui/Tabs.vue'
 import SearchInput from '@/components/ui/SearchInput.vue'
@@ -34,10 +38,15 @@ import PaginationBar from '@/components/ui/PaginationBar.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { useToastStore } from '@/stores/toast'
+import { useAuthStore } from '@/stores/auth'
 
 const toast = useToastStore()
+const authStore = useAuthStore()
+
+function isSelf(user: AdminUserItem): boolean {
+  return authStore.user?.id === user.id
+}
 
 // State
 const users = ref<AdminUserItem[]>([])
@@ -126,7 +135,7 @@ async function fetchUsers() {
 }
 
 // Tabs
-type RoleFilterTab = 'all' | AdminUserRole
+type RoleFilterTab = 'all' | AdminUserRole | 'unverified-agent'
 const activeTab = ref<RoleFilterTab>('all')
 
 const roleTabs: { label: string; value: RoleFilterTab }[] = [
@@ -135,6 +144,7 @@ const roleTabs: { label: string; value: RoleFilterTab }[] = [
   { label: 'Agents', value: 'agent' },
   { label: 'Sellers', value: 'seller' },
   { label: 'Buyers', value: 'buyer' },
+  { label: 'Unverified Agents', value: 'unverified-agent' },
 ]
 
 // Tab counts (computed dynamically from all users)
@@ -145,10 +155,14 @@ const tabCounts = computed(() => {
     agent: 0,
     seller: 0,
     buyer: 0,
+    'unverified-agent': 0,
   }
   for (const u of users.value) {
     if (u.role in counts) {
       counts[u.role]++
+    }
+    if (u.role === 'agent' && !u.emailVerified) {
+      counts['unverified-agent']++
     }
   }
   return counts
@@ -196,12 +210,19 @@ const dateRangeFilterOptions = [
   { label: 'Year 2024', value: '2024' },
 ]
 
-// Sync tab changes to role filter dropdown
+// Sync tab changes to role filter dropdown. "Unverified Agents" is a
+// role+verification compound filter, not a real role value — point the
+// dropdown at "agent" and let the tab-specific clause in filteredUsers
+// narrow it further.
 watch(activeTab, (newTab) => {
-  selectedRole.value = newTab
+  selectedRole.value = newTab === 'unverified-agent' ? 'agent' : newTab
 })
 
 watch(selectedRole, (newRole) => {
+  // The "Unverified Agents" tab drives selectedRole to "agent" itself (see
+  // above) — don't let that echo back and downgrade the tab to plain "Agents".
+  if (activeTab.value === 'unverified-agent' && newRole === 'agent') return
+
   if (['all', 'admin', 'agent', 'seller', 'buyer'].includes(newRole)) {
     activeTab.value = newRole as RoleFilterTab
   }
@@ -349,16 +370,60 @@ async function handleRoleChanged(user: AdminUserItem, newRole: AdminUserRole) {
   }
 }
 
-async function toggleUserStatus(user: AdminUserItem) {
+const isStatusConfirmOpen = ref(false)
+const userPendingStatusToggle = ref<AdminUserItem | null>(null)
+const statusToggleLoading = ref(false)
+
+function requestStatusToggle(user: AdminUserItem) {
+  userPendingStatusToggle.value = user
+  isStatusConfirmOpen.value = true
+}
+
+async function confirmStatusToggle() {
+  const user = userPendingStatusToggle.value
+  if (!user) return
+
   const newIsActive = !(user.status === 'active' || user.isActive)
+  statusToggleLoading.value = true
   try {
     const response = await userService.toggleUserStatus(user.id, newIsActive)
     const updated = normalizeUser(extractRecord(response.data))
     const idx = users.value.findIndex((u) => u.id === user.id)
     if (idx !== -1) users.value[idx] = updated
     toast.info(`User ${user.fullName} is now ${updated.status}.`)
+    isStatusConfirmOpen.value = false
   } catch (err) {
     toast.error(apiErrorMessage(err, 'Failed to update status.'))
+  } finally {
+    statusToggleLoading.value = false
+  }
+}
+
+const isVerifyConfirmOpen = ref(false)
+const userPendingVerification = ref<AdminUserItem | null>(null)
+const verifyLoading = ref(false)
+
+function requestAgentVerification(user: AdminUserItem) {
+  userPendingVerification.value = user
+  isVerifyConfirmOpen.value = true
+}
+
+async function confirmAgentVerification() {
+  const user = userPendingVerification.value
+  if (!user) return
+
+  verifyLoading.value = true
+  try {
+    const response = await userService.verifyUserEmail(user.id)
+    const updated = normalizeUser(extractRecord(response.data))
+    const idx = users.value.findIndex((u) => u.id === user.id)
+    if (idx !== -1) users.value[idx] = updated
+    toast.success(`${user.fullName}'s email has been marked as verified.`)
+    isVerifyConfirmOpen.value = false
+  } catch (err) {
+    toast.error(apiErrorMessage(err, 'Failed to verify user.'))
+  } finally {
+    verifyLoading.value = false
   }
 }
 
@@ -373,7 +438,7 @@ async function handleDeleteUser(user: AdminUserItem) {
 }
 
 function getActionMenuItems(user: AdminUserItem) {
-  return [
+  const items = [
     { label: 'View User', icon: Eye, value: 'view' },
     { label: 'Edit User', icon: Pencil, value: 'edit' },
     { label: 'Change Role', icon: Shield, value: 'changeRole' },
@@ -384,6 +449,14 @@ function getActionMenuItems(user: AdminUserItem) {
     },
     { label: 'Delete User', icon: Trash2, value: 'delete', destructive: true },
   ]
+
+  // You can't deactivate or delete the account you're currently signed in
+  // with — same guard the backend already enforces for delete.
+  if (isSelf(user)) {
+    return items.filter((item) => item.value !== 'toggleStatus' && item.value !== 'delete')
+  }
+
+  return items
 }
 
 function handleActionSelect(value: string, user: AdminUserItem) {
@@ -398,7 +471,7 @@ function handleActionSelect(value: string, user: AdminUserItem) {
       openChangeRoleModal(user)
       break
     case 'toggleStatus':
-      toggleUserStatus(user)
+      requestStatusToggle(user)
       break
     case 'delete':
       openDeleteUserModal(user)
@@ -434,7 +507,9 @@ async function reloadUsers() {
 const filteredUsers = computed(() => {
   return users.value.filter((user) => {
     // Tab filter
-    if (activeTab.value !== 'all' && user.role !== activeTab.value) {
+    if (activeTab.value === 'unverified-agent') {
+      if (user.role !== 'agent' || user.emailVerified) return false
+    } else if (activeTab.value !== 'all' && user.role !== activeTab.value) {
       return false
     }
 
@@ -678,6 +753,11 @@ watch(totalUsers, (total) => {
                 </div>
               </th>
 
+              <!-- Verified Column -->
+              <th scope="col" class="px-4 py-3.5">
+                <span>Verified</span>
+              </th>
+
               <!-- Email Column -->
               <th
                 scope="col"
@@ -743,9 +823,45 @@ watch(totalUsers, (total) => {
                 <UserRoleBadge :role="user.role" />
               </td>
 
-              <!-- Status Badge -->
+              <!-- Status -->
               <td class="px-4 py-3.5 whitespace-nowrap">
-                <StatusBadge kind="user" emphasized :status="user.status" />
+                <div class="flex items-center gap-2">
+                  <ToggleSwitch
+                    :model-value="user.status === 'active'"
+                    :disabled="isSelf(user)"
+                    :label="`Toggle active status for ${user.fullName}`"
+                    :title="isSelf(user) ? 'You cannot deactivate your own account.' : undefined"
+                    @update:model-value="requestStatusToggle(user)"
+                  />
+                  <span
+                    class="text-xs font-medium"
+                    :class="user.status === 'active' ? 'text-success' : 'text-fg-muted'"
+                  >
+                    {{ user.status === 'active' ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
+              </td>
+
+              <!-- Verified -->
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center gap-1.5 text-xs font-medium"
+                    :class="user.emailVerified ? 'text-success' : 'text-fg-muted'"
+                    :title="user.emailVerified ? 'Email verified' : 'Email not verified yet'"
+                  >
+                    <component :is="user.emailVerified ? BadgeCheck : CircleAlert" class="h-3.5 w-3.5" />
+                    {{ user.emailVerified ? 'Verified' : 'Not verified' }}
+                  </span>
+                  <button
+                    v-if="!user.emailVerified && user.role === 'agent'"
+                    type="button"
+                    class="focus-ring rounded text-xs font-medium text-primary hover:underline"
+                    @click="requestAgentVerification(user)"
+                  >
+                    Verify
+                  </button>
+                </div>
               </td>
 
               <!-- Email -->
@@ -841,5 +957,36 @@ watch(totalUsers, (total) => {
     <ChangeRoleModal v-model="isChangeRoleModalOpen" :user="userToChangeRole" @role-changed="handleRoleChanged" />
 
     <DeleteUserModal v-model="isDeleteModalOpen" :user="userToDelete" @confirm-delete="handleDeleteUser" />
+
+    <ConfirmDialog
+      v-if="userPendingStatusToggle"
+      v-model="isStatusConfirmOpen"
+      :title="userPendingStatusToggle.status === 'active' ? 'Deactivate User' : 'Activate User'"
+      :confirm-label="userPendingStatusToggle.status === 'active' ? 'Deactivate' : 'Activate'"
+      :tone="userPendingStatusToggle.status === 'active' ? 'danger' : 'default'"
+      :loading="statusToggleLoading"
+      @confirm="confirmStatusToggle"
+    >
+      Are you sure you want to
+      {{ userPendingStatusToggle.status === 'active' ? 'deactivate' : 'activate' }}
+      <span class="font-semibold text-fg">{{ userPendingStatusToggle.fullName }}</span>?
+      <template v-if="userPendingStatusToggle.status === 'active'">
+        They will no longer be able to sign in until reactivated.
+      </template>
+    </ConfirmDialog>
+
+    <ConfirmDialog
+      v-if="userPendingVerification"
+      v-model="isVerifyConfirmOpen"
+      title="Verify Agent"
+      confirm-label="Verify"
+      :loading="verifyLoading"
+      @confirm="confirmAgentVerification"
+    >
+      Are you sure you want to mark
+      <span class="font-semibold text-fg">{{ userPendingVerification.fullName }}</span>'s email as
+      verified? This skips them clicking the verification link themselves and lets them sign in
+      immediately (once approved and active).
+    </ConfirmDialog>
   </div>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ArrowRight, CheckCircle2 } from 'lucide-vue-next'
+import { ArrowRight, CheckCircle2, Check } from 'lucide-vue-next'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseSelect from '@/components/form/BaseSelect.vue'
 import BaseRadioGroup from '@/components/form/BaseRadioGroup.vue'
@@ -12,8 +12,10 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToastStore } from '@/stores/toast'
 import * as publicGeographyService from '@/services/publicGeographyService'
+import * as packageService from '@/services/packageService'
 import type { PublicState, PublicCity } from '@/services/publicGeographyService'
 import type { RegisterPayload } from '@/types/auth'
+import type { PackageItem, PackageListResponse } from '@/types/package'
 
 const router = useRouter()
 const toast = useToastStore()
@@ -46,6 +48,46 @@ const isPendingApproval = ref(false)
 const states = ref<PublicState[]>([])
 const cities = ref<PublicCity[]>([])
 const citiesLoading = ref(false)
+
+const packages = ref<PackageItem[]>([])
+const packagesLoading = ref(false)
+const packagesError = ref<string | null>(null)
+const selectedPackageId = ref('')
+let packagesFetched = false
+
+function extractPackageItems(payload: PackageListResponse | PackageItem[] | undefined): PackageItem[] {
+  if (Array.isArray(payload)) return payload
+  if (payload && Array.isArray(payload.items)) return payload.items
+  if (payload && Array.isArray(payload.data)) return payload.data
+  return []
+}
+
+async function fetchPackages() {
+  if (packagesFetched) return
+  packagesFetched = true
+  packagesLoading.value = true
+  packagesError.value = null
+  try {
+    const { data } = await packageService.fetchPackages()
+    packages.value = extractPackageItems(data)
+  } catch {
+    packagesError.value = 'Unable to load packages right now.'
+  } finally {
+    packagesLoading.value = false
+  }
+}
+
+watch(
+  () => form.userType,
+  (userType) => {
+    if (userType === 'agent') {
+      fetchPackages()
+    } else {
+      selectedPackageId.value = ''
+    }
+  },
+  { immediate: true },
+)
 
 const stateOptions = computed(() =>
   states.value.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id })),
@@ -97,6 +139,7 @@ async function handleSubmit() {
     ...form,
     state: state.code,
     city: city.name,
+    packageId: form.userType === 'agent' && selectedPackageId.value ? selectedPackageId.value : undefined,
   }
 
   const result = await register(payload)
@@ -131,6 +174,41 @@ async function handleSubmit() {
 
       <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
         <BaseRadioGroup v-model="form.userType" label="I am a" :options="userTypeOptions" inline required />
+
+        <div v-if="form.userType === 'agent'" class="rounded-xl border border-border bg-surface-raised p-4">
+          <p class="text-sm font-semibold text-fg">Choose a package</p>
+          <p class="mt-0.5 text-xs text-fg-muted">
+            Optional — pick one now, or select it after your account is approved.
+          </p>
+
+          <p v-if="packagesLoading" class="mt-3 text-sm text-fg-muted">Loading packages…</p>
+          <p v-else-if="packagesError" class="mt-3 text-sm text-danger">{{ packagesError }}</p>
+          <p v-else-if="packages.length === 0" class="mt-3 text-sm text-fg-muted">
+            No packages are available right now.
+          </p>
+
+          <div v-else class="mt-3 grid gap-3 sm:grid-cols-3">
+            <button
+              v-for="pkg in packages"
+              :key="pkg.id"
+              type="button"
+              class="focus-ring flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors"
+              :class="
+                selectedPackageId === pkg.id
+                  ? 'border-primary bg-primary-soft'
+                  : 'border-border bg-surface hover:border-primary/50'
+              "
+              @click="selectedPackageId = selectedPackageId === pkg.id ? '' : pkg.id"
+            >
+              <span class="flex w-full items-center justify-between gap-2">
+                <span class="text-sm font-semibold text-fg">{{ pkg.name }}</span>
+                <Check v-if="selectedPackageId === pkg.id" class="h-4 w-4 shrink-0 text-primary" />
+              </span>
+              <span v-if="pkg.description" class="text-xs text-fg-muted">{{ pkg.description }}</span>
+              <span class="text-xs text-fg-muted">{{ pkg.durationDays }}-day access</span>
+            </button>
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <BaseInput v-model="form.firstName" label="First name" placeholder="Jane" required />

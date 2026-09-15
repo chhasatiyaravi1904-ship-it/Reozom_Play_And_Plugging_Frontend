@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   MapPin,
   Network,
+  Package,
   ShieldCheck,
   Users,
   Workflow,
@@ -33,6 +34,7 @@ const navGroups = [
     label: 'Platform',
     items: [
       { label: 'Users', to: '/admin/users', icon: Users },
+      { label: 'Packages', to: '/admin/packages', icon: Package },
       { label: 'Listings', to: '/admin/listings', icon: Building2 },
       { label: 'Listing Process Management', to: '/admin/listing-processes', icon: Workflow },
       { label: 'Disclosures', to: '/admin/disclosures', icon: FileText },

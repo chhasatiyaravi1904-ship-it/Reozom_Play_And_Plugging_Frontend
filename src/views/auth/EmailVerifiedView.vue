@@ -1,11 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { BadgeCheck, CircleAlert } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const verified = computed(() => route.query.status === 'verified')
+
+onMounted(async () => {
+  // A user who registered as seller/buyer already has a session (register()
+  // logs them in immediately, unverified). If they click the link from that
+  // same session, refresh the user so the router's verify-email guard
+  // clears and carry them straight into the app instead of "go sign in."
+  if (verified.value && authStore.isAuthenticated) {
+    await authStore.loadCurrentUser()
+    if (authStore.user?.emailVerified) {
+      router.replace({ name: 'dashboard' })
+    }
+  }
+})
 </script>
 
 <template>

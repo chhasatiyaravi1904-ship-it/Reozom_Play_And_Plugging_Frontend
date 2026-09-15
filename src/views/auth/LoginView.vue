@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { ArrowRight, Eye, EyeOff } from 'lucide-vue-next'
 import BaseInput from '@/components/form/BaseInput.vue'
@@ -7,7 +7,6 @@ import SocialLoginButtons from '@/components/form/SocialLoginButtons.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { useAuth } from '@/composables/useAuth'
-import { resendVerificationEmail } from '@/services/authService'
 import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
@@ -16,25 +15,14 @@ const { login, status, error } = useAuth()
 
 const form = reactive({ email: '', password: '' })
 const showPassword = ref(false)
-const resending = ref(false)
-
-const isUnverifiedError = computed(() => !!error.value?.toLowerCase().includes('verify your email'))
 
 async function handleSubmit() {
   const success = await login({ email: form.email, password: form.password })
   if (success) {
     toast.success('Welcome back!')
     router.push('/dashboard')
-  }
-}
-
-async function handleResend() {
-  resending.value = true
-  try {
-    await resendVerificationEmail(form.email)
-    toast.success('If that account exists, a new verification email is on its way.')
-  } finally {
-    resending.value = false
+  } else if (error.value?.toLowerCase().includes('verify your email')) {
+    router.push({ name: 'verify-email', query: { email: form.email } })
   }
 }
 </script>
@@ -81,18 +69,7 @@ async function handleResend() {
         </RouterLink>
       </div>
 
-      <div v-if="error" class="text-sm text-danger">
-        {{ error }}
-        <button
-          v-if="isUnverifiedError"
-          type="button"
-          class="ml-1 font-medium underline disabled:opacity-60"
-          :disabled="resending"
-          @click="handleResend"
-        >
-          Resend verification email
-        </button>
-      </div>
+      <p v-if="error" class="text-sm text-danger">{{ error }}</p>
 
       <BaseButton type="submit" block :loading="status === 'loading'">
         Sign In

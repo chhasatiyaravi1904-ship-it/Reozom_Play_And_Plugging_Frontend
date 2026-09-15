@@ -53,6 +53,11 @@ const router = createRouter({
           name: 'email-verified',
           component: () => import('@/views/auth/EmailVerifiedView.vue'),
         },
+        {
+          path: 'verify-email',
+          name: 'verify-email',
+          component: () => import('@/views/auth/VerifyEmailView.vue'),
+        },
       ],
     },
     {
@@ -81,6 +86,11 @@ const router = createRouter({
           path: 'users',
           name: 'admin-users',
           component: () => import('@/views/admin/AdminUsersView.vue'),
+        },
+        {
+          path: 'packages',
+          name: 'admin-packages',
+          component: () => import('@/views/admin/AdminPackagesView.vue'),
         },
         {
           path: 'listings',
@@ -175,6 +185,11 @@ const router = createRouter({
           component: () => import('@/views/profile/ProfileView.vue'),
         },
         { path: 'help', name: 'help', component: () => import('@/views/HelpView.vue') },
+        {
+          path: 'select-package',
+          name: 'select-package',
+          component: () => import('@/views/packages/PackageSelectionView.vue'),
+        },
       ],
     },
     {
@@ -208,9 +223,36 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' }
   }
 
+  // A freshly-registered seller/buyer already has a session but hasn't
+  // confirmed their email yet (register() logs them in immediately either
+  // way) — hold them on the verify-email screen until they do.
+  if (
+    authStore.isAuthenticated &&
+    authStore.user &&
+    !authStore.user.emailVerified &&
+    to.name !== 'verify-email'
+  ) {
+    return { name: 'verify-email' }
+  }
+
+  // Agents must pick a package before using the rest of the app. Packages
+  // recur/expire, so this also re-triggers once a package lapses.
+  if (
+    authStore.isAuthenticated &&
+    authStore.user?.role === 'agent' &&
+    !authStore.user?.hasActivePackage &&
+    to.name !== 'select-package'
+  ) {
+    return { name: 'select-package' }
+  }
+
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     return { name: isAdminPortalUser(authStore.user?.role) ? 'admin-dashboard' : 'dashboard' }
   }
 })
 
 export default router
+
+
+// how we will get MLS credicail 
+// we will get MLS credicail from the user and then we will store it in the database and then we will use it to get the MLS data from the MLS API

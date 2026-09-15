@@ -18,6 +18,16 @@ export interface User {
   extension?: string | null
   profileFinished?: boolean
   permissions?: string[]
+  hasActivePackage?: boolean
+  currentPackage?: CurrentPackage | null
+}
+
+export interface CurrentPackage {
+  id: string
+  name: string
+  slug: string
+  startedAt: string
+  expiresAt: string
 }
 
 export interface LoginPayload {
@@ -37,6 +47,7 @@ export interface RegisterPayload {
   zip: string
   password: string
   passwordConfirmation: string
+  packageId?: string
 }
 
 export interface AuthResponse {

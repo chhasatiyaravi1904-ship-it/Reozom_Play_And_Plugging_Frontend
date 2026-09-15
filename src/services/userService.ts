@@ -65,3 +65,7 @@ export const deleteUser = (id: number | string) => {
 export const toggleUserStatus = (id: number | string, isActive: boolean) => {
   return api.put<AdminUserItem>(`/admin/users/${id}`, { is_active: isActive })
 }
+
+export const verifyUserEmail = (id: number | string) => {
+  return api.put<AdminUserItem>(`/admin/users/${id}`, { email_verified: true })
+}
