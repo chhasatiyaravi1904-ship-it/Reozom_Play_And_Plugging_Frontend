@@ -1,143 +1,6 @@
 <template>
   <div class="landing-page">
-    <!-- SHARED COMPONENT 1: TopNavBar (Web Header) -->
-    <header
-      class="bg-surface-container-lowest dark:bg-primary-container text-primary dark:text-inverse-primary docked full-width top sticky top-0 z-50 border-b border-outline-variant/30 dark:border-outline-variant/10 shadow-sm dark:shadow-none"
-    >
-      <div class="max-w-7xl mx-auto px-6 md:px-10 h-20 flex justify-between items-center w-full">
-        <!-- Brand Logo Anchor -->
-        <a class="flex items-center gap-3 group" href="#hero">
-          <img
-            alt="REOZOM Logo"
-            class="h-10 w-10 object-contain rounded-md"
-            src="https://lh3.googleusercontent.com/aida/AEtjO1XC5OIcOBhCVaDJep_6PTsv94jiDesgJgD67a1TVcMdBzPOXmrdrTPjevxl8QOhQ-eMz5Yv6xZvQQMEHu6sgPpx22DfFVtGebieL3T5ff6tNGFqgpCNiuZzuG6ey3mMXq7YHUimUA-GwqkroAPShYeL9G2MepHSrgNqRQi-AN_GPMcusYda7Dqrc3SZ8BulhX4TDKA7Py9MEsoXMP0yHcr7IQ5U380SNuaAcISk7f8ozx9l54oznuR6"
-          />
-          <span
-            class="text-headline-md font-headline-md font-extrabold tracking-tight text-primary dark:text-inverse-primary"
-            >REOZOM</span
-          >
-        </a>
-        <!-- Desktop Nav Links -->
-        <nav class="hidden lg:flex items-center space-x-7">
-          <a
-            class="text-secondary dark:text-secondary-fixed font-semibold border-b-2 border-secondary dark:border-secondary-fixed pb-1 text-label-lg font-label-lg"
-            href="#listings"
-            >Listings</a
-          >
-          <a
-            class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-inverse-primary transition-colors text-label-lg font-label-lg"
-            href="#how-it-works"
-            >How It Works</a
-          >
-          <a
-            class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-inverse-primary transition-colors text-label-lg font-label-lg"
-            href="#sellers"
-            >For Sellers</a
-          >
-          <a
-            class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-inverse-primary transition-colors text-label-lg font-label-lg"
-            href="#listing-agents"
-            >For Agents</a
-          >
-          <a
-            class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-inverse-primary transition-colors text-label-lg font-label-lg"
-            href="#buyers"
-            >For Buyers</a
-          >
-          <a
-            class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-inverse-primary transition-colors text-label-lg font-label-lg"
-            href="#pricing"
-            >Pricing</a
-          >
-          <a
-            class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-inverse-primary transition-colors text-label-lg font-label-lg"
-            href="#trust"
-            >About</a
-          >
-        </nav>
-        <!-- Trailing Auth CTAs -->
-        <div class="hidden sm:flex items-center gap-3">
-          <button
-            class="px-4 py-2 border border-outline-variant/60 rounded-lg text-primary hover:bg-surface-container transition-colors text-label-lg font-label-lg"
-            onclick="openAuthModal('Log In')"
-          >
-            Log In
-          </button>
-          <button
-            class="px-5 py-2 bg-primary-container text-on-primary hover:bg-primary transition-all duration-150 rounded-lg shadow-sm font-label-lg text-label-lg flex items-center gap-1.5 active:scale-[0.99]"
-            onclick="openAuthModal('Register')"
-          >
-            <span class="w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
-            Register
-          </button>
-        </div>
-        <!-- Mobile Hamburger Button -->
-        <div class="lg:hidden flex items-center gap-2">
-          <button
-            class="px-3 py-1.5 bg-primary-container text-on-primary rounded-lg text-label-md font-label-md"
-            onclick="openAuthModal('Register')"
-          >
-            Sign In
-          </button>
-          <button
-            aria-label="Toggle navigation menu"
-            class="p-2 text-on-surface hover:bg-surface-container rounded-lg focus:outline-none"
-            id="mobileMenuBtn"
-          >
-            <span class="material-symbols-outlined" data-icon="menu">menu</span>
-          </button>
-        </div>
-      </div>
-      <!-- Mobile Drawer Navigation -->
-      <div
-        class="hidden lg:hidden border-t border-outline-variant/30 bg-surface-container-lowest px-6 py-5 space-y-3 shadow-lg"
-        id="mobileDrawer"
-      >
-        <a class="block py-2 text-primary font-semibold text-label-lg" href="#listings">Listings</a>
-        <a
-          class="block py-2 text-on-surface-variant hover:text-primary text-label-lg"
-          href="#how-it-works"
-          >How It Works</a
-        >
-        <a
-          class="block py-2 text-on-surface-variant hover:text-primary text-label-lg"
-          href="#sellers"
-          >For Sellers</a
-        >
-        <a
-          class="block py-2 text-on-surface-variant hover:text-primary text-label-lg"
-          href="#listing-agents"
-          >For Agents</a
-        >
-        <a
-          class="block py-2 text-on-surface-variant hover:text-primary text-label-lg"
-          href="#buyers"
-          >For Buyers</a
-        >
-        <a
-          class="block py-2 text-on-surface-variant hover:text-primary text-label-lg"
-          href="#pricing"
-          >Pricing</a
-        >
-        <a class="block py-2 text-on-surface-variant hover:text-primary text-label-lg" href="#trust"
-          >About</a
-        >
-        <div class="pt-3 border-t border-outline-variant/20 flex gap-3">
-          <button
-            class="flex-1 py-2.5 border border-outline-variant/80 rounded-lg text-primary text-label-md font-label-md text-center"
-            onclick="openAuthModal('Log In')"
-          >
-            Log In
-          </button>
-          <button
-            class="flex-1 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-label-md text-center"
-            onclick="openAuthModal('Register')"
-          >
-            Register
-          </button>
-        </div>
-      </div>
-    </header>
+    <TopNavBar />
     <main>
       <!-- SECTION 2: HERO SECTION -->
       <section
@@ -175,7 +38,7 @@
               <div class="flex flex-wrap items-center gap-4 pt-2">
                 <button
                   class="px-7 py-3.5 bg-primary-container text-on-primary hover:bg-primary transition-all duration-150 rounded-lg shadow-md font-label-lg text-label-lg flex items-center gap-2"
-                  onclick="openAuthModal('Create an Account')"
+                  @click="$router.push('/auth/register')"
                 >
                   <span>Create an Account</span>
                   <span
@@ -600,7 +463,7 @@
                 </div>
                 <button
                   class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  onclick="openAuthModal('Submit Offer for Modern Family Home')"
+                  @click="$router.push('/auth/register')"
                 >
                   View Details &amp; Offer
                 </button>
@@ -675,7 +538,7 @@
                 </div>
                 <button
                   class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  onclick="openAuthModal('Submit Offer for Architectural Waterfront Villa')"
+                  @click="$router.push('/auth/register')"
                 >
                   View Details &amp; Offer
                 </button>
@@ -750,7 +613,7 @@
                 </div>
                 <button
                   class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  onclick="openAuthModal('Submit Offer for Minimalist Urban Loft')"
+                  @click="$router.push('/auth/register')"
                 >
                   View Details &amp; Offer
                 </button>
@@ -825,7 +688,7 @@
                 </div>
                 <button
                   class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  onclick="openAuthModal('Submit Offer for Mid-Century Desert Sanctuary')"
+                  @click="$router.push('/auth/register')"
                 >
                   View Details &amp; Offer
                 </button>
@@ -1024,7 +887,7 @@
             <div class="pt-2">
               <button
                 class="px-6 py-3.5 bg-secondary text-surface-container-lowest hover:bg-on-secondary-container rounded-lg font-label-lg text-label-lg transition-colors shadow-sm flex items-center gap-2"
-                onclick="openAuthModal('Start Your Listing as Seller')"
+                @click="$router.push('/auth/register')"
               >
                 <span>Start Your Listing</span>
                 <span class="material-symbols-outlined text-base" data-icon="arrow_forward"
@@ -1197,7 +1060,7 @@
               <div class="mt-5 text-center">
                 <button
                   class="text-secondary font-label-md text-label-md hover:underline inline-flex items-center gap-1"
-                  onclick="openAuthModal('Select Agent Plan')"
+                  @click="$router.push('/auth/register')"
                 >
                   <span>Configure custom intake criteria</span>
                   <span class="material-symbols-outlined text-sm" data-icon="chevron_right"
@@ -1335,14 +1198,14 @@
               <div class="flex items-center gap-3 mt-2 sm:mt-0">
                 <button
                   class="px-3 py-1.5 rounded-lg bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 text-surface-container-lowest text-label-sm font-label-sm flex items-center gap-1 transition-colors"
-                  onclick="openAuthModal('Process Builder - Add Step')"
+                  @click="$router.push('/auth/register')"
                 >
                   <span class="material-symbols-outlined text-sm" data-icon="add">add</span> Add
                   Step
                 </button>
                 <button
                   class="px-3.5 py-1.5 rounded-lg bg-secondary text-surface-container-lowest text-label-sm font-label-sm font-bold hover:bg-secondary-container hover:text-on-secondary-container transition-colors"
-                  onclick="openAuthModal('Process Builder - Publish Process')"
+                  @click="$router.push('/auth/register')"
                 >
                   Save &amp; Deploy Workflow
                 </button>
@@ -1690,7 +1553,7 @@
             </div>
             <button
               class="w-full py-3.5 bg-secondary hover:bg-on-secondary-container text-surface-container-lowest font-label-lg text-label-lg rounded-lg transition-colors flex items-center justify-center gap-2"
-              onclick="openAuthModal('Register as Buyer Agent')"
+              @click="$router.push('/auth/register')"
             >
               <span>Register as Buyer Agent</span>
               <span class="material-symbols-outlined text-base" data-icon="how_to_reg"
@@ -1886,7 +1749,7 @@
               </div>
               <button
                 class="text-label-md font-label-md text-primary hover:text-secondary flex items-center gap-1 font-semibold"
-                onclick="openAuthModal('Download Audit Log')"
+                @click="$router.push('/auth/register')"
               >
                 <span>View Escrow Ledger</span>
                 <span class="material-symbols-outlined text-sm" data-icon="open_in_new"
@@ -2261,7 +2124,7 @@
               <div class="mt-8">
                 <button
                   class="w-full py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container font-label-lg text-label-lg transition-colors"
-                  onclick="openAuthModal('Contact Enterprise Sales')"
+                  @click="$router.push('/auth/register')"
                 >
                   Contact Us
                 </button>
@@ -2402,7 +2265,7 @@
           <div class="flex flex-wrap items-center justify-center gap-4 mt-8">
             <button
               class="px-8 py-4 bg-secondary text-surface-container-lowest hover:bg-secondary-container hover:text-on-secondary-container transition-colors rounded-lg font-label-lg text-label-lg font-bold shadow-lg"
-              onclick="openAuthModal('Register Now - Final CTA')"
+              @click="$router.push('/auth/register')"
             >
               Register Now
             </button>
@@ -2666,7 +2529,7 @@
             <input
               class="w-full h-11 px-3.5 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
               placeholder="agent@realtypartners.com"
-              required=""
+              required
               type="email"
             />
           </div>
@@ -2680,7 +2543,7 @@
             <input
               class="w-full h-11 px-3.5 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
               placeholder="••••••••••••"
-              required=""
+              required
               type="password"
             />
           </div>
@@ -2727,6 +2590,10 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from "vue-router";
+const router = useRouter();
+import TopNavBar from '@/components/layout/TopNavBar.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 // Landing page component
 </script>
 

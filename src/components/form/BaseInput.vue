@@ -23,8 +23,8 @@ const errorId = `${inputId}-error`
 
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="label" :for="inputId" class="text-sm font-medium text-fg">
-      {{ label }}<span v-if="required" class="ml-0.5 text-danger">*</span>
+    <label v-if="label" :for="inputId" class="block text-label-sm font-label-sm text-on-surface-variant uppercase mb-1">
+      {{ label }}<span v-if="required" class="ml-0.5 text-error">*</span>
     </label>
     <input
       :id="inputId"
@@ -36,10 +36,10 @@ const errorId = `${inputId}-error`
       :required="required"
       :aria-invalid="!!error"
       :aria-describedby="error ? errorId : undefined"
-      class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-fg outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-primary/30 disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-fg-disabled"
-      :class="{ 'border-danger focus:border-danger focus:ring-danger/10': error }"
+      class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary disabled:cursor-not-allowed disabled:bg-surface-container disabled:text-outline"
+      :class="{ 'border-error focus:border-error focus:ring-error/10': error }"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
-    <span v-if="error" :id="errorId" class="text-xs text-danger">{{ error }}</span>
+    <span v-if="error" :id="errorId" class="text-xs text-error">{{ error }}</span>
   </div>
 </template>

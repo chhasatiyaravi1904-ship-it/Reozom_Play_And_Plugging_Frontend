@@ -16,9 +16,9 @@ const providers = [
 <template>
   <div>
     <div class="relative my-6 flex items-center gap-3">
-      <div class="h-px flex-1 bg-border"></div>
-      <span class="text-xs text-fg-muted uppercase">or continue with</span>
-      <div class="h-px flex-1 bg-border"></div>
+      <div class="h-px flex-1 bg-outline-variant/50"></div>
+      <span class="text-xs text-on-surface-variant uppercase font-medium">or continue with</span>
+      <div class="h-px flex-1 bg-outline-variant/50"></div>
     </div>
 
     <div class="grid grid-cols-3 gap-3">
@@ -26,10 +26,10 @@ const providers = [
         v-for="provider in providers"
         :key="provider.key"
         :href="`${apiBase}/auth/${provider.key}/redirect`"
-        class="flex items-center justify-center rounded-lg border border-border py-2.5 text-fg-muted transition-colors hover:bg-surface-raised hover:text-fg"
+        class="flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest py-2.5 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
         :aria-label="`Continue with ${provider.label}`"
       >
-        <component :is="provider.icon" class="h-4 w-4" />
+        <component :is="provider.icon" class="h-5 w-5" />
       </a>
     </div>
   </div>

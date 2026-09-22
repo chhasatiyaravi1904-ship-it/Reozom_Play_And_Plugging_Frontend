@@ -10,22 +10,22 @@ const props = defineProps<{
 }>()
 
 const variantClasses: Record<string, string> = {
-  primary: 'bg-primary text-white hover:bg-primary-hover',
-  secondary: 'border border-border bg-surface-raised text-fg hover:bg-border',
-  danger: 'bg-danger text-white hover:bg-danger/90',
-  ghost: 'bg-transparent text-fg hover:bg-surface-raised',
+  primary: 'bg-primary-container hover:bg-primary text-on-primary shadow-sm',
+  secondary: 'bg-secondary hover:bg-secondary-fixed text-on-secondary shadow-sm',
+  danger: 'bg-error hover:bg-error/90 text-on-error shadow-sm',
+  ghost: 'border border-outline-variant text-primary hover:bg-surface-container',
 }
 
 const sizeClasses: Record<string, string> = {
-  sm: 'px-2 py-1 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg',
+  sm: 'px-4 py-1.5 text-label-sm font-label-sm',
+  md: 'px-5 py-2 text-label-md font-label-md h-11',
+  lg: 'px-7 py-3.5 text-label-lg font-label-lg h-12',
 }
 
 const classes = computed(() => [
-  'relative inline-flex items-center justify-center rounded-lg font-medium outline-none transition-colors',
-  '[&:not(:disabled):active]:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60',
-  'focus-visible:ring-3 focus-visible:ring-primary/30',
+  'relative inline-flex items-center justify-center rounded-lg outline-none transition-colors',
+  '[&:not(:disabled):active]:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60',
+  'focus-visible:ring-3 focus-visible:ring-secondary/30',
   variantClasses[props.variant || 'primary'],
   sizeClasses[props.size || 'md'],
   props.block && 'w-full',

@@ -157,13 +157,13 @@ async function handleSubmit() {
     <template v-if="isPendingApproval">
       <PageHeader title="Almost there" description="Your agent account is awaiting approval" />
 
-      <div class="mt-8 flex flex-col items-center gap-3 rounded-xl border border-border bg-surface-raised p-6 text-center">
-        <CheckCircle2 class="h-10 w-10 text-success" />
-        <p class="text-sm text-fg">
+      <div class="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-low p-6 text-center shadow-sm">
+        <span class="material-symbols-outlined text-4xl text-primary" data-icon="check_circle">check_circle</span>
+        <p class="text-body-md font-body-md text-on-surface">
           Your agent account has been created and is pending admin approval. We'll email you once
           it's approved and you're able to sign in.
         </p>
-        <RouterLink to="/auth/login" class="mt-2 text-sm font-medium text-primary hover:underline">
+        <RouterLink to="/auth/login" class="mt-2 font-label-md text-secondary hover:underline">
           Back to sign in
         </RouterLink>
       </div>
@@ -173,42 +173,8 @@ async function handleSubmit() {
       <PageHeader title="Create your account" description="List your property in a few guided steps" />
 
       <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
-        <BaseRadioGroup v-model="form.userType" label="I am a" :options="userTypeOptions" inline required />
+        <BaseSelect v-model="form.userType" label="I am a" :options="userTypeOptions" required />
 
-        <div v-if="form.userType === 'agent'" class="rounded-xl border border-border bg-surface-raised p-4">
-          <p class="text-sm font-semibold text-fg">Choose a package</p>
-          <p class="mt-0.5 text-xs text-fg-muted">
-            Optional — pick one now, or select it after your account is approved.
-          </p>
-
-          <p v-if="packagesLoading" class="mt-3 text-sm text-fg-muted">Loading packages…</p>
-          <p v-else-if="packagesError" class="mt-3 text-sm text-danger">{{ packagesError }}</p>
-          <p v-else-if="packages.length === 0" class="mt-3 text-sm text-fg-muted">
-            No packages are available right now.
-          </p>
-
-          <div v-else class="mt-3 grid gap-3 sm:grid-cols-3">
-            <button
-              v-for="pkg in packages"
-              :key="pkg.id"
-              type="button"
-              class="focus-ring flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors"
-              :class="
-                selectedPackageId === pkg.id
-                  ? 'border-primary bg-primary-soft'
-                  : 'border-border bg-surface hover:border-primary/50'
-              "
-              @click="selectedPackageId = selectedPackageId === pkg.id ? '' : pkg.id"
-            >
-              <span class="flex w-full items-center justify-between gap-2">
-                <span class="text-sm font-semibold text-fg">{{ pkg.name }}</span>
-                <Check v-if="selectedPackageId === pkg.id" class="h-4 w-4 shrink-0 text-primary" />
-              </span>
-              <span v-if="pkg.description" class="text-xs text-fg-muted">{{ pkg.description }}</span>
-              <span class="text-xs text-fg-muted">{{ pkg.durationDays }}-day access</span>
-            </button>
-          </div>
-        </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <BaseInput v-model="form.firstName" label="First name" placeholder="Jane" required />
@@ -266,26 +232,28 @@ async function handleSubmit() {
         />
 
         <BaseCheckbox v-model="acceptedTerms">
-          I agree to the
-          <a href="#" class="text-primary hover:underline">Terms of Service</a>
-          and
-          <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+          <span class="text-body-sm font-body-sm text-on-surface-variant">
+            I agree to the
+            <a href="#" class="text-secondary hover:underline">Terms of Service</a>
+            and
+            <a href="#" class="text-secondary hover:underline">Privacy Policy</a>
+          </span>
         </BaseCheckbox>
 
-        <p v-if="formError" class="text-sm text-danger">{{ formError }}</p>
-        <p v-if="error" class="text-sm text-danger">{{ error }}</p>
+        <p v-if="formError" class="text-sm text-error">{{ formError }}</p>
+        <p v-if="error" class="text-sm text-error">{{ error }}</p>
 
         <BaseButton type="submit" block :disabled="!acceptedTerms" :loading="status === 'loading'">
           Create Account
-          <ArrowRight class="ml-1.5 h-4 w-4" />
+          <span class="material-symbols-outlined text-base ml-1.5" data-icon="arrow_forward">arrow_forward</span>
         </BaseButton>
       </form>
 
       <SocialLoginButtons />
 
-      <p class="mt-6 text-center text-sm text-fg-muted">
+      <p class="mt-6 text-center text-body-sm font-body-sm text-on-surface-variant">
         Already have an account?
-        <RouterLink to="/auth/login" class="font-medium text-primary hover:underline"
+        <RouterLink to="/auth/login" class="font-label-md text-secondary hover:underline"
           >Sign in</RouterLink
         >
       </p>
