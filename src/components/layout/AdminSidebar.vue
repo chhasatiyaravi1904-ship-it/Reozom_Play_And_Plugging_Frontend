@@ -47,6 +47,7 @@ const navGroups = [
       { label: 'State', to: '/admin/states', icon: Flag },
       { label: 'County', to: '/admin/counties', icon: MapPin },
       { label: 'City', to: '/admin/cities', icon: Building },
+      { label: 'ZIP Code', to: '/admin/zip-codes', icon: MapPin },
     ],
   },
 ]

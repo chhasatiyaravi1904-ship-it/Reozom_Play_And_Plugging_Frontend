@@ -133,6 +133,11 @@ const router = createRouter({
           name: 'admin-cities',
           component: () => import('@/views/admin/AdminCitiesView.vue'),
         },
+        {
+          path: 'zip-codes',
+          name: 'admin-zip-codes',
+          component: () => import('@/views/admin/AdminZipCodesView.vue'),
+        },
       ],
     },
     {

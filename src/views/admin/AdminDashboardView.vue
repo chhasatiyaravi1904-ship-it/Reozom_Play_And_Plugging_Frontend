@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { Building2, ChevronRight, Info, Landmark, Map, Network, Users as UsersIcon } from 'lucide-vue-next'
+import { Building2, ChevronRight, Info, Landmark, Map, MapPin, Network, Users as UsersIcon } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useStateStore } from '@/stores/state'
 import { useCountyStore } from '@/stores/county'
 import { useCityStore } from '@/stores/city'
+import { useZipCodeStore } from '@/stores/zipCode'
 import { useMlsStore } from '@/stores/mls'
 import * as userService from '@/services/userService'
 import type { AdminUserListResponse } from '@/services/userService'
@@ -19,6 +20,7 @@ const toast = useToastStore()
 const stateStore = useStateStore()
 const countyStore = useCountyStore()
 const cityStore = useCityStore()
+const zipCodeStore = useZipCodeStore()
 const mlsStore = useMlsStore()
 
 const usersLoading = ref(false)
@@ -111,6 +113,16 @@ const stats = computed(() => [
     iconClass: 'bg-success-soft text-success',
   },
   {
+    key: 'zipCodes',
+    label: 'ZIP Codes',
+    icon: MapPin,
+    value: zipCodeStore.zipCodes.length,
+    status: inactiveLabel(zipCodeStore.zipCodes.length, activeOf(zipCodeStore.zipCodes)),
+    loading: zipCodeStore.status === 'loading',
+    to: { name: 'admin-zip-codes' },
+    iconClass: 'bg-primary-soft text-primary',
+  },
+  {
     key: 'mls',
     label: 'MLS',
     icon: Network,
@@ -127,6 +139,7 @@ onMounted(() => {
   stateStore.fetchStates()
   countyStore.fetchCounties()
   cityStore.fetchCities()
+  zipCodeStore.fetchZipCodes()
   mlsStore.fetchDirectories()
 })
 </script>
