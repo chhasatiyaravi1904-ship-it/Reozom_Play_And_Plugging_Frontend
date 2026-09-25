@@ -28,3 +28,12 @@ export const fetchCurrentUser = () => {
 export const resendVerificationEmail = (email: string) => {
   return api.post('/auth/email/resend', { email })
 }
+
+export const verify2fa = (payload: { email: string; code: string }) => {
+  return api.post<AuthResponse>('/auth/verify-2fa', payload)
+}
+
+export const resend2fa = (email: string) => {
+  return api.post('/auth/resend-2fa', { email })
+}
+

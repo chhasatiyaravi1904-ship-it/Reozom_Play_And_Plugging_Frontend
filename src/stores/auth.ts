@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
   const status = ref<'idle' | 'loading' | 'error'>('idle')
   const error = ref<string | null>(null)
+  const requires2fa = ref(false)
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -32,9 +33,16 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       const { data } = await authService.login(payload)
-      setSession(data.token, data.user)
+      
+      if (data.requires_2fa) {
+        requires2fa.value = true
+        status.value = 'idle'
+        return '2fa'
+      }
+
+      setSession(data.token as string, data.user as User)
       status.value = 'idle'
-      return true
+      return 'success'
     } catch (err) {
       // DEV fallback: no Laravel API running yet, so allow the seller journey
       // to be previewed locally. Remove once the backend is live.
@@ -43,6 +51,36 @@ export const useAuthStore = defineStore('auth', () => {
         status.value = 'idle'
         return true
       }
+      status.value = 'error'
+      error.value = extractErrorMessage(err)
+      return false
+    }
+  }
+
+  async function verify2fa(payload: { email: string; code: string }) {
+    status.value = 'loading'
+    error.value = null
+    try {
+      const { data } = await authService.verify2fa(payload)
+      setSession(data.token as string, data.user as User)
+      requires2fa.value = false
+      status.value = 'idle'
+      return true
+    } catch (err) {
+      status.value = 'error'
+      error.value = extractErrorMessage(err)
+      return false
+    }
+  }
+
+  async function resend2fa(email: string) {
+    status.value = 'loading'
+    error.value = null
+    try {
+      await authService.resend2fa(email)
+      status.value = 'idle'
+      return true
+    } catch (err) {
       status.value = 'error'
       error.value = extractErrorMessage(err)
       return false
@@ -118,8 +156,11 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     status,
     error,
+    requires2fa,
     isAuthenticated,
     login,
+    verify2fa,
+    resend2fa,
     register,
     logout,
     loadCurrentUser,

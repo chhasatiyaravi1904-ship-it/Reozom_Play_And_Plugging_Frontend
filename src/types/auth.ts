@@ -51,8 +51,15 @@ export interface RegisterPayload {
 }
 
 export interface AuthResponse {
-  token: string
-  user: User
+  token?: string
+  user?: User
+  requires_2fa?: boolean
+  email?: string
+}
+
+export interface Verify2FAPayload {
+  email: string
+  code: string
 }
 
 export interface RegisterResult {

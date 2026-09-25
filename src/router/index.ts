@@ -101,7 +101,12 @@ const router = createRouter({
         {
           path: 'listing-processes',
           name: 'admin-listing-processes',
-          component: () => import('@/views/admin/AdminListingProcessesView.vue'),
+          component: () => import('@/views/admin/ListingProcessesList.vue'),
+        },
+        {
+          path: 'processes/:id/builder',
+          name: 'admin-listing-process-builder',
+          component: () => import('@/views/admin/ListingFormConfig.vue'),
         },
         {
           path: 'disclosures',
@@ -144,6 +149,11 @@ const router = createRouter({
           path: 'listings',
           name: 'listings',
           component: () => import('@/views/listings/ListingsView.vue'),
+        },
+        {
+          path: 'my-listings',
+          name: 'my-listings',
+          component: () => import('@/views/listings/MyListingsView.vue'),
         },
         {
           path: 'listings/create',
@@ -192,6 +202,11 @@ const router = createRouter({
           component: () => import('@/views/packages/PackageSelectionView.vue'),
         },
       ],
+    },
+    {
+      path: '/preview/:id',
+      name: 'preview-listing-process',
+      component: () => import('@/views/preview/FullFormPreview.vue'),
     },
     {
       path: '/:pathMatch(.*)*',
