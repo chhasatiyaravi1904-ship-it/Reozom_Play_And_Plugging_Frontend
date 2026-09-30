@@ -148,10 +148,14 @@ function toggleSort(field: string) {
             <span class="ml-1.5 hidden sm:inline">Refresh</span>
           </BaseButton>
 
-          <BaseButton variant="primary" @click="openAddModal">
+          <button
+            type="button"
+            class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
+            @click="openAddModal"
+          >
             <Plus class="h-4 w-4" />
-            <span class="ml-2">Add Directory</span>
-          </BaseButton>
+            <span>Add Directory</span>
+          </button>
         </div>
       </div>
     </div>
@@ -305,10 +309,14 @@ function toggleSort(field: string) {
             description="Create your first MLS directory, then add its country and website coverage info."
           >
             <template #action>
-              <BaseButton variant="primary" size="sm" @click="openAddModal">
-                <Plus class="h-3.5 w-3.5" />
-                <span class="ml-1.5">Add Directory</span>
-              </BaseButton>
+              <button
+                type="button"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
+                @click="openAddModal"
+              >
+                <Plus class="h-4 w-4" />
+                <span>Add Directory</span>
+              </button>
             </template>
           </EmptyState>
         </div>

@@ -23,8 +23,8 @@ export const useZipCodeStore = defineStore('zipCode', () => {
   const stateFilter = ref<string | number | 'all'>('all')
   const countyFilter = ref<string | number | 'all'>('all')
   const cityFilter = ref<string | number | 'all'>('all')
-  const sortBy = ref<string>('code')
-  const sortOrder = ref<'asc' | 'desc'>('asc')
+  const sortBy = ref<string>('created_at')
+  const sortOrder = ref<'asc' | 'desc'>('desc')
 
   const page = ref(1)
   const perPage = ref(10)
@@ -60,6 +60,10 @@ export const useZipCodeStore = defineStore('zipCode', () => {
     if (responsePayload && typeof responsePayload === 'object') {
       if (Array.isArray(responsePayload.items)) return responsePayload.items
       if (Array.isArray(responsePayload.data)) return responsePayload.data
+      if (responsePayload.data && typeof responsePayload.data === 'object') {
+        if (Array.isArray(responsePayload.data.items)) return responsePayload.data.items
+        if (Array.isArray(responsePayload.data.data)) return responsePayload.data.data
+      }
       if (Array.isArray(responsePayload.zipCodes)) return responsePayload.zipCodes
     }
     return []
@@ -117,7 +121,13 @@ export const useZipCodeStore = defineStore('zipCode', () => {
     status.value = 'loading'
     error.value = null
     try {
-      const response = await zipCodeService.fetchZipCodes({ per_page: 100, ...params })
+      const apiParams = {
+        per_page: 100,
+        sort: sortBy.value,
+        direction: sortOrder.value,
+        ...params
+      }
+      const response = await zipCodeService.fetchZipCodes(apiParams)
       const rawPayload = response.data
       const rawList = extractItems(rawPayload)
       zipCodes.value = rawList.map(normalizeZipCodeItem)
@@ -203,8 +213,8 @@ export const useZipCodeStore = defineStore('zipCode', () => {
     stateFilter.value = 'all'
     countyFilter.value = 'all'
     cityFilter.value = 'all'
-    sortBy.value = 'code'
-    sortOrder.value = 'asc'
+    sortBy.value = 'created_at'
+    sortOrder.value = 'desc'
     page.value = 1
   }
 

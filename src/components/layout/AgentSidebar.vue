@@ -28,37 +28,40 @@ const emit = defineEmits<{
 const route = useRoute()
 const { user } = useAuth()
 
-const adminNavGroups = [
-  {
-    label: 'Overview',
-    items: [{ label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard }],
-  },
-  {
-    label: 'Platform',
-    items: [
-      { label: 'Users', to: '/admin/users', icon: Users },
-      { label: 'Packages', to: '/admin/packages', icon: Package },
-      { label: 'Listings', to: '/admin/listings', icon: Building2 },
-      { label: 'Listing Process Management', to: '/admin/listing-processes', icon: Workflow },
-      { label: 'Disclosures', to: '/admin/disclosures', icon: FileText },
-    ],
-  },
-  {
-    label: 'Reference Data',
-    items: [
-      { label: 'MLS', to: '/admin/mls', icon: Network },
-      { label: 'State', to: '/admin/states', icon: Flag },
-      { label: 'County', to: '/admin/counties', icon: MapPin },
-      { label: 'City', to: '/admin/cities', icon: Building },
-      { label: 'ZIP Code', to: '/admin/zip-codes', icon: MapPin },
-    ],
-  },
-]
+const navGroups = computed(() => {
+  const hasPackage = user.value?.hasActivePackage
+  const permissions = user.value?.permissions || []
+  const canAccessListingProcess = permissions.includes('listing_process')
+  const canAccessListings = permissions.includes('listings')
 
-const navGroups = adminNavGroups
+  const agentItems = [
+    { label: 'Dashboard', to: '/agent/dashboard', icon: LayoutDashboard },
+    hasPackage 
+      ? { label: 'My Subscription', to: '/agent/subscription', icon: Package }
+      : { label: 'Available Subscriptions', to: '/agent/subscription', icon: Package }
+  ]
+
+  agentItems.push({ label: 'Service Packages', to: '/agent/service-packages', icon: FileText })
+  agentItems.push({ label: 'Listing Processes', to: '/agent/listing-processes', icon: Workflow })
+  agentItems.push({ label: 'Listings', to: '/agent/listings', icon: Building2 })
+  agentItems.push({ label: 'Profile', to: '/agent/profile', icon: Users })
+
+  return [
+    {
+      label: 'Agent',
+      items: agentItems
+    }
+  ]
+})
+
+
 
 function isItemActive(path: string) {
-  return route.path === path || route.path.startsWith(path + '/')
+  if (route.path === path || route.path.startsWith(path + '/')) return true
+  if (path.endsWith('/listing-processes') && route.path.startsWith(path.replace('/listing-processes', '/processes/'))) {
+    return true
+  }
+  return false
 }
 </script>
 
@@ -84,8 +87,8 @@ function isItemActive(path: string) {
           <ShieldCheck class="h-5 w-5" />
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-semibold tracking-tight text-fg">Reozom Admin</p>
-          <p class="text-[11px] font-medium text-fg-muted">Enterprise Control</p>
+          <p class="text-sm font-semibold tracking-tight text-fg">Reozom Agent</p>
+          <p class="text-[11px] font-medium text-fg-muted">Agent Portal</p>
         </div>
       </div>
       <button

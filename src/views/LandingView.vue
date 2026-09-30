@@ -924,52 +924,69 @@
                     id="zipInput"
                     placeholder="Enter ZIP Code (e.g. 380001, 78701)"
                     type="text"
-                    value="380001"
+                    v-model="zipSearchInput"
+                    @keyup.enter="handleZipSearch"
                   />
                 </div>
                 <button
                   class="px-5 h-12 bg-primary-container text-on-primary font-label-lg text-label-lg rounded-lg hover:bg-primary transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                   id="zipSearchBtn"
                   type="button"
+                  @click="handleZipSearch"
+                  :disabled="isSearchingZip"
                 >
-                  <span>Find Available Options</span>
+                  <span v-if="!isSearchingZip">Find Available Options</span>
+                  <span v-else>Searching...</span>
                   <span
+                    v-if="!isSearchingZip"
                     class="material-symbols-outlined text-secondary-fixed text-base"
                     data-icon="near_me"
                     >near_me</span
                   >
                 </button>
               </div>
-              <!-- Dynamic Mock Results Container -->
-              <div class="mt-6 space-y-4" id="zipResultsContainer">
+
+              <!-- Dynamic Search Results -->
+              <div v-if="searchError" class="mt-6 p-4 rounded-lg bg-error/10 text-error font-body-sm">
+                {{ searchError }}
+              </div>
+              
+              <div v-else-if="searchedZip" class="mt-6 space-y-4" id="zipResultsContainer">
                 <div class="flex items-center justify-between">
                   <span class="text-label-sm font-label-sm text-on-surface-variant uppercase"
                     >Results for ZIP:
                     <strong class="text-primary font-bold" id="currentZipLabel"
-                      >380001</strong
+                      >{{ searchedZip }}</strong
                     ></span
                   >
                   <span class="text-label-sm font-label-sm text-secondary font-bold"
-                    >2 Licensed Agents Available</span
+                    >{{ zipSearchResults.length }} Licensed Agent{{ zipSearchResults.length !== 1 ? 's' : '' }} Available</span
                   >
                 </div>
-                <!-- Agent Card A -->
+                
+                <div v-if="zipSearchResults.length === 0" class="text-center py-8 text-on-surface-variant">
+                  <p>No agents found offering service packages in this ZIP code.</p>
+                </div>
+
+                <!-- Dynamic Agent Cards -->
                 <div
+                  v-for="agent in zipSearchResults"
+                  :key="agent.id"
                   class="p-4 rounded-xl border border-outline-variant/40 bg-surface hover:border-secondary/50 transition-colors"
                 >
                   <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-3">
                       <div
-                        class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-primary"
+                        class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-primary uppercase"
                       >
-                        SJ
+                        {{ agent.initials }}
                       </div>
                       <div>
                         <h4 class="font-headline-sm text-sm font-bold text-primary">
-                          Sarah Jenkins
+                          {{ agent.name }}
                         </h4>
                         <p class="text-body-sm font-body-sm text-on-surface-variant">
-                          Premier Realty Network · Lic #TX-98442
+                          Verified Network Agent · Lic #{{ agent.license }}
                         </p>
                       </div>
                     </div>
@@ -980,79 +997,21 @@
                   </div>
                   <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-outline-variant/20">
                     <div
-                      class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30"
+                      v-for="pkg in agent.packages"
+                      :key="pkg.id"
+                      class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30 flex flex-col"
                     >
                       <div class="flex justify-between items-center">
                         <span class="text-label-sm font-label-sm font-bold text-primary"
-                          >Standard Plan</span
+                          >{{ pkg.name }}</span
                         >
                         <span class="text-label-sm font-label-sm text-secondary font-bold"
-                          >$1,499 Flat</span
+                          >${{ pkg.price ? Number(pkg.price).toFixed(2) : 'Free' }}</span
                         >
                       </div>
                       <p class="text-body-sm text-xs text-on-surface-variant mt-1">
-                        MLS Syndication, Legal Disclosures
+                        {{ pkg.description || 'Verified Service Package' }}
                       </p>
-                    </div>
-                    <div
-                      class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30"
-                    >
-                      <div class="flex justify-between items-center">
-                        <span class="text-label-sm font-label-sm font-bold text-primary"
-                          >Premium Plan</span
-                        >
-                        <span class="text-label-sm font-label-sm text-secondary font-bold"
-                          >1.5% Escrow</span
-                        >
-                      </div>
-                      <p class="text-body-sm text-xs text-on-surface-variant mt-1">
-                        Includes 3D Virtual Tour &amp; Drone capture
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <!-- Agent Card B -->
-                <div
-                  class="p-4 rounded-xl border border-outline-variant/40 bg-surface hover:border-secondary/50 transition-colors"
-                >
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-primary"
-                      >
-                        MV
-                      </div>
-                      <div>
-                        <h4 class="font-headline-sm text-sm font-bold text-primary">
-                          Marcus Vance
-                        </h4>
-                        <p class="text-body-sm font-body-sm text-on-surface-variant">
-                          Apex Partners Real Estate · Lic #TX-48192
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      class="text-label-sm font-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-primary font-semibold"
-                      >Verified</span
-                    >
-                  </div>
-                  <div class="mt-3 pt-3 border-t border-outline-variant/20">
-                    <div
-                      class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30 flex justify-between items-center"
-                    >
-                      <div>
-                        <div class="text-label-sm font-label-sm font-bold text-primary">
-                          Professional Concierge Plan
-                        </div>
-                        <p class="text-body-sm text-xs text-on-surface-variant mt-0.5">
-                          Full white-glove staging, dynamic builder intake, negotiation lead
-                        </p>
-                      </div>
-                      <div class="text-right pl-3">
-                        <span class="text-label-sm font-label-sm text-secondary font-bold"
-                          >2.0% Escrow</span
-                        >
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -2590,11 +2549,81 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
-const router = useRouter();
 import TopNavBar from '@/components/layout/TopNavBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
-// Landing page component
+import { searchServicePackagesByZip, type ServicePackage } from '@/services/servicePackageService'
+
+const router = useRouter();
+
+// --- ZIP Code Matching Engine Logic ---
+const zipSearchInput = ref('');
+const searchedZip = ref('');
+const isSearchingZip = ref(false);
+const zipSearchResults = ref<any[]>([]); // Grouped by agent
+const searchError = ref<string | null>(null);
+
+let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+watch(zipSearchInput, (newVal) => {
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout);
+  }
+  
+  if (!newVal.trim()) {
+    zipSearchResults.value = [];
+    searchedZip.value = '';
+    return;
+  }
+  
+  debounceTimeout = setTimeout(() => {
+    handleZipSearch();
+  }, 400); // 400ms debounce delay
+});
+
+const handleZipSearch = async () => {
+  const query = zipSearchInput.value.trim();
+  if (!query) return;
+
+  isSearchingZip.value = true;
+  searchError.value = null;
+  zipSearchResults.value = [];
+  
+  try {
+    const response = await searchServicePackagesByZip(query);
+    const packages = Array.isArray(response.data) ? response.data : 
+                     (response.data?.data ? response.data.data : []);
+    
+    // Group packages by agent
+    const agentsMap = new Map();
+    
+    packages.forEach((pkg: any) => {
+      const agentId = pkg.agent_id || (pkg.agent && pkg.agent.id);
+      if (!agentId) return;
+      
+      if (!agentsMap.has(agentId)) {
+        agentsMap.set(agentId, {
+          id: agentId,
+          name: pkg.agent?.full_name || pkg.agent?.first_name ? `${pkg.agent.first_name} ${pkg.agent.last_name}` : 'Verified Agent',
+          initials: pkg.agent?.first_name ? `${pkg.agent.first_name[0]}${pkg.agent.last_name ? pkg.agent.last_name[0] : ''}` : 'AG',
+          license: pkg.agent?.license || 'N/A',
+          packages: []
+        });
+      }
+      
+      agentsMap.get(agentId).packages.push(pkg);
+    });
+
+    zipSearchResults.value = Array.from(agentsMap.values());
+    searchedZip.value = query;
+  } catch (e) {
+    console.error(e);
+    searchError.value = 'Failed to fetch available options for this ZIP code.';
+  } finally {
+    isSearchingZip.value = false;
+  }
+};
 </script>
 
 <style scoped></style>

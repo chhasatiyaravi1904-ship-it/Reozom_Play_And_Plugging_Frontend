@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { Building2, ChevronRight, Info, Landmark, Map, MapPin, Network, Users as UsersIcon } from 'lucide-vue-next'
+import { Building2, ChevronRight, Info, Landmark, Map as MapIcon, MapPin, Network, Users as UsersIcon } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import { useAuth } from '@/composables/useAuth'
@@ -95,7 +95,7 @@ const stats = computed(() => [
   {
     key: 'counties',
     label: 'Counties',
-    icon: Map,
+    icon: MapIcon,
     value: countyStore.totalCounties,
     status: inactiveLabel(countyStore.totalCounties, activeOf(countyStore.counties)),
     loading: countyStore.status === 'loading',

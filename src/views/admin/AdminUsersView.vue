@@ -135,7 +135,7 @@ async function fetchUsers() {
 }
 
 // Tabs
-type RoleFilterTab = 'all' | AdminUserRole | 'unverified-agent'
+type RoleFilterTab = 'all' | AdminUserRole
 const activeTab = ref<RoleFilterTab>('all')
 
 const roleTabs: { label: string; value: RoleFilterTab }[] = [
@@ -144,7 +144,6 @@ const roleTabs: { label: string; value: RoleFilterTab }[] = [
   { label: 'Agents', value: 'agent' },
   { label: 'Sellers', value: 'seller' },
   { label: 'Buyers', value: 'buyer' },
-  { label: 'Unverified Agents', value: 'unverified-agent' },
 ]
 
 // Tab counts (computed dynamically from all users)
@@ -155,14 +154,10 @@ const tabCounts = computed(() => {
     agent: 0,
     seller: 0,
     buyer: 0,
-    'unverified-agent': 0,
   }
   for (const u of users.value) {
     if (u.role in counts) {
       counts[u.role]++
-    }
-    if (u.role === 'agent' && !u.emailVerified) {
-      counts['unverified-agent']++
     }
   }
   return counts
@@ -210,19 +205,12 @@ const dateRangeFilterOptions = [
   { label: 'Year 2024', value: '2024' },
 ]
 
-// Sync tab changes to role filter dropdown. "Unverified Agents" is a
-// role+verification compound filter, not a real role value — point the
-// dropdown at "agent" and let the tab-specific clause in filteredUsers
-// narrow it further.
+// Sync tab changes to role filter dropdown.
 watch(activeTab, (newTab) => {
-  selectedRole.value = newTab === 'unverified-agent' ? 'agent' : newTab
+  selectedRole.value = newTab
 })
 
 watch(selectedRole, (newRole) => {
-  // The "Unverified Agents" tab drives selectedRole to "agent" itself (see
-  // above) — don't let that echo back and downgrade the tab to plain "Agents".
-  if (activeTab.value === 'unverified-agent' && newRole === 'agent') return
-
   if (['all', 'admin', 'agent', 'seller', 'buyer'].includes(newRole)) {
     activeTab.value = newRole as RoleFilterTab
   }
@@ -507,9 +495,7 @@ async function reloadUsers() {
 const filteredUsers = computed(() => {
   return users.value.filter((user) => {
     // Tab filter
-    if (activeTab.value === 'unverified-agent') {
-      if (user.role !== 'agent' || user.emailVerified) return false
-    } else if (activeTab.value !== 'all' && user.role !== activeTab.value) {
+    if (activeTab.value !== 'all' && user.role !== activeTab.value) {
       return false
     }
 
@@ -614,10 +600,14 @@ watch(totalUsers, (total) => {
             <span class="ml-1.5 hidden sm:inline">Refresh</span>
           </BaseButton>
 
-          <BaseButton variant="primary" @click="openAddUserModal">
+          <button
+            type="button"
+            class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
+            @click="openAddUserModal"
+          >
             <UserPlus class="h-4 w-4" />
-            <span class="ml-2">Add User</span>
-          </BaseButton>
+            <span>Add User</span>
+          </button>
         </div>
       </div>
     </div>
@@ -922,10 +912,14 @@ watch(totalUsers, (total) => {
             description="Get started by provisioning the first administrator, agent, seller, or buyer account."
           >
             <template #action>
-              <BaseButton variant="primary" size="sm" @click="openAddUserModal">
-                <UserPlus class="h-3.5 w-3.5" />
-                <span class="ml-1.5">Add First User</span>
-              </BaseButton>
+              <button
+                type="button"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
+                @click="openAddUserModal"
+              >
+                <UserPlus class="h-4 w-4" />
+                <span>Add First User</span>
+              </button>
             </template>
           </EmptyState>
         </div>

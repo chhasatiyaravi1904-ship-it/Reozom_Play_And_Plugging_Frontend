@@ -185,10 +185,14 @@ async function handleDelete() {
             <RefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': isLoading }" />
             <span class="ml-1.5">Refresh</span>
           </BaseButton>
-          <BaseButton size="sm" @click="openAddModal">
+          <button
+            type="button"
+            class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
+            @click="openAddModal"
+          >
             <Plus class="h-4 w-4" />
-            <span class="ml-1.5">Add Package</span>
-          </BaseButton>
+            <span>Add Package</span>
+          </button>
         </div>
       </template>
     </PageHeader>
@@ -271,10 +275,14 @@ async function handleDelete() {
           :icon="FilterX"
         >
           <template #action>
-            <BaseButton variant="secondary" size="sm" @click="openAddModal">
-              <PackageIcon class="h-3.5 w-3.5" />
-              <span class="ml-1.5">Add your first package</span>
-            </BaseButton>
+            <button
+              type="button"
+              class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
+              @click="openAddModal"
+            >
+              <PackageIcon class="h-4 w-4" />
+              <span>Add your first package</span>
+            </button>
           </template>
         </EmptyState>
       </div>

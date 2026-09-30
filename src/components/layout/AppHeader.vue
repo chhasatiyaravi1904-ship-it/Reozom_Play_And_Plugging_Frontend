@@ -21,7 +21,7 @@ const navLinks = [
 async function handleLogout() {
   isUserMenuOpen.value = false
   await logout()
-  router.push('/auth/login')
+  router.push('/')
 }
 </script>
 

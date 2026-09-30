@@ -1,20 +1,29 @@
 <template>
-  <div class="min-h-screen bg-neutral-50 flex flex-col font-sans">
-    <header class="bg-white border-b border-neutral-200 sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-neutral-900">Form Preview</h1>
-        <p class="text-sm text-neutral-500">Test how your listing form will look and behave for end users.</p>
+  <div class="min-h-screen bg-neutral-50 flex flex-col font-sans p-6 md:p-12">
+    <div class="max-w-4xl w-full mx-auto flex-1 flex flex-col">
+      <!-- Mockup Window Header -->
+      <div class="bg-primary-container px-6 py-4 flex flex-wrap justify-between items-center text-on-primary rounded-t-2xl shadow-xl z-10">
+        <div class="flex items-center gap-3">
+          <div class="flex space-x-1.5">
+            <span class="w-3 h-3 rounded-full bg-error"></span>
+            <span class="w-3 h-3 rounded-full bg-secondary-fixed"></span>
+            <span class="w-3 h-3 rounded-full bg-surface-variant"></span>
+          </div>
+          <span class="font-label-lg text-label-lg font-mono text-inverse-primary ml-2">Listing_Process_Builder v2.4</span>
+          <span class="px-2 py-0.5 rounded bg-surface-container-lowest/10 text-xs font-mono">Status: PREVIEW</span>
+        </div>
+        <div class="flex items-center gap-3 mt-2 sm:mt-0">
+          <router-link
+            :to="`/admin/processes/${$route.params.id}/builder`"
+            class="px-3 py-1.5 rounded-lg bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 text-surface-container-lowest text-label-sm font-label-sm flex items-center gap-1 transition-colors"
+          >
+            <span class="material-symbols-outlined text-sm" data-icon="edit">edit</span> Back to Editor
+          </router-link>
+        </div>
       </div>
-      <router-link
-        :to="`/admin/processes/${$route.params.processId}/builder`"
-        class="px-4 py-2 text-sm font-medium text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded transition"
-      >
-        Back to Editor
-      </router-link>
-    </header>
 
-    <main class="flex-1 max-w-3xl w-full mx-auto p-6 md:p-8">
-      <div v-if="formStore.steps.length > 0" class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+    <main class="flex-1 bg-white border-x border-b border-neutral-200 rounded-b-2xl shadow-xl w-full overflow-hidden flex flex-col">
+      <div v-if="formStore.steps.length > 0" class="flex-1 flex flex-col">
         
         <!-- Progress Bar -->
         <div class="bg-neutral-100 px-8 py-4 border-b border-neutral-200 flex items-center gap-4 text-sm font-medium text-neutral-500">
@@ -50,7 +59,7 @@
                   class="space-y-1.5"
                 >
                   <label class="block text-sm font-semibold text-neutral-800">
-                    {{ field.label }}
+                    {{ field.label || field.name || 'Unnamed Field' }}
                     <span v-if="field.required" class="text-red-500 ml-0.5">*</span>
                   </label>
                   
@@ -149,9 +158,10 @@
       <div v-else class="text-center py-20 text-neutral-500">
          <h2 class="text-xl font-bold mb-2">No Form Configuration Found</h2>
          <p>Please configure the form in the admin editor first.</p>
-         <router-link :to="`/admin/processes/${$route.params.processId}/builder`" class="text-primary hover:underline mt-4 inline-block">Return to Editor</router-link>
+         <router-link :to="`/admin/processes/${$route.params.id}/builder`" class="text-primary hover:underline mt-4 inline-block">Return to Editor</router-link>
       </div>
     </main>
+    </div>
   </div>
 </template>
 
@@ -165,7 +175,7 @@ const route = useRoute()
 const formStore = useFormConfigStore()
 const activeStepIndex = ref(0)
 
-formStore.loadProcess(route.params.processId)
+formStore.loadProcess(route.params.id)
 
 const activeStep = computed(() => {
   return formStore.steps[activeStepIndex.value]
@@ -194,6 +204,6 @@ const prevStep = () => {
 
 const submitForm = () => {
   // Simulate submission and redirect
-  router.push('/listings/1')
+  router.push('/admin/listing-processes')
 }
 </script>

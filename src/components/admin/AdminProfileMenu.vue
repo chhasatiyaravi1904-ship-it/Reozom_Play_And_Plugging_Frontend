@@ -19,6 +19,11 @@ const menuItems = [
 ]
 
 async function handleSelect(value: string) {
+  if (value === 'profile') {
+    router.push({ name: 'admin-profile' })
+    return
+  }
+
   if (value !== 'logout') {
     toast.info('This isn’t available yet.')
     return
@@ -27,7 +32,7 @@ async function handleSelect(value: string) {
   isLoggingOut.value = true
   try {
     await logout()
-    await router.push({ name: 'admin-login' })
+    await router.push('/')
   } finally {
     isLoggingOut.value = false
   }

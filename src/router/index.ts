@@ -138,6 +138,88 @@ const router = createRouter({
           name: 'admin-zip-codes',
           component: () => import('@/views/admin/AdminZipCodesView.vue'),
         },
+        {
+          path: 'profile',
+          name: 'admin-profile',
+          component: () => import('@/views/profile/ProfileView.vue'),
+        },
+      ],
+    },
+    {
+      path: '/agent',
+      component: () => import('@/layouts/AgentLayout.vue'),
+      meta: { requiresAuth: true, roles: ['agent'] },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'agent-dashboard',
+          component: () => import('@/views/dashboard/DashboardView.vue'),
+        },
+        {
+          path: 'subscription',
+          name: 'agent-subscription',
+          component: () => import('@/views/packages/PackageSelectionView.vue'),
+        },
+        {
+          path: 'service-packages',
+          name: 'agent-service-packages',
+          component: () => import('@/views/agent/ServicePackagesList.vue'),
+        },
+        {
+          path: 'listing-processes',
+          name: 'agent-listing-processes',
+          component: () => import('@/views/admin/ListingProcessesList.vue'),
+        },
+        {
+          path: 'processes/:id/builder',
+          name: 'agent-listing-process-builder',
+          component: () => import('@/views/admin/ListingFormConfig.vue'),
+        },
+        {
+          path: 'listings',
+          name: 'agent-listings',
+          component: () => import('@/views/listings/ListingsView.vue'),
+        },
+        {
+          path: 'listings/create',
+          name: 'agent-listing-create',
+          component: () => import('@/views/listings/CreateListingView.vue'),
+        },
+        {
+          path: 'listings/:listingId',
+          name: 'agent-listing-overview',
+          component: () => import('@/views/listings/ListingOverviewView.vue'),
+        },
+        {
+          path: 'listings/:listingId/step/:stepId',
+          name: 'agent-listing-step',
+          component: () => import('@/views/listings/ListingStepView.vue'),
+        },
+        {
+          path: 'listings/:listingId/disclosures',
+          name: 'agent-listing-disclosures',
+          component: () => import('@/views/listings/DisclosuresView.vue'),
+        },
+        {
+          path: 'listings/:listingId/documents',
+          name: 'agent-listing-documents',
+          component: () => import('@/views/listings/DocumentsView.vue'),
+        },
+        {
+          path: 'listings/:listingId/review',
+          name: 'agent-listing-review',
+          component: () => import('@/views/listings/ReviewView.vue'),
+        },
+        {
+          path: 'listings/:listingId/submit',
+          name: 'agent-listing-submit',
+          component: () => import('@/views/listings/SubmitSuccessView.vue'),
+        },
+        {
+          path: 'profile',
+          name: 'agent-profile',
+          component: () => import('@/views/profile/ProfileView.vue'),
+        },
       ],
     },
     {
@@ -212,6 +294,7 @@ const router = createRouter({
       path: '/preview/:id',
       name: 'preview-listing-process',
       component: () => import('@/views/preview/FullFormPreview.vue'),
+      meta: { requiresAuth: true, roles: ['admin', 'super-admin', 'content-manager', 'agent'] },
     },
     {
       path: '/:pathMatch(.*)*',
@@ -241,7 +324,17 @@ router.beforeEach(async (to) => {
 
   const allowedRoles = to.meta.roles as UserRole[] | undefined
   if (allowedRoles && !allowedRoles.includes(authStore.user?.role as UserRole)) {
-    return { name: 'dashboard' }
+    if (authStore.user?.role === 'agent') {
+      return { name: 'agent-dashboard' }
+    }
+    return { name: isAdminPortalUser(authStore.user?.role) ? 'admin-dashboard' : 'dashboard' }
+  }
+
+  // Prevent agents from accessing the seller layout routes by default
+  if (to.path === '/' || to.path.startsWith('/dashboard')) {
+    if (authStore.user?.role === 'agent') {
+      return { name: 'agent-dashboard' }
+    }
   }
 
   // A freshly-registered seller/buyer already has a session but hasn't
@@ -258,16 +351,20 @@ router.beforeEach(async (to) => {
 
   // Agents must pick a package before using the rest of the app. Packages
   // recur/expire, so this also re-triggers once a package lapses.
+  const allowedAgentNoPackageRoutes = ['select-package', 'agent-subscription', 'agent-dashboard', 'agent-profile', 'agent-listing-processes', 'agent-listing-process-builder', 'agent-listings', 'agent-listing-create', 'agent-service-packages']
   if (
     authStore.isAuthenticated &&
     authStore.user?.role === 'agent' &&
     !authStore.user?.hasActivePackage &&
-    to.name !== 'select-package'
+    !allowedAgentNoPackageRoutes.includes(to.name as string)
   ) {
-    return { name: 'select-package' }
+    return { name: 'agent-subscription' }
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
+    if (authStore.user?.role === 'agent') {
+      return { name: 'agent-dashboard' }
+    }
     return { name: isAdminPortalUser(authStore.user?.role) ? 'admin-dashboard' : 'dashboard' }
   }
 })

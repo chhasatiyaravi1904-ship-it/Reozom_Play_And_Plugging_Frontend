@@ -268,6 +268,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFormConfigStore } from '../../stores/formConfig'
 import { useProcessStore } from '../../stores/processStore'
+import { useAuthStore } from '../../stores/auth'
 import { IconPlus, IconMenu2, IconGripVertical, IconEdit, IconTrash } from '@tabler/icons-vue'
 import Sidebar from '../../components/Sidebar.vue'
 import FieldTableRow from '../../components/FieldTableRow.vue'
@@ -281,14 +282,17 @@ const formStore = useFormConfigStore()
 const processStore = useProcessStore()
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 const activeTab = ref('all')
 const mobileMenuOpen = ref(false)
+
+const getBasePath = () => authStore.user?.role === 'agent' ? '/agent' : '/admin'
 
 onMounted(async () => {
   const processId = route.params.id
   if (!processId || processId === 'undefined') {
     console.error('Invalid process ID:', processId)
-    router.push('/admin/listing-processes')
+    router.push(`${getBasePath()}/listing-processes`)
     return
   }
   await formStore.loadProcess(processId)

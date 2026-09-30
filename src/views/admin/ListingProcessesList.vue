@@ -9,10 +9,10 @@
       </div>
       <button 
         @click="showCreateModal = true"
-        class="flex items-center gap-2 bg-[#1641d9] hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-sm"
+        class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
       >
-        <IconPlus :size="18" />
-        New Process
+        <IconPlus class="h-4 w-4" />
+        <span>New Process</span>
       </button>
     </div>
 
@@ -64,6 +64,9 @@
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2">
+                <button @click="previewProcess(process.id)" class="p-2 text-neutral-400 hover:text-green-600 hover:bg-green-50 rounded transition" title="Preview Form">
+                  <IconEye :size="18" />
+                </button>
                 <button @click="editProcess(process.id)" class="p-2 text-neutral-400 hover:text-[#1641d9] hover:bg-blue-50 rounded transition" title="Open Builder">
                   <IconEdit :size="18" />
                 </button>
@@ -102,18 +105,42 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1">Process Type</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">Process Type</label>
+            <div class="flex flex-col gap-3">
+              <label class="flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors" :class="newProcessForm.isDefault ? 'border-[#1641d9] bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300'">
+                <input type="radio" :value="true" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]">
+                <div>
+                  <span class="block text-sm font-medium text-neutral-900">Default Use</span>
+                  <span class="block text-xs text-neutral-500">{{ authStore.user?.role === 'agent' ? 'Automatically use this process for all your new listings.' : 'Set as the default process for all agents.' }}</span>
+                </div>
+              </label>
+              
+              <label class="flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors" :class="!newProcessForm.isDefault ? 'border-[#1641d9] bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300'">
+                <input type="radio" :value="false" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]">
+                <div>
+                  <span class="block text-sm font-medium text-neutral-900">Custom</span>
+                  <span class="block text-xs text-neutral-500">A specialized process that can be manually selected when needed.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Service Package (Optional)</label>
+            <select v-model="newProcessForm.service_package_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9] bg-white">
+              <option value="">-- None --</option>
+              <option v-for="pkg in servicePackages" :key="pkg.id" :value="pkg.id">{{ pkg.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Assigned Zip Codes (Optional)</label>
             <input 
-              v-model="newProcessForm.type" 
+              v-model="newProcessForm.assigned_zips" 
               type="text" 
               class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
-              placeholder="e.g. Default - Michigan"
+              placeholder="e.g. 48103, 48104"
             />
+            <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
           </div>
-          <label class="flex items-center gap-2 mt-4 cursor-pointer">
-            <input type="checkbox" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] rounded border-neutral-300 focus:ring-[#1641d9]">
-            <span class="text-sm font-medium text-neutral-700">Set as Default Form for Agents</span>
-          </label>
         </div>
         <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
           <button @click="showCreateModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition">Cancel</button>
@@ -129,22 +156,38 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProcessStore } from '@/stores/processStore'
-import { IconPlus, IconSearch, IconX, IconEdit, IconTrash } from '@tabler/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye } from '@tabler/icons-vue'
+import { fetchServicePackages } from '@/services/servicePackageService'
 
 const router = useRouter()
 const processStore = useProcessStore()
+const authStore = useAuthStore()
+
+const getBasePath = () => authStore.user?.role === 'agent' ? '/agent' : '/admin'
 
 const searchQuery = ref('')
 const showCreateModal = ref(false)
+const servicePackages = ref([])
 
 const newProcessForm = ref({
   name: '',
   type: '',
-  isDefault: false
+  isDefault: false,
+  service_package_id: '',
+  assigned_zips: ''
 })
 
-onMounted(() => {
+onMounted(async () => {
   processStore.loadProcesses()
+  if (authStore.user?.role === 'agent') {
+    try {
+      const res = await fetchServicePackages()
+      servicePackages.value = res.data || []
+    } catch (e) {
+      console.error('Failed to load service packages', e)
+    }
+  }
 })
 
 const filteredProcesses = computed(() => {
@@ -154,24 +197,50 @@ const filteredProcesses = computed(() => {
 })
 
 const editProcess = (id) => {
-  router.push(`/admin/processes/${id}/builder`)
+  router.push(`${getBasePath()}/processes/${id}/builder`)
+}
+
+const previewProcess = (id) => {
+  router.push(`/preview/${id}`)
 }
 
 const handleCreate = async () => {
   if (!newProcessForm.value.name) return
   
   try {
-    const newProc = await processStore.addProcess({
+    const payload = {
       name: newProcessForm.value.name,
-      type: newProcessForm.value.type || 'Custom',
-      isDefault: newProcessForm.value.isDefault
-    })
+      type: newProcessForm.value.isDefault ? 'default' : 'custom',
+      isDefault: newProcessForm.value.isDefault,
+    }
+    
+    if (newProcessForm.value.service_package_id) {
+      payload.service_package_id = newProcessForm.value.service_package_id
+    }
+    
+    if (newProcessForm.value.assigned_zips) {
+      payload.assigned_zips = newProcessForm.value.assigned_zips.split(',').map(z => z.trim()).filter(z => z)
+    }
+    
+    const newProc = await processStore.addProcess(payload)
     
     showCreateModal.value = false
-    newProcessForm.value = { name: '', type: '', isDefault: false }
+    const createdName = newProcessForm.value.name
+    newProcessForm.value = { name: '', type: '', isDefault: false, service_package_id: '', assigned_zips: '' }
     
-    // Immediately navigate to builder
-    router.push(`/admin/processes/${newProc.id}/builder`)
+    let targetId = newProc?.id
+    if (!targetId) {
+      // Fallback: Reload processes and find the one we just created
+      await processStore.loadProcesses()
+      const fallbackProc = processStore.processes.find(p => p.name === createdName)
+      targetId = fallbackProc?.id
+    }
+    
+    if (targetId) {
+      router.push(`${getBasePath()}/processes/${targetId}/builder`)
+    } else {
+      console.error('Could not determine new process ID for routing')
+    }
   } catch (e) {
     console.error('Failed to create', e)
   }

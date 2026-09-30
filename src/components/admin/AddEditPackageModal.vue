@@ -33,6 +33,7 @@ const form = ref({
   durationDays: 30,
   sortOrder: 0,
   isActive: true,
+  maxListingProcesses: '',
 })
 
 const isManualSlug = ref(false)
@@ -54,6 +55,7 @@ watch(
         durationDays: pkg.durationDays,
         sortOrder: pkg.sortOrder,
         isActive: pkg.isActive,
+        maxListingProcesses: pkg.maxListingProcesses !== null && pkg.maxListingProcesses !== undefined ? String(pkg.maxListingProcesses) : '',
       }
       isManualSlug.value = true
     } else {
@@ -65,6 +67,7 @@ watch(
         durationDays: 30,
         sortOrder: 0,
         isActive: true,
+        maxListingProcesses: '',
       }
     }
   },
@@ -102,6 +105,9 @@ function validate(): boolean {
   if (form.value.price && Number.isNaN(Number(form.value.price))) {
     errors.value.price = 'Price must be a number.'
   }
+  if (form.value.maxListingProcesses && Number.isNaN(Number(form.value.maxListingProcesses))) {
+    errors.value.maxListingProcesses = 'Must be a valid number.'
+  }
   return Object.keys(errors.value).length === 0
 }
 
@@ -120,6 +126,7 @@ function handleSubmit() {
     durationDays: Number(form.value.durationDays),
     sortOrder: Number(form.value.sortOrder) || 0,
     isActive: Boolean(form.value.isActive),
+    maxListingProcesses: form.value.maxListingProcesses.trim() ? Number(form.value.maxListingProcesses) : null,
   })
   handleClose()
 }
@@ -230,16 +237,31 @@ function handleSubmit() {
         </div>
       </div>
 
-      <div>
-        <label class="mb-1.5 block text-xs font-semibold text-fg">Status</label>
-        <select
-          :value="form.isActive ? 'active' : 'inactive'"
-          class="focus-ring w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg shadow-xs transition-colors"
-          @change="form.isActive = ($event.target as HTMLSelectElement).value === 'active'"
-        >
-          <option value="active">🟢 Active (Selectable by agents)</option>
-          <option value="inactive">🔴 Inactive (Hidden from selection)</option>
-        </select>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold text-fg">Max Listing Processes</label>
+          <input
+            v-model="form.maxListingProcesses"
+            type="number"
+            min="1"
+            placeholder="Unlimited if empty"
+            class="focus-ring w-full rounded-lg border border-border bg-surface px-3.5 py-2 text-sm text-fg shadow-xs placeholder:text-fg-disabled transition-colors"
+            :class="{ 'border-danger': errors.maxListingProcesses }"
+          />
+          <p v-if="errors.maxListingProcesses" class="mt-1 text-xs text-danger">{{ errors.maxListingProcesses }}</p>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold text-fg">Status</label>
+          <select
+            :value="form.isActive ? 'active' : 'inactive'"
+            class="focus-ring w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg shadow-xs transition-colors"
+            @change="form.isActive = ($event.target as HTMLSelectElement).value === 'active'"
+          >
+            <option value="active">🟢 Active (Selectable by agents)</option>
+            <option value="inactive">🔴 Inactive (Hidden from selection)</option>
+          </select>
+        </div>
       </div>
 
       <div class="mt-6 flex items-center justify-end gap-3 border-t border-border pt-4">

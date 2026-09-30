@@ -7,6 +7,7 @@ export interface PackageItem {
   durationDays: number
   sortOrder: number
   isActive: boolean
+  maxListingProcesses?: number | null
   createdAt?: string
   updatedAt?: string
 }
@@ -32,6 +33,7 @@ export interface CreatePackagePayload {
   durationDays: number
   sortOrder?: number
   isActive?: boolean
+  maxListingProcesses?: number | null
 }
 
 export interface UpdatePackagePayload extends Partial<CreatePackagePayload> {}

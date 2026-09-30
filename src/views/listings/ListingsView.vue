@@ -9,8 +9,12 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { useListingStore } from '@/stores/listing'
+import { useAuthStore } from '@/stores/auth'
 
 const listingStore = useListingStore()
+const authStore = useAuthStore()
+
+const createRoute = authStore.user?.role === 'agent' ? '/agent/listings/create' : '/listings/create'
 
 onMounted(() => {
   listingStore.fetchListings()
@@ -21,7 +25,7 @@ onMounted(() => {
   <div class="flex flex-col gap-6">
     <PageHeader title="My Listings">
       <template #actions>
-        <RouterLink to="/listings/create">
+        <RouterLink :to="createRoute">
           <BaseButton>
             Start New Listing
             <ArrowRight class="ml-1.5 h-4 w-4" />
@@ -52,7 +56,7 @@ onMounted(() => {
       description="Start a new listing and we'll guide you through every step."
     >
       <template #action>
-        <RouterLink to="/listings/create">
+        <RouterLink :to="createRoute">
           <BaseButton>
             Start New Listing
             <ArrowRight class="ml-1.5 h-4 w-4" />
