@@ -37,7 +37,7 @@ const navGroups = computed(() => {
   const agentItems = [
     { label: 'Dashboard', to: '/agent/dashboard', icon: LayoutDashboard },
     hasPackage 
-      ? { label: 'My Subscription', to: '/agent/subscription', icon: Package }
+      ? { label: 'My Subscription', to: '/agent/my-subscription', icon: Package }
       : { label: 'Available Subscriptions', to: '/agent/subscription', icon: Package }
   ]
 

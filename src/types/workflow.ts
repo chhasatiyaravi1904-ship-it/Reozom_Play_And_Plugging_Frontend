@@ -2,7 +2,8 @@ import type { FieldDefinition, FieldCondition } from './field'
 
 export interface WorkflowSection {
   id: string
-  title: string
+  title?: string
+  name?: string
   description?: string
   fields: FieldDefinition[]
   showIf?: FieldCondition
@@ -20,6 +21,7 @@ export interface WorkflowDefinition {
   listingId: number
   processId: number
   steps: WorkflowStep[]
+  answers?: Record<string, Record<string, FieldValue>>
 }
 
 export interface DisclosureQuestion {

@@ -43,7 +43,8 @@ async function handleSubmit() {
   const success = await listingStore.submitListing(listingId.value)
   isSubmitting.value = false
   if (success) {
-    router.push(`/listings/${listingId.value}/submit`)
+    const basePath = route.path.startsWith('/agent') ? '/agent' : ''
+    router.push(`${basePath}/listings/${listingId.value}/submit`)
   } else {
     toast.error('Unable to submit your listing. Please try again.')
   }

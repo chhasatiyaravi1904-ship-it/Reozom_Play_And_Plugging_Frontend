@@ -13,21 +13,21 @@ export interface ListingProcess {
 }
 
 export const fetchListingProcesses = () => {
-  return api.get<ListingProcess[]>('/admin/listing-processes')
+  return api.get<ListingProcess[]>('/listing-processes')
 }
 
 export const getListingProcess = (id: string | number) => {
-  return api.get<ListingProcess>(`/admin/listing-processes/${id}`)
+  return api.get<ListingProcess>(`/listing-processes/${id}`)
 }
 
 export const createListingProcess = (data: Partial<ListingProcess>) => {
-  return api.post<ListingProcess>('/admin/listing-processes', data)
+  return api.post<ListingProcess>('/listing-processes', data)
 }
 
 export const updateListingProcess = (id: string | number, data: Partial<ListingProcess>) => {
-  return api.put<ListingProcess>(`/admin/listing-processes/${id}`, data)
+  return api.put<ListingProcess>(`/listing-processes/${id}`, data)
 }
 
 export const deleteListingProcess = (id: string | number) => {
-  return api.delete(`/admin/listing-processes/${id}`)
+  return api.delete(`/listing-processes/${id}`)
 }

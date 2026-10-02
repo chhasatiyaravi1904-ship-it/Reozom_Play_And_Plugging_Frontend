@@ -30,10 +30,13 @@ export function useListingSteps(listingId: number) {
   })
 
   function routeFor(stepId: string): string {
+    const isAgent = window.location.pathname.startsWith('/agent');
+    const basePath = isAgent ? '/agent' : '';
+    
     if (FIXED_STEPS.some((s) => s.id === stepId)) {
-      return `/listings/${listingId}/${stepId}`
+      return `${basePath}/listings/${listingId}/${stepId}`
     }
-    return `/listings/${listingId}/step/${stepId}`
+    return `${basePath}/listings/${listingId}/step/${stepId}`
   }
 
   return { steps, routeFor }

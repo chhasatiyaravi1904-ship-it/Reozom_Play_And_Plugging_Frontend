@@ -146,6 +146,12 @@ const router = createRouter({
       ],
     },
     {
+      path: '/agent/subscription',
+      name: 'agent-subscription',
+      component: () => import('@/views/packages/PackageSelectionView.vue'),
+      meta: { requiresAuth: true, roles: ['agent'] },
+    },
+    {
       path: '/agent',
       component: () => import('@/layouts/AgentLayout.vue'),
       meta: { requiresAuth: true, roles: ['agent'] },
@@ -156,9 +162,9 @@ const router = createRouter({
           component: () => import('@/views/dashboard/DashboardView.vue'),
         },
         {
-          path: 'subscription',
-          name: 'agent-subscription',
-          component: () => import('@/views/packages/PackageSelectionView.vue'),
+          path: 'my-subscription',
+          name: 'agent-my-subscription',
+          component: () => import('@/views/packages/MySubscriptionView.vue'),
         },
         {
           path: 'service-packages',
@@ -351,7 +357,7 @@ router.beforeEach(async (to) => {
 
   // Agents must pick a package before using the rest of the app. Packages
   // recur/expire, so this also re-triggers once a package lapses.
-  const allowedAgentNoPackageRoutes = ['select-package', 'agent-subscription', 'agent-dashboard', 'agent-profile', 'agent-listing-processes', 'agent-listing-process-builder', 'agent-listings', 'agent-listing-create', 'agent-service-packages']
+  const allowedAgentNoPackageRoutes = ['select-package', 'agent-subscription']
   if (
     authStore.isAuthenticated &&
     authStore.user?.role === 'agent' &&

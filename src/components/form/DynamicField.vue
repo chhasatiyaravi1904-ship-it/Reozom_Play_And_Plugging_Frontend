@@ -30,86 +30,86 @@ const fileName = computed(() =>
 
 <template>
   <BaseInput
-    v-if="field.fieldType === 'text'"
+    v-if="(field.fieldType || field.type) === 'text'"
     :label="field.label"
     :placeholder="field.placeholder"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <BaseInput
-    v-else-if="field.fieldType === 'number'"
+    v-else-if="(field.fieldType || field.type) === 'number'"
     type="number"
     :label="field.label"
     :placeholder="field.placeholder"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <BaseInput
-    v-else-if="field.fieldType === 'date'"
+    v-else-if="(field.fieldType || field.type) === 'date'"
     type="date"
     :label="field.label"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <BaseSelect
-    v-else-if="field.fieldType === 'select'"
+    v-else-if="(field.fieldType || field.type) === 'select'"
     :label="field.label"
     :options="field.options || []"
     :placeholder="field.placeholder"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <BaseRadioGroup
-    v-else-if="field.fieldType === 'radio'"
+    v-else-if="(field.fieldType || field.type) === 'radio'"
     :label="field.label"
     :options="field.options || []"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <BaseCheckbox
-    v-else-if="field.fieldType === 'checkbox'"
+    v-else-if="(field.fieldType || field.type) === 'checkbox'"
     :label="field.label"
     :error="error"
     :model-value="!!modelValue"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <BaseTextarea
-    v-else-if="field.fieldType === 'textarea'"
+    v-else-if="(field.fieldType || field.type) === 'textarea'"
     :label="field.label"
     :placeholder="field.placeholder"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <YesNoField
-    v-else-if="field.fieldType === 'yesno'"
+    v-else-if="(field.fieldType || field.type) === 'yesno'"
     :label="field.label"
     :required="field.required"
     :error="error"
     :model-value="(modelValue as string) || ''"
-    @update:model-value="update"
+    @update:modelValue="update"
   />
 
   <FileUploadField
-    v-else-if="field.fieldType === 'file' || field.fieldType === 'signature'"
+    v-else-if="(field.fieldType || field.type) === 'file' || (field.fieldType || field.type) === 'signature'"
     :label="field.label"
     :required="field.required"
     :error="error"

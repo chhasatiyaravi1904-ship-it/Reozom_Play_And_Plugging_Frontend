@@ -21,7 +21,7 @@ const { isVisible } = useConditionalLogic(props.values)
   <div class="flex flex-col gap-8">
     <template v-for="section in step.sections" :key="section.id">
       <section v-if="isVisible(section.showIf)" class="flex flex-col gap-1">
-        <h2 class="text-lg font-semibold text-fg">{{ section.title }}</h2>
+        <h2 class="text-lg font-semibold text-fg">{{ section.title || section.name }}</h2>
         <p v-if="section.description" class="mb-3 text-sm text-fg-muted">
           {{ section.description }}
         </p>
@@ -30,13 +30,13 @@ const { isVisible } = useConditionalLogic(props.values)
           <template v-for="field in section.fields" :key="field.id">
             <div
               v-if="isVisible(field.showIf)"
-              :class="{ 'md:col-span-2': field.fieldType === 'textarea' }"
+              :class="{ 'md:col-span-2': (field.fieldType || field.type) === 'textarea' }"
             >
               <DynamicField
                 :field="field"
                 :model-value="values[field.id] ?? ''"
                 :error="errors?.[field.id]"
-                @update:model-value="(value) => emit('update:field', field.id, value)"
+                @update:modelValue="(value) => emit('update:field', field.id, value)"
               />
             </div>
           </template>

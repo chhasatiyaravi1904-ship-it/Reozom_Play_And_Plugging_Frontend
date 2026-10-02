@@ -13,7 +13,7 @@ const listingStore = useListingStore()
 
 const zipSearchInput = ref('')
 const isSearchingZip = ref(false)
-const groupedAgents = ref<any[]>([])
+const availablePackages = ref<any[]>([])
 const searchError = ref<string | null>(null)
 const selectedPackage = ref<any>(null)
 const isResolving = ref(false)
@@ -27,7 +27,7 @@ watch(zipSearchInput, (newVal) => {
   }
   
   if (!newVal.trim()) {
-    groupedAgents.value = [];
+    availablePackages.value = [];
     selectedPackage.value = null;
     return;
   }
@@ -43,35 +43,27 @@ const handleZipSearch = async () => {
 
   isSearchingZip.value = true;
   searchError.value = null;
-  groupedAgents.value = [];
+  availablePackages.value = [];
   selectedPackage.value = null;
   
   try {
     const response = await searchServicePackagesByZip(query);
-    const packages = Array.isArray(response.data) ? response.data : 
+    let packages = Array.isArray(response.data) ? response.data : 
                      (response.data?.data ? response.data.data : []);
     
-    // Group packages by agent for a premium structured display
-    const agentsMap = new Map();
-    
-    packages.forEach((pkg: any) => {
-      const agentId = pkg.agent_id || (pkg.agent && pkg.agent.id);
-      if (!agentId) return;
+    // Flatten and inject agent details directly into the package
+    availablePackages.value = packages.map((pkg: any) => {
+      const agentName = pkg.agent?.full_name || pkg.agent?.first_name ? `${pkg.agent.first_name} ${pkg.agent.last_name || ''}`.trim() : 'Verified Agent';
+      const agentInitials = pkg.agent?.first_name ? `${pkg.agent.first_name[0]}${pkg.agent.last_name ? pkg.agent.last_name[0] : ''}` : 'VA';
+      const agentLicense = pkg.agent?.license || 'State Licensed';
       
-      if (!agentsMap.has(agentId)) {
-        agentsMap.set(agentId, {
-          id: agentId,
-          name: pkg.agent?.full_name || pkg.agent?.first_name ? `${pkg.agent.first_name} ${pkg.agent.last_name || ''}`.trim() : 'Verified Agent',
-          initials: pkg.agent?.first_name ? `${pkg.agent.first_name[0]}${pkg.agent.last_name ? pkg.agent.last_name[0] : ''}` : 'VA',
-          license: pkg.agent?.license || 'State Licensed',
-          packages: []
-        });
-      }
-      
-      agentsMap.get(agentId).packages.push(pkg);
+      return {
+        ...pkg,
+        agentName,
+        agentInitials,
+        agentLicense
+      };
     });
-
-    groupedAgents.value = Array.from(agentsMap.values());
   } catch (e) {
     console.error(e);
     searchError.value = 'Failed to fetch available packages for this ZIP code.';
@@ -88,7 +80,8 @@ async function handleSubmit() {
   const listing = await listingStore.startListing({ zip: zipSearchInput.value, packageId: selectedPackage.value.id })
   isResolving.value = false
   if (listing) {
-    router.push(`/listings/${listing.id}`)
+    const basePath = router.currentRoute.value.path.startsWith('/agent') ? '/agent' : ''
+    router.push(`${basePath}/listings/${listing.id}`)
   } else {
     routingFailed.value = true
   }
@@ -148,57 +141,55 @@ async function handleSubmit() {
 
           <ErrorState v-if="searchError" :description="searchError" />
 
-          <!-- Agent Groups Container -->
-          <div v-if="groupedAgents.length > 0 && !isSearchingZip" class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-4 border-t border-border/50">
+          <!-- Packages Container -->
+          <div v-if="availablePackages.length > 0 && !isSearchingZip" class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-4 border-t border-border/50">
             
-            <div v-for="agent in groupedAgents" :key="agent.id" class="space-y-5">
-              <!-- Agent Header Profile -->
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-surface">
-                  {{ agent.initials }}
+            <!-- Packages Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div 
+                v-for="pkg in availablePackages" 
+                :key="pkg.id"
+                class="group relative rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 overflow-hidden flex flex-col"
+                :class="selectedPackage?.id === pkg.id ? 'border-primary bg-primary/[0.02] shadow-md scale-[1.02]' : 'border-border/60 bg-surface hover:border-primary/40 hover:shadow-sm'"
+                @click="selectedPackage = pkg"
+              >
+                <!-- Selection Indicator -->
+                <div v-if="selectedPackage?.id === pkg.id" class="absolute top-4 right-4 bg-primary text-white rounded-full p-1 shadow-sm animate-in zoom-in duration-200">
+                  <Check class="w-4 h-4" />
                 </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-xl font-bold text-fg">{{ agent.name }}</h3>
-                    <ShieldCheck class="w-5 h-5 text-secondary" />
-                  </div>
-                  <div class="text-sm text-fg-muted font-medium">License: {{ agent.license }}</div>
-                </div>
-              </div>
 
-              <!-- Packages Grid for this Agent -->
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div 
-                  v-for="pkg in agent.packages" 
-                  :key="pkg.id"
-                  class="group relative rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 overflow-hidden flex flex-col"
-                  :class="selectedPackage?.id === pkg.id ? 'border-primary bg-primary/[0.02] shadow-md scale-[1.02]' : 'border-border/60 bg-surface hover:border-primary/40 hover:shadow-sm'"
-                  @click="selectedPackage = pkg"
-                >
-                  <!-- Selection Indicator -->
-                  <div v-if="selectedPackage?.id === pkg.id" class="absolute top-4 right-4 bg-primary text-white rounded-full p-1 shadow-sm animate-in zoom-in duration-200">
-                    <Check class="w-4 h-4" />
-                  </div>
-
-                  <div class="flex flex-col h-full">
-                    <div class="flex items-start gap-3 mb-3">
-                      <div class="p-2 rounded-lg" :class="selectedPackage?.id === pkg.id ? 'bg-primary/10 text-primary' : 'bg-surface-container text-fg-muted'">
-                        <Package class="w-6 h-6" />
-                      </div>
-                      <div class="pr-6">
-                        <h4 class="font-bold text-fg text-lg leading-tight">{{ pkg.name }}</h4>
-                      </div>
+                <div class="flex flex-col h-full">
+                  <!-- Agent info integrated into package card -->
+                  <div class="flex items-center gap-3 mb-4 pb-4 border-b border-border/50">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                      {{ pkg.agentInitials }}
                     </div>
-                    
-                    <p class="text-sm text-fg-muted leading-relaxed flex-grow mb-6">
-                      {{ pkg.description || 'Comprehensive real estate services designed to maximize your property value.' }}
-                    </p>
-                    
-                    <div class="mt-auto pt-4 border-t border-border/50 flex items-end justify-between">
-                      <div class="text-xs font-semibold text-fg-muted uppercase tracking-wider">Package Price</div>
-                      <div class="text-2xl font-black text-fg" :class="selectedPackage?.id === pkg.id ? 'text-primary' : ''">
-                        ${{ Number(pkg.price || 0).toLocaleString() }}
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <h3 class="text-sm font-bold text-fg line-clamp-1">{{ pkg.agentName }}</h3>
+                        <ShieldCheck class="w-3.5 h-3.5 text-secondary shrink-0" />
                       </div>
+                      <div class="text-[10px] text-fg-muted uppercase tracking-wider">{{ pkg.agentLicense }}</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3 mb-3">
+                    <div class="p-2 rounded-lg" :class="selectedPackage?.id === pkg.id ? 'bg-primary/10 text-primary' : 'bg-surface-container text-fg-muted'">
+                      <Package class="w-6 h-6" />
+                    </div>
+                    <div class="pr-6">
+                      <h4 class="font-bold text-fg text-lg leading-tight">{{ pkg.name }}</h4>
+                    </div>
+                  </div>
+                  
+                  <p class="text-sm text-fg-muted leading-relaxed flex-grow mb-6">
+                    {{ pkg.description || 'Comprehensive real estate services designed to maximize your property value.' }}
+                  </p>
+                  
+                  <div class="mt-auto pt-4 border-t border-border/50 flex items-end justify-between">
+                    <div class="text-xs font-semibold text-fg-muted uppercase tracking-wider">Package Price</div>
+                    <div class="text-2xl font-black text-fg" :class="selectedPackage?.id === pkg.id ? 'text-primary' : ''">
+                      ${{ Number(pkg.price || 0).toLocaleString() }}
                     </div>
                   </div>
                 </div>
@@ -229,7 +220,7 @@ async function handleSubmit() {
             </div>
           </div>
           
-          <div v-else-if="!isSearchingZip && zipSearchInput.length >= 5 && groupedAgents.length === 0" class="text-center py-12 px-4 rounded-xl border border-dashed border-border/60 bg-surface-container/30">
+          <div v-else-if="!isSearchingZip && zipSearchInput.length >= 5 && availablePackages.length === 0" class="text-center py-12 px-4 rounded-xl border border-dashed border-border/60 bg-surface-container/30">
             <div class="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center mx-auto mb-4 text-fg-muted">
               <Search class="w-8 h-8" />
             </div>

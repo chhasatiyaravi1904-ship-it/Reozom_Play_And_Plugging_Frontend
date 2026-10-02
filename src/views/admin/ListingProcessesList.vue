@@ -100,51 +100,86 @@
             <input 
               v-model="newProcessForm.name" 
               type="text" 
+              @keyup.enter="handleCreate"
               class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
               placeholder="e.g. Michigan Residential"
             />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">Process Type</label>
-            <div class="flex flex-col gap-3">
-              <label class="flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors" :class="newProcessForm.isDefault ? 'border-[#1641d9] bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300'">
-                <input type="radio" :value="true" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]">
-                <div>
-                  <span class="block text-sm font-medium text-neutral-900">Default Use</span>
-                  <span class="block text-xs text-neutral-500">{{ authStore.user?.role === 'agent' ? 'Automatically use this process for all your new listings.' : 'Set as the default process for all agents.' }}</span>
-                </div>
-              </label>
-              
-              <label class="flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors" :class="!newProcessForm.isDefault ? 'border-[#1641d9] bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300'">
-                <input type="radio" :value="false" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]">
-                <div>
-                  <span class="block text-sm font-medium text-neutral-900">Custom</span>
-                  <span class="block text-xs text-neutral-500">A specialized process that can be manually selected when needed.</span>
-                </div>
-              </label>
+          <template v-if="authStore.user?.role === 'agent'">
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-2">Process Type</label>
+              <div class="flex flex-col gap-3">
+                <label class="flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors" :class="newProcessForm.isDefault ? 'border-[#1641d9] bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300'">
+                  <input type="radio" :value="true" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]">
+                  <div>
+                    <span class="block text-sm font-medium text-neutral-900">Default Use</span>
+                    <span class="block text-xs text-neutral-500">Automatically use this process for all your new listings.</span>
+                  </div>
+                </label>
+                
+                <label class="flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors" :class="!newProcessForm.isDefault ? 'border-[#1641d9] bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300'">
+                  <input type="radio" :value="false" v-model="newProcessForm.isDefault" class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]">
+                  <div>
+                    <span class="block text-sm font-medium text-neutral-900">Custom</span>
+                    <span class="block text-xs text-neutral-500">A specialized process that can be manually selected when needed.</span>
+                  </div>
+                </label>
+              </div>
             </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1">Service Package (Optional)</label>
-            <select v-model="newProcessForm.service_package_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9] bg-white">
-              <option value="">-- None --</option>
-              <option v-for="pkg in servicePackages" :key="pkg.id" :value="pkg.id">{{ pkg.name }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1">Assigned Zip Codes (Optional)</label>
-            <input 
-              v-model="newProcessForm.assigned_zips" 
-              type="text" 
-              class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
-              placeholder="e.g. 48103, 48104"
-            />
-            <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
-          </div>
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-1">Service Package (Optional)</label>
+              <select v-model="newProcessForm.service_package_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9] bg-white">
+                <option value="">-- None --</option>
+                <option v-for="pkg in servicePackages" :key="pkg.id" :value="pkg.id">{{ pkg.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-1">Assigned Zip Codes (Optional)</label>
+              <input 
+                v-model="newProcessForm.assigned_zips" 
+                type="text" 
+                class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
+                placeholder="e.g. 48103, 48104"
+              />
+              <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
+            </div>
+          </template>
         </div>
         <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
-          <button @click="showCreateModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition">Cancel</button>
-          <button @click="handleCreate" class="px-4 py-2 text-sm font-medium text-white bg-[#1641d9] rounded-lg hover:bg-blue-700 transition" :disabled="!newProcessForm.name">Create Process</button>
+          <button @click="showCreateModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition" :disabled="isSubmitting">Cancel</button>
+          <button @click="handleCreate" class="px-4 py-2 text-sm font-medium text-white bg-[#1641d9] rounded-lg hover:bg-blue-700 transition" :disabled="!newProcessForm.name || isSubmitting">
+            <span v-if="isSubmitting">Creating...</span>
+            <span v-else>Create Process</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div v-if="showDeleteModal && processToDelete" class="fixed inset-0 bg-neutral-900/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <div class="flex items-center gap-3">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <IconTrash class="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-neutral-900">Delete Process</h3>
+              <p class="text-sm text-neutral-500 mt-1">This action cannot be undone.</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-6">
+          <p class="text-sm text-neutral-700">
+            Are you sure you want to permanently delete the <span class="font-bold">"{{ processToDelete.name }}"</span> process? 
+          </p>
+          <p class="text-xs text-neutral-500 mt-2">
+            Any existing listings using this process will still retain their snapshot, but this template will no longer be available.
+          </p>
+        </div>
+        <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
+          <button @click="showDeleteModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition">Cancel</button>
+          <button @click="executeDelete" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">Yes, Delete Process</button>
         </div>
       </div>
     </div>
@@ -168,6 +203,9 @@ const getBasePath = () => authStore.user?.role === 'agent' ? '/agent' : '/admin'
 
 const searchQuery = ref('')
 const showCreateModal = ref(false)
+const isSubmitting = ref(false)
+const showDeleteModal = ref(false)
+const processToDelete = ref(null)
 const servicePackages = ref([])
 
 const newProcessForm = ref({
@@ -205,13 +243,15 @@ const previewProcess = (id) => {
 }
 
 const handleCreate = async () => {
-  if (!newProcessForm.value.name) return
+  if (!newProcessForm.value.name || isSubmitting.value) return
+  isSubmitting.value = true
   
   try {
+    const isAdmin = authStore.user?.role === 'admin'
     const payload = {
       name: newProcessForm.value.name,
-      type: newProcessForm.value.isDefault ? 'default' : 'custom',
-      isDefault: newProcessForm.value.isDefault,
+      type: (isAdmin || newProcessForm.value.isDefault) ? 'default' : 'custom',
+      isDefault: isAdmin || newProcessForm.value.isDefault,
     }
     
     if (newProcessForm.value.service_package_id) {
@@ -243,6 +283,8 @@ const handleCreate = async () => {
     }
   } catch (e) {
     console.error('Failed to create', e)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -250,9 +292,16 @@ const toggleStatus = async (process) => {
   await processStore.updateProcess(process.id, { status: process.status === 'Active' ? 'Draft' : 'Active' })
 }
 
-const confirmDelete = async (process) => {
-  if (confirm(`Are you sure you want to delete ${process.name}?`)) {
-    await processStore.deleteProcess(process.id)
+const confirmDelete = (process) => {
+  processToDelete.value = process
+  showDeleteModal.value = true
+}
+
+const executeDelete = async () => {
+  if (processToDelete.value) {
+    await processStore.deleteProcess(processToDelete.value.id)
+    showDeleteModal.value = false
+    processToDelete.value = null
   }
 }
 </script>

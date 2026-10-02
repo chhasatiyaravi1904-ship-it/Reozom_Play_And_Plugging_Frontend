@@ -19,6 +19,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       const { data } = await workflowService.fetchWorkflow(listingId)
       workflow.value = data
+      
+      // Rehydrate answers from the server
+      if (data.answers) {
+        let mergedValues = {}
+        Object.values(data.answers).forEach((stepValues: any) => {
+          mergedValues = { ...mergedValues, ...stepValues }
+        })
+        values.value = { ...values.value, ...mergedValues }
+      }
+
     } catch (err) {
       // DEV fallback: no Laravel API running yet.
       if (import.meta.env.DEV && isNetworkError(err)) {

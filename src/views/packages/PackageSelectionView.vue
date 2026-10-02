@@ -63,8 +63,8 @@ onMounted(fetchPackages)
 <template>
   <div class="mx-auto max-w-4xl space-y-6 py-4">
     
-    <!-- Packages Listing (Hidden) -->
-    <div v-if="false">
+    <!-- Packages Listing -->
+    <div>
       <div class="text-center">
         <div
           class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary ring-1 ring-primary/20"
@@ -105,51 +105,5 @@ onMounted(fetchPackages)
       </div>
     </div>
 
-    <!-- Purchase History Mockup -->
-    <div v-if="!isLoading && !loadError" class="mt-16">
-      <h2 class="text-xl font-semibold text-neutral-900 mb-6">Purchase History</h2>
-      <BaseCard class="overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm whitespace-nowrap">
-            <thead class="bg-neutral-50 border-b border-neutral-200 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-              <tr>
-                <th class="px-6 py-4">Purchase Date</th>
-                <th class="px-6 py-4">Package</th>
-                <th class="px-6 py-4">Amount</th>
-                <th class="px-6 py-4">Expires</th>
-                <th class="px-6 py-4">Status</th>
-                <th class="px-6 py-4 text-right">Invoice</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100 bg-white">
-              <tr class="hover:bg-neutral-50/50 transition">
-                <td class="px-6 py-4 text-neutral-900 font-medium">Sep 28, 2026</td>
-                <td class="px-6 py-4 text-neutral-600">Premium Listing Service</td>
-                <td class="px-6 py-4 text-neutral-600">$500.00</td>
-                <td class="px-6 py-4 text-neutral-600">Oct 28, 2026</td>
-                <td class="px-6 py-4">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">Active</span>
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <a href="#" class="text-primary hover:text-primary-active font-medium">Download</a>
-                </td>
-              </tr>
-              <tr class="hover:bg-neutral-50/50 transition opacity-60">
-                <td class="px-6 py-4 text-neutral-900 font-medium">Aug 28, 2026</td>
-                <td class="px-6 py-4 text-neutral-600">Basic Package</td>
-                <td class="px-6 py-4 text-neutral-600">$100.00</td>
-                <td class="px-6 py-4 text-neutral-600">Sep 27, 2026</td>
-                <td class="px-6 py-4">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 border border-neutral-200">Expired</span>
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <a href="#" class="text-primary hover:text-primary-active font-medium">Download</a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </BaseCard>
-    </div>
   </div>
 </template>

@@ -39,11 +39,14 @@ export const useProcessStore = defineStore('processStore', () => {
 
   const addProcess = async (processData: any) => {
     try {
-      const newProcData = {
+      const newProcData: any = {
         name: processData.name,
         type: processData.isDefault ? 'default' : 'custom',
-        status: 'draft',
+        status: 'active',
       }
+      if (processData.service_package_id) newProcData.service_package_id = processData.service_package_id;
+      if (processData.assigned_zips) newProcData.assigned_zips = processData.assigned_zips;
+
       const response = await createListingProcess(newProcData)
       const p = response.data
       const newProcess = {

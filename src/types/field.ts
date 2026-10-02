@@ -22,7 +22,8 @@ export interface FieldCondition {
 
 export interface FieldDefinition {
   id: string
-  fieldType: FieldType
+  fieldType?: FieldType
+  type?: FieldType
   label: string
   helpText?: string
   placeholder?: string

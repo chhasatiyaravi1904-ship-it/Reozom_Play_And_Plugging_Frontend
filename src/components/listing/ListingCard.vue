@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ArrowRight } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -7,6 +9,12 @@ import type { ListingSummary } from '@/types/listing'
 defineProps<{
   listing: ListingSummary
 }>()
+
+const route = useRoute()
+const linkPath = computed(() => {
+  const basePath = route.path.startsWith('/agent') ? '/agent' : ''
+  return `${basePath}/listings/`
+})
 </script>
 
 <template>
@@ -34,7 +42,7 @@ defineProps<{
       </div>
     </div>
 
-    <RouterLink :to="`/listings/${listing.id}`" class="shrink-0">
+    <RouterLink :to="`${linkPath}${listing.id}`" class="shrink-0">
       <BaseButton size="sm">
         Continue
         <ArrowRight class="ml-1.5 h-4 w-4" />
