@@ -17,40 +17,48 @@ defineEmits<{
 </script>
 
 <template>
-  <nav aria-label="Listing progress">
-    <ol class="flex gap-4 overflow-x-auto pb-2 sm:gap-6 md:overflow-visible">
-      <li v-for="(step, index) in steps" :key="step.id" class="flex shrink-0 items-center gap-3">
+  <nav aria-label="Listing progress" class="w-full mb-8">
+    <div class="flex items-center justify-between w-full relative">
+      <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] bg-outline-variant/30 z-0"></div>
+      
+      <div v-for="(step, index) in steps" :key="step.id" class="relative z-10 flex flex-col items-center flex-1">
+        <!-- Connecting Line fill -->
+        <div 
+          v-if="index < steps.length - 1" 
+          class="absolute left-1/2 top-[11px] h-[2px] w-full"
+          :class="step.status === 'completed' ? 'bg-secondary' : 'bg-transparent'"
+          style="transform: translateX(50%); z-index: -1;"
+        ></div>
+
         <button
           type="button"
-          class="flex items-center gap-2 outline-none focus-visible:ring-3 focus-visible:ring-primary/30 rounded-full"
+          class="group outline-none flex flex-col items-center"
           :disabled="step.status === 'upcoming'"
           @click="$emit('select', step.id)"
         >
-          <span
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
+          <div
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 bg-surface transition-colors"
             :class="{
-              'border-primary bg-primary text-white': step.status === 'current',
-              'border-success bg-success text-white': step.status === 'completed',
-              'border-border bg-surface text-fg-muted': step.status === 'upcoming',
+              'border-secondary ring-4 ring-secondary/20': step.status === 'current',
+              'border-secondary bg-secondary text-surface-container-lowest': step.status === 'completed',
+              'border-outline-variant text-transparent hover:border-outline': step.status === 'upcoming',
             }"
           >
-            <Check v-if="step.status === 'completed'" class="h-4 w-4" aria-hidden="true" />
-            <span v-else>{{ index + 1 }}</span>
-          </span>
+            <span v-if="step.status === 'completed'" class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+            <div v-else-if="step.status === 'current'" class="w-2.5 h-2.5 rounded-full bg-secondary"></div>
+          </div>
           <span
-            class="text-sm font-medium whitespace-nowrap"
-            :class="step.status === 'upcoming' ? 'text-fg-muted' : 'text-fg'"
+            class="mt-3 text-label-sm font-label-sm hidden sm:block whitespace-nowrap transition-colors"
+            :class="{
+              'text-primary font-bold': step.status === 'current',
+              'text-primary': step.status === 'completed',
+              'text-outline-variant': step.status === 'upcoming'
+            }"
           >
             {{ step.label }}
           </span>
         </button>
-        <span
-          v-if="index < steps.length - 1"
-          class="h-px w-6 shrink-0 sm:w-10"
-          :class="step.status === 'completed' ? 'bg-success' : 'bg-border'"
-          aria-hidden="true"
-        ></span>
-      </li>
-    </ol>
+      </div>
+    </div>
   </nav>
 </template>

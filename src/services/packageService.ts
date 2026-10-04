@@ -18,6 +18,8 @@ function toApiPayload(payload: Partial<CreatePackagePayload>): Record<string, un
   if (payload.durationDays !== undefined) body.duration_days = payload.durationDays
   if (payload.sortOrder !== undefined) body.sort_order = payload.sortOrder
   if (payload.isActive !== undefined) body.is_active = payload.isActive
+  if (payload.maxListingProcesses !== undefined) body.max_listing_processes = payload.maxListingProcesses
+  if (payload.features !== undefined) body.features = payload.features
   return body
 }
 
@@ -57,4 +59,8 @@ export const updatePackage = (id: string, payload: UpdatePackagePayload) => {
 
 export const deletePackage = (id: string) => {
   return api.delete(`/admin/packages/${id}`)
+}
+
+export const fetchAdminPermissions = () => {
+  return api.get<string[]>('/admin/packages/permissions')
 }

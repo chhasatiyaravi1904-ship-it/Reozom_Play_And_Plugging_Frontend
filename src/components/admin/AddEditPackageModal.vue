@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { PackagePlus, PackageCheck, Sparkles } from 'lucide-vue-next'
 import type { PackageItem, CreatePackagePayload } from '@/types/package'
 import Modal from '@/components/ui/Modal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { fetchAdminPermissions } from '@/services/packageService'
 
 const props = defineProps<{
   modelValue: boolean
@@ -34,10 +35,22 @@ const form = ref({
   sortOrder: 0,
   isActive: true,
   maxListingProcesses: '',
+  features: [] as string[],
 })
 
 const isManualSlug = ref(false)
 const errors = ref<Record<string, string>>({})
+const availablePermissions = ref<string[]>([])
+
+onMounted(async () => {
+  try {
+    const res = await fetchAdminPermissions()
+    // Depending on API structure, it might be in data or direct
+    availablePermissions.value = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
+  } catch (err) {
+    console.error('Failed to load permissions:', err)
+  }
+})
 
 watch(
   () => props.modelValue,
@@ -56,6 +69,7 @@ watch(
         sortOrder: pkg.sortOrder,
         isActive: pkg.isActive,
         maxListingProcesses: pkg.maxListingProcesses !== null && pkg.maxListingProcesses !== undefined ? String(pkg.maxListingProcesses) : '',
+        features: pkg.features ? [...pkg.features] : [],
       }
       isManualSlug.value = true
     } else {
@@ -68,6 +82,7 @@ watch(
         sortOrder: 0,
         isActive: true,
         maxListingProcesses: '',
+        features: [],
       }
     }
   },
@@ -127,6 +142,7 @@ function handleSubmit() {
     sortOrder: Number(form.value.sortOrder) || 0,
     isActive: Boolean(form.value.isActive),
     maxListingProcesses: form.value.maxListingProcesses.trim() ? Number(form.value.maxListingProcesses) : null,
+    features: form.value.features,
   })
   handleClose()
 }
@@ -261,6 +277,16 @@ function handleSubmit() {
             <option value="active">🟢 Active (Selectable by agents)</option>
             <option value="inactive">🔴 Inactive (Hidden from selection)</option>
           </select>
+        </div>
+      </div>
+
+      <div v-if="availablePermissions.length > 0">
+        <label class="mb-2 block text-xs font-semibold text-fg">Features (Permissions)</label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-border rounded-lg bg-surface">
+          <label v-for="perm in availablePermissions" :key="perm" class="flex items-center gap-2 text-sm text-fg">
+            <input type="checkbox" :value="perm" v-model="form.features" class="rounded border-border text-primary focus:ring-primary/20" />
+            {{ perm }}
+          </label>
         </div>
       </div>
 

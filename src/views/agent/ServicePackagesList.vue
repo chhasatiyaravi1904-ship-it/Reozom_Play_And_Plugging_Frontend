@@ -34,16 +34,17 @@
                 <th class="px-6 py-4">Package Name</th>
                 <th class="px-6 py-4">Price</th>
                 <th class="px-6 py-4">Zip Codes</th>
+                <th class="px-6 py-4">Listing Process</th>
                 <th class="px-6 py-4">Status</th>
                 <th class="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
               <tr v-if="isLoading" class="bg-white">
-                <td colspan="5" class="px-6 py-8 text-center text-sm text-neutral-500">Loading packages...</td>
+                <td colspan="6" class="px-6 py-8 text-center text-sm text-neutral-500">Loading packages...</td>
               </tr>
               <tr v-else-if="filteredPackages.length === 0" class="bg-white">
-                <td colspan="5" class="px-6 py-12 text-center">
+                <td colspan="6" class="px-6 py-12 text-center">
                   <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-soft text-primary mb-3">
                     <IconFileText :size="24" />
                   </div>
@@ -72,6 +73,14 @@
                     <span v-else class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-600">
                       {{ pkg.zip_codes.length }} zip(s)
                     </span>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-neutral-700">
+                      {{ pkg.listing_process?.name || 'Default Process' }}
+                    </span>
+                    <span v-if="!pkg.listing_process" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">Default</span>
                   </div>
                 </td>
                 <td class="px-6 py-4">
@@ -171,6 +180,17 @@
             <p class="text-xs text-neutral-500 mt-1">Sellers searching these zip codes will see this package.</p>
           </div>
           
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Listing Process</label>
+            <select v-model="form.listing_process_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
+              <option :value="null">Default Process</option>
+              <option v-for="process in listingProcesses" :key="process.id" :value="process.id">
+                {{ process.name }}
+              </option>
+            </select>
+            <p class="text-xs text-neutral-500 mt-1">Select the form workflow sellers will complete when choosing this package.</p>
+          </div>
+
           <!-- Invisible overlay to close dropdown when clicking outside -->
           <div v-if="isDropdownOpen" class="fixed inset-0 z-10" @click="isDropdownOpen = false"></div>
           <label class="flex items-center gap-2 mt-4 cursor-pointer">
@@ -194,8 +214,10 @@ import { ref, computed, onMounted } from 'vue'
 import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconFileText, IconLoader2, IconChevronDown } from '@tabler/icons-vue'
 import { fetchServicePackages, createServicePackage, updateServicePackage, deleteServicePackage, searchZipCodes, type ServicePackage } from '@/services/servicePackageService'
 import { useZipCodeStore } from '@/stores/zipCode'
+import { useProcessStore } from '@/stores/processStore'
 
 const zipCodeStore = useZipCodeStore()
+const processStore = useProcessStore()
 const packages = ref<ServicePackage[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
@@ -203,6 +225,10 @@ const searchQuery = ref('')
 const showModal = ref(false)
 const isDropdownOpen = ref(false)
 const zipInputRef = ref<HTMLInputElement | null>(null)
+
+const listingProcesses = computed(() => {
+  return processStore.processes.filter(p => p.agent_id !== null)
+})
 
 const openDropdown = () => {
   isDropdownOpen.value = true
@@ -216,6 +242,7 @@ const form = ref({
   description: '',
   price: '',
   selectedZips: [] as { id: string, code: string, city?: any, state?: any }[],
+  listing_process_id: null as number | null,
   is_active: true
 })
 
@@ -253,6 +280,7 @@ const loadPackages = async () => {
 onMounted(() => {
   loadPackages()
   zipCodeStore.fetchZipCodes()
+  processStore.loadProcesses()
 })
 
 const openCreateModal = () => {
@@ -262,6 +290,7 @@ const openCreateModal = () => {
     description: '',
     price: '',
     selectedZips: [],
+    listing_process_id: null,
     is_active: true
   }
   zipSearchInput.value = ''
@@ -275,6 +304,7 @@ const editPackage = (pkg: ServicePackage) => {
     description: pkg.description || '',
     price: pkg.price?.toString() || '',
     selectedZips: pkg.zip_codes ? [...pkg.zip_codes] : [],
+    listing_process_id: pkg.listing_process?.id || null,
     is_active: pkg.is_active
   }
   zipSearchInput.value = ''
@@ -316,6 +346,7 @@ const handleSave = async () => {
     description: form.value.description,
     price: parseFloat(form.value.price) || 0,
     assigned_zips: zipCodesArray,
+    listing_process_id: form.value.listing_process_id,
     is_active: form.value.is_active
   }
 

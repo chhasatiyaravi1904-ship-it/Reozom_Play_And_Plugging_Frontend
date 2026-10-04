@@ -27,22 +27,24 @@
           :step="step"
           :is-active="activeStepId === step.id"
           @select="emit('select-step', step.id)"
-          @drag-start="handleDragStart"
-          @drop="handleDrop"
-          @edit="emit('edit-step', $event)"
-          @delete="emit('delete-step', $event)"
+          @drag-start="!isReadOnly && handleDragStart($event, step)"
+          @drop="!isReadOnly && handleDrop($event, step)"
+          @edit="!isReadOnly && emit('edit-step', $event)"
+          @delete="!isReadOnly && emit('delete-step', $event)"
+          :is-read-only="isReadOnly"
         />
       </div>
 
       <!-- Add New Step Button -->
       <button
+        v-if="!isReadOnly"
         @click="emit('add-step')"
         class="w-full mt-4 flex items-center justify-center gap-2 py-2 border border-dashed border-neutral-400 text-neutral-600 rounded-md hover:bg-neutral-100 hover:text-primary hover:border-primary transition text-sm font-medium"
       >
         <IconPlus :size="16" /> Add New Step
       </button>
 
-      <p class="mt-4 text-xs text-neutral-500 text-center">
+      <p class="mt-4 text-xs text-neutral-500 text-center" v-if="!isReadOnly">
         Drag to reorder. Fields move with step.
       </p>
     </div>
@@ -61,6 +63,10 @@ defineProps({
   activeStepId: {
     type: String,
     required: true
+  },
+  isReadOnly: {
+    type: Boolean,
+    default: false
   }
 })
 

@@ -145,7 +145,15 @@ async function handleSubmit() {
   const result = await register(payload)
   if (result === 'active') {
     toast.success('Account created! Welcome to REOZOM.')
-    router.push('/dashboard')
+    
+    const pendingZip = localStorage.getItem('pending_listing_zip_code')
+    const pendingPackageId = localStorage.getItem('pending_listing_package_id')
+    
+    if (pendingZip && pendingPackageId) {
+      router.push('/listings/create')
+    } else {
+      router.push('/dashboard')
+    }
   } else if (result === 'pending') {
     isPendingApproval.value = true
   }

@@ -20,7 +20,15 @@ async function handleSubmit() {
   const result = await login({ email: form.email, password: form.password })
   if (result === 'success') {
     toast.success('Welcome back!')
-    router.push('/dashboard')
+    
+    const pendingZip = localStorage.getItem('pending_listing_zip_code')
+    const pendingPackageId = localStorage.getItem('pending_listing_package_id')
+    
+    if (pendingZip && pendingPackageId) {
+      router.push('/listings/create')
+    } else {
+      router.push('/dashboard')
+    }
   } else if (error.value?.toLowerCase().includes('verify your email')) {
     router.push({ name: 'verify-email', query: { email: form.email } })
   }
@@ -30,7 +38,15 @@ async function handleVerify2FA() {
   const success = await verify2fa({ email: form.email, code: form.code })
   if (success) {
     toast.success('Authentication successful!')
-    router.push('/dashboard')
+    
+    const pendingZip = localStorage.getItem('pending_listing_zip_code')
+    const pendingPackageId = localStorage.getItem('pending_listing_package_id')
+    
+    if (pendingZip && pendingPackageId) {
+      router.push('/listings/create')
+    } else {
+      router.push('/dashboard')
+    }
   }
 }
 

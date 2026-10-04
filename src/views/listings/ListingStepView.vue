@@ -33,6 +33,11 @@ onMounted(() => {
   if (!workflowStore.workflow) workflowStore.fetchWorkflow(listingId.value)
 })
 
+const isLastStep = computed(() => {
+  const index = steps.value.findIndex((s) => s.id === stepId.value)
+  return index === steps.value.length - 1
+})
+
 watch(stepId, () => {
   Object.keys(errors).forEach((key) => delete errors[key])
 })
@@ -67,38 +72,74 @@ async function handleContinue() {
   await workflowStore.saveStep(listingId.value, stepId.value)
   const index = steps.value.findIndex((s) => s.id === stepId.value)
   const next = steps.value[index + 1]
-  if (next) router.push(routeFor(next.id))
+  if (next) {
+    router.push(routeFor(next.id))
+  } else {
+    try {
+      await fetch(`/api/listings/${listingId.value}/submit`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      const isAgent = window.location.pathname.startsWith('/agent');
+      const basePath = isAgent ? '/agent' : '';
+      router.push(`${basePath}/listings`)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 }
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-4xl flex-col gap-6">
+  <div class="mx-auto flex w-full max-w-[1000px] flex-col gap-6 py-6 md:py-10">
+    
+    <!-- Page Header -->
+    <div class="mb-4">
+      <a href="#" @click.prevent="router.push('/listings')" class="text-secondary text-label-sm font-label-sm hover:underline mb-8 inline-flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+        Back to Dashboard
+      </a>
+      <div class="flex items-end justify-between">
+        <div>
+          <span class="text-outline-variant font-label-sm text-label-sm uppercase tracking-wider mb-2 block">Create Your Listing</span>
+          <h1 class="text-headline-md font-headline-md text-primary">{{ currentStep?.name || 'Loading...' }}</h1>
+        </div>
+        <div class="text-right">
+          <span class="text-primary font-label-md text-label-md block">Step {{ steps.findIndex(s => s.id === stepId) + 1 }} of {{ steps.length }}</span>
+        </div>
+      </div>
+    </div>
+
     <Stepper :steps="steps" @select="(id) => router.push(routeFor(id))" />
 
-    <LoadingState v-if="workflowStore.status === 'loading'" :rows="4" label="Loading workflow" />
+    <LoadingState v-if="workflowStore.status === 'loading'" :rows="4" label="Loading listing process..." />
 
     <ErrorState
       v-else-if="workflowStore.status === 'error'"
       :description="workflowStore.error || undefined"
     >
       <template #action>
-        <BaseButton size="sm" @click="workflowStore.fetchWorkflow(listingId)">Try Again</BaseButton>
+        <button class="px-6 py-3 bg-secondary text-surface-container-lowest rounded-lg font-label-lg" @click="workflowStore.fetchWorkflow(listingId)">Try Again</button>
       </template>
     </ErrorState>
 
-    <BaseCard v-else-if="currentStep">
-      <div class="mb-6 flex items-start justify-between gap-4">
+    <div v-else-if="currentStep" class="bg-surface-container-lowest shadow-sm border border-outline-variant/40 rounded-2xl p-6 md:p-10">
+      <div class="mb-10 pb-6 border-b border-outline-variant/30 flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-xl font-semibold text-fg">{{ currentStep.name }}</h1>
-          <p v-if="currentStep.description" class="mt-1 text-sm text-fg-muted">
+          <h2 class="text-headline-sm font-headline-sm text-primary">{{ currentStep.name }}</h2>
+          <p v-if="currentStep.description" class="mt-2 text-body-lg font-body-lg text-on-surface-variant">
             {{ currentStep.description }}
           </p>
         </div>
-        <span class="flex shrink-0 items-center gap-1 text-xs text-fg-muted">
-          <span v-if="saveState === 'saving'">Saving…</span>
-          <span v-else-if="saveState === 'saved'" class="flex items-center gap-1">
-            <Check class="h-3.5 w-3.5 text-success" />
-            Saved just now
+        <span class="flex shrink-0 items-center gap-1.5 text-xs text-secondary bg-surface-container py-1.5 px-3 rounded-full">
+          <span v-if="saveState === 'saving'" class="font-medium">Saving...</span>
+          <span v-else-if="saveState === 'saved'" class="flex items-center gap-1 font-medium">
+            <span class="material-symbols-outlined text-[14px]">check_circle</span>
+            Saved
           </span>
         </span>
       </div>
@@ -110,15 +151,22 @@ async function handleContinue() {
         @update:field="handleFieldUpdate"
       />
 
-      <template #footer>
-        <div class="flex items-center justify-between">
-          <BaseButton variant="secondary" @click="handleBack">Back</BaseButton>
-          <BaseButton @click="handleContinue">
-            Save & Continue
-            <ArrowRight class="ml-1.5 h-4 w-4" />
-          </BaseButton>
-        </div>
-      </template>
-    </BaseCard>
+      <div class="mt-12 pt-6 border-t border-outline-variant/30 flex items-center justify-between">
+        <button 
+          @click="handleBack" 
+          class="px-6 h-12 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors font-label-lg text-label-lg"
+          :class="steps.findIndex((s) => s.id === stepId) === 0 ? 'invisible' : ''"
+        >
+          ← Back
+        </button>
+        <button 
+          @click="handleContinue" 
+          class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm"
+        >
+          {{ isLastStep ? 'Review Listing' : 'Save & Continue' }}
+          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>

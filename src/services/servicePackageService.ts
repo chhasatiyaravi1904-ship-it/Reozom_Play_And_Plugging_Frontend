@@ -7,6 +7,8 @@ export interface ServicePackage {
   description: string | null;
   price: number | null;
   zip_codes?: { id: string, code: string }[];
+  listing_process_id?: number | null;
+  listing_process?: any;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;

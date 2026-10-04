@@ -8,6 +8,7 @@ export interface PackageItem {
   sortOrder: number
   isActive: boolean
   maxListingProcesses?: number | null
+  features?: string[]
   createdAt?: string
   updatedAt?: string
 }
@@ -34,6 +35,7 @@ export interface CreatePackagePayload {
   sortOrder?: number
   isActive?: boolean
   maxListingProcesses?: number | null
+  features?: string[]
 }
 
 export interface UpdatePackagePayload extends Partial<CreatePackagePayload> {}

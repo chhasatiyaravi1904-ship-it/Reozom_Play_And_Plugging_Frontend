@@ -20,6 +20,7 @@
         @edit-step="handleEditStep"
         @delete-step="handleConfirmDeleteStep"
         @drag-step="handleDragStep"
+        :is-read-only="isReadOnly"
       />
     </div>
 
@@ -43,26 +44,28 @@
           >
             Preview Wizard
           </button>
-          <button
-            @click="formStore.saveAll"
-            class="px-3 md:px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            :disabled="!formStore.hasChanges"
-          >
-            Save All
-          </button>
-          <button
-            @click="formStore.discardChanges"
-            class="hidden md:block px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!formStore.hasChanges"
-          >
-            Discard
-          </button>
-          <button
-            @click="handleResetDefaults"
-            class="hidden md:block px-4 py-2 text-sm font-medium text-danger bg-red-50 hover:bg-red-100 rounded transition"
-          >
-            Reset to Defaults
-          </button>
+          <template v-if="!isReadOnly">
+            <button
+              @click="formStore.saveAll"
+              class="px-3 md:px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              :disabled="!formStore.hasChanges"
+            >
+              Save All
+            </button>
+            <button
+              @click="formStore.discardChanges"
+              class="hidden md:block px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="!formStore.hasChanges"
+            >
+              Discard
+            </button>
+            <button
+              @click="handleResetDefaults"
+              class="hidden md:block px-4 py-2 text-sm font-medium text-danger bg-red-50 hover:bg-red-100 rounded transition"
+            >
+              Reset to Defaults
+            </button>
+          </template>
         </div>
       </header>
 
@@ -77,6 +80,7 @@
             </div>
             
             <button
+              v-if="!isReadOnly"
               @click="handleAddSection"
               class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded transition shrink-0 self-start md:self-auto"
             >
@@ -143,7 +147,7 @@
                     <p class="text-xs text-neutral-500" v-if="section.description">{{ section.description }}</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2" v-if="!isReadOnly">
                   <button
                     @click.stop="handleAddField(section.id)"
                     class="p-2 text-primary hover:bg-primary-soft rounded transition"
@@ -178,7 +182,7 @@
                       <th class="px-4 py-3">Type</th>
                       <th class="w-24 px-4 py-3 text-center">Required</th>
                       <th class="w-24 px-4 py-3 text-center">Active</th>
-                      <th class="w-24 px-4 py-3 text-right">Actions</th>
+                      <th class="w-24 px-4 py-3 text-right" v-if="!isReadOnly">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -186,14 +190,15 @@
                       v-for="field in getFilteredFields(section.fields)"
                       :key="field.id"
                       :field="field"
-                      draggable="true"
-                      @dragstart="handleFieldDragStart($event, field, section.id)"
+                      :draggable="!isReadOnly"
+                      @dragstart="!isReadOnly && handleFieldDragStart($event, field, section.id)"
                       @dragover.prevent
-                      @drop.stop="handleFieldDrop($event, field, section.id)"
-                      @toggle-required="updateField(section.id, field.id, { required: $event })"
-                      @toggle-active="updateField(section.id, field.id, { active: $event })"
-                      @edit="handleEditField(field, section.id)"
-                      @delete="handleConfirmDeleteField(field, section.id)"
+                      @drop.stop="!isReadOnly && handleFieldDrop($event, field, section.id)"
+                      @toggle-required="!isReadOnly && updateField(section.id, field.id, { required: $event })"
+                      @toggle-active="!isReadOnly && updateField(section.id, field.id, { active: $event })"
+                      @edit="!isReadOnly && handleEditField(field, section.id)"
+                      @delete="!isReadOnly && handleConfirmDeleteField(field, section.id)"
+                      :is-read-only="isReadOnly"
                     />
                     <tr v-if="getFilteredFields(section.fields).length === 0">
                       <td colspan="6" class="px-4 py-8 text-center text-sm text-neutral-500 bg-neutral-50">
@@ -298,6 +303,7 @@ onMounted(async () => {
   await formStore.loadProcess(processId)
 })
 const currentProcess = computed(() => processStore.getProcessById(route.params.id))
+const isReadOnly = computed(() => authStore.user?.role === 'agent' && currentProcess.value?.agent_id === null)
 
 const fieldModalOpen = ref(false)
 const editingField = ref(null)

@@ -13,7 +13,7 @@
     @click="emit('select')"
   >
     <div class="flex items-center gap-2 flex-1">
-      <div class="w-2 h-6 rounded-r cursor-grab text-neutral-400 flex items-center justify-center">
+      <div v-if="!isReadOnly" class="w-2 h-6 rounded-r cursor-grab text-neutral-400 flex items-center justify-center">
         <IconGripVertical :size="18" />
       </div>
       <div class="flex-1">
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <div class="relative">
+    <div class="relative" v-if="!isReadOnly">
       <button
         class="p-1 text-neutral-400 hover:text-primary hover:bg-neutral-100 rounded transition"
         @click.stop="toggleMenu"
@@ -54,7 +54,11 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  isActive: Boolean
+  isActive: Boolean,
+  isReadOnly: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const fieldCount = computed(() => {

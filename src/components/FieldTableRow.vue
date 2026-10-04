@@ -8,6 +8,7 @@
     <!-- Drag Handle -->
     <td class="w-8 px-2">
       <div
+        v-if="!isReadOnly"
         draggable="true"
         class="flex items-center justify-center text-neutral-400 hover:text-primary cursor-grab"
         @dragstart="handleDragStart"
@@ -39,8 +40,9 @@
         <input
           type="checkbox"
           :checked="field.required"
-          @change="emit('update:required', $event.target.checked)"
-          class="w-4 h-4 rounded border-neutral-300 text-primary focus:ring-primary cursor-pointer"
+          :disabled="isReadOnly"
+          @change="!isReadOnly && emit('update:required', $event.target.checked)"
+          class="w-4 h-4 rounded border-neutral-300 text-primary focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <span v-if="field.required" class="ml-1 text-danger text-lg font-bold">*</span>
       </div>
@@ -49,9 +51,10 @@
     <!-- Active Toggle -->
     <td class="px-4 py-3 w-15">
       <button
-        @click="emit('update:active', !field.active)"
+        :disabled="isReadOnly"
+        @click="!isReadOnly && emit('update:active', !field.active)"
         :class="[
-          'relative inline-flex w-11 h-6 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary',
+          'relative inline-flex w-11 h-6 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed',
           field.active ? 'bg-success' : 'bg-neutral-300'
         ]"
       >
@@ -78,7 +81,7 @@
     </td>
 
     <!-- Actions -->
-    <td class="px-4 py-3 w-20">
+    <td class="px-4 py-3 w-20" v-if="!isReadOnly">
       <div class="flex gap-2">
         <button
           @click="emit('edit')"
@@ -106,6 +109,10 @@ const props = defineProps({
   field: {
     type: Object,
     required: true
+  },
+  isReadOnly: {
+    type: Boolean,
+    default: false
   }
 })
 

@@ -58,6 +58,10 @@ async function handleSelect(pkg: PackageItem) {
 }
 
 onMounted(fetchPackages)
+
+const isCurrentPackage = (pkg: PackageItem) => {
+  return authStore.user?.currentPackage?.id === pkg.id
+}
 </script>
 
 <template>
@@ -94,12 +98,13 @@ onMounted(fetchPackages)
           <BaseButton
             class="mt-5"
             block
+            :variant="isCurrentPackage(pkg) ? 'secondary' : 'primary'"
             :loading="selectingId === pkg.id"
-            :disabled="selectingId !== null"
+            :disabled="selectingId !== null || isCurrentPackage(pkg)"
             @click="handleSelect(pkg)"
           >
             <Check class="h-4 w-4" />
-            <span class="ml-1.5">Select {{ pkg.name }}</span>
+            <span class="ml-1.5">{{ isCurrentPackage(pkg) ? 'Current Package' : 'Select ' + pkg.name }}</span>
           </BaseButton>
         </BaseCard>
       </div>

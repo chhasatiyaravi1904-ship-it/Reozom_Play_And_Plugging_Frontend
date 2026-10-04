@@ -30,59 +30,67 @@
     </div>
 
     <!-- Processes List -->
-    <div class="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-      <table class="w-full text-left">
-        <thead class="bg-neutral-50/50 border-b border-neutral-200">
-          <tr>
-            <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Process Name</th>
-            <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Last Modified</th>
-            <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-          <tr v-for="process in filteredProcesses" :key="process.id" class="hover:bg-neutral-50/50 transition-colors">
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
-                <div class="font-medium text-neutral-900">{{ process.name }}</div>
-                <span v-if="process.isDefault" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">Default</span>
-              </div>
-              <div class="text-xs text-neutral-500 mt-1">{{ process.type }}</div>
-            </td>
-            <td class="px-6 py-4">
-              <button
-                @click="toggleStatus(process)"
-                class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition"
-                :class="process.status === 'Active' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'"
-                :title="process.status === 'Active' ? 'Click to set as Draft' : 'Click to activate for agents'"
-              >
-                {{ process.status }}
-              </button>
-            </td>
-            <td class="px-6 py-4 text-sm text-neutral-500">
-              {{ process.lastModified }}
-            </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex items-center justify-end gap-2">
-                <button @click="previewProcess(process.id)" class="p-2 text-neutral-400 hover:text-green-600 hover:bg-green-50 rounded transition" title="Preview Form">
-                  <IconEye :size="18" />
+    <div v-for="group in displayGroups" :key="group.title" class="mb-8">
+      <h2 v-if="isAgent && group.processes.length > 0" class="text-lg font-bold text-neutral-900 mb-4">{{ group.title }} <span v-if="group.title === 'System Default'" class="text-xs font-normal text-neutral-500 ml-2">(Read Only)</span></h2>
+      <div v-if="group.processes.length > 0" class="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+          <thead class="bg-neutral-50/50 border-b border-neutral-200">
+            <tr>
+              <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Process Name</th>
+              <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Last Modified</th>
+              <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-neutral-100">
+            <tr v-for="process in group.processes" :key="process.id" class="hover:bg-neutral-50/50 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <div class="font-medium text-neutral-900">{{ process.name }}</div>
+                  <span v-if="process.agent_id === null && process.type === 'default'" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">System Default</span>
+                  <span v-else-if="process.isDefault" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">Default</span>
+                </div>
+                <div class="text-xs text-neutral-500 mt-1">{{ process.type }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <button
+                  v-if="!isAgent || process.agent_id !== null"
+                  @click="toggleStatus(process)"
+                  class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition"
+                  :class="process.status === 'Active' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'"
+                  :title="process.status === 'Active' ? 'Click to set as Draft' : 'Click to activate for agents'"
+                >
+                  {{ process.status }}
                 </button>
-                <button @click="editProcess(process.id)" class="p-2 text-neutral-400 hover:text-[#1641d9] hover:bg-blue-50 rounded transition" title="Open Builder">
-                  <IconEdit :size="18" />
-                </button>
-                <button @click="confirmDelete(process)" class="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition" title="Delete Process">
-                  <IconTrash :size="18" />
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="filteredProcesses.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center text-sm text-neutral-500">
-              No processes found matching your criteria.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                <span v-else class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-neutral-100 text-neutral-700 cursor-not-allowed opacity-75">
+                  {{ process.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-neutral-500">
+                {{ process.lastModified }}
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button @click="previewProcess(process.id)" class="p-2 text-neutral-400 hover:text-green-600 hover:bg-green-50 rounded transition" title="Preview Form">
+                    <IconEye :size="18" />
+                  </button>
+                  <button @click="editProcess(process.id)" class="p-2 text-neutral-400 hover:text-[#1641d9] hover:bg-blue-50 rounded transition" :title="isAgent && process.agent_id === null ? 'View Process Structure' : 'Open Builder'">
+                    <IconEdit :size="18" v-if="!isAgent || process.agent_id !== null" />
+                    <IconEye :size="18" v-else />
+                  </button>
+                  <button v-if="!isAgent || process.agent_id !== null" @click="confirmDelete(process)" class="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition" title="Delete Process">
+                    <IconTrash :size="18" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div v-if="filteredProcesses.length === 0" class="bg-white rounded-xl border border-neutral-200 shadow-sm p-8 text-center text-sm text-neutral-500">
+      No processes found matching your criteria.
     </div>
 
     <!-- Create Modal -->
@@ -232,6 +240,19 @@ const filteredProcesses = computed(() => {
   if (!searchQuery.value) return processStore.processes
   const q = searchQuery.value.toLowerCase()
   return processStore.processes.filter(p => p.name.toLowerCase().includes(q) || p.type.toLowerCase().includes(q))
+})
+
+const isAgent = computed(() => authStore.user?.role === 'agent')
+
+const displayGroups = computed(() => {
+  if (!isAgent.value) {
+    return [{ title: 'All Processes', processes: filteredProcesses.value }]
+  }
+  
+  return [
+    { title: 'System Default', processes: filteredProcesses.value.filter(p => p.agent_id === null && p.type === 'default') },
+    { title: 'My Processes', processes: filteredProcesses.value.filter(p => p.agent_id !== null) }
+  ]
 })
 
 const editProcess = (id) => {

@@ -999,7 +999,7 @@
                     <div
                       v-for="pkg in agent.packages"
                       :key="pkg.id"
-                      class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30 flex flex-col"
+                      class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/30 flex flex-col hover:border-secondary transition-colors group"
                     >
                       <div class="flex justify-between items-center">
                         <span class="text-label-sm font-label-sm font-bold text-primary"
@@ -1009,9 +1009,16 @@
                           >${{ pkg.price ? Number(pkg.price).toFixed(2) : 'Free' }}</span
                         >
                       </div>
-                      <p class="text-body-sm text-xs text-on-surface-variant mt-1">
+                      <p class="text-body-sm text-xs text-on-surface-variant mt-1 mb-3 flex-1">
                         {{ pkg.description || 'Verified Service Package' }}
                       </p>
+                      <button 
+                        class="w-full py-2 bg-surface-container text-primary font-label-sm text-label-sm font-bold rounded hover:bg-secondary hover:text-surface-container-lowest transition-colors flex items-center justify-center gap-1"
+                        @click="selectPackage(pkg.id)"
+                      >
+                        Select Plan
+                        <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2554,8 +2561,10 @@ import { useRouter } from "vue-router";
 import TopNavBar from '@/components/layout/TopNavBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { searchServicePackagesByZip, type ServicePackage } from '@/services/servicePackageService'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 // --- ZIP Code Matching Engine Logic ---
 const zipSearchInput = ref('');
@@ -2622,6 +2631,19 @@ const handleZipSearch = async () => {
     searchError.value = 'Failed to fetch available options for this ZIP code.';
   } finally {
     isSearchingZip.value = false;
+  }
+};
+
+const selectPackage = (packageId: number) => {
+  localStorage.setItem('pending_listing_zip_code', searchedZip.value);
+  localStorage.setItem('pending_listing_package_id', String(packageId));
+  
+  if (authStore.isAuthenticated) {
+    router.push('/listings/create');
+  } else {
+    // Optionally set role for onboarding
+    localStorage.setItem('pending_signup_role', 'Seller');
+    router.push('/auth/register');
   }
 };
 </script>

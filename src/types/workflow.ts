@@ -1,4 +1,4 @@
-import type { FieldDefinition, FieldCondition } from './field'
+import type { FieldDefinition, FieldCondition, FieldValue } from './field'
 
 export interface WorkflowSection {
   id: string

@@ -24,7 +24,7 @@ const errorId = `${inputId}-error`
 <template>
   <div class="flex flex-col gap-1">
     <label v-if="label" :for="inputId" class="block text-label-sm font-label-sm text-on-surface-variant uppercase mb-1">
-      {{ label }}<span v-if="required" class="ml-0.5 text-error">*</span>
+      {{ label }}<span v-if="required" class="ml-0.5 text-outline-variant">*</span>
     </label>
     <input
       :id="inputId"
@@ -40,6 +40,9 @@ const errorId = `${inputId}-error`
       :class="{ 'border-error focus:border-error focus:ring-error/10': error }"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
-    <span v-if="error" :id="errorId" class="text-xs text-error">{{ error }}</span>
+    <span v-if="error" :id="errorId" class="text-xs text-error font-medium flex items-center gap-1 mt-1">
+      <span class="material-symbols-outlined text-[14px]">warning</span>
+      {{ error }}
+    </span>
   </div>
 </template>

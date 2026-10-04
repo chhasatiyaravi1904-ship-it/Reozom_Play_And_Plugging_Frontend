@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight, Search, Check, MapPin, Package, ShieldCheck, Info } from 'lucide-vue-next'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -86,6 +86,25 @@ async function handleSubmit() {
     routingFailed.value = true
   }
 }
+
+onMounted(() => {
+  const pendingZip = localStorage.getItem('pending_listing_zip_code')
+  const pendingPackageId = localStorage.getItem('pending_listing_package_id')
+  
+  if (pendingZip && pendingPackageId) {
+    zipSearchInput.value = pendingZip
+    selectedPackage.value = { id: pendingPackageId }
+    
+    // Safely clear intent immediately so a page reload doesn't trigger it again
+    localStorage.removeItem('pending_listing_zip_code')
+    localStorage.removeItem('pending_listing_package_id')
+    
+    // Defer the submit slightly so the UI is ready
+    setTimeout(() => {
+      handleSubmit()
+    }, 100)
+  }
+})
 </script>
 
 <template>

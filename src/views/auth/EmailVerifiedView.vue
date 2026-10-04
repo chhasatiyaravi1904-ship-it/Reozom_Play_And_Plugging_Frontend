@@ -18,7 +18,14 @@ onMounted(async () => {
   if (verified.value && authStore.isAuthenticated) {
     await authStore.loadCurrentUser()
     if (authStore.user?.emailVerified) {
-      router.replace({ name: 'dashboard' })
+      const pendingZip = localStorage.getItem('pending_listing_zip_code')
+      const pendingPackageId = localStorage.getItem('pending_listing_package_id')
+      
+      if (pendingZip && pendingPackageId) {
+        router.replace({ name: 'listing-create' })
+      } else {
+        router.replace({ name: 'dashboard' })
+      }
     }
   }
 })

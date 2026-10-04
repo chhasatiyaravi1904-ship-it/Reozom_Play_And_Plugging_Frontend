@@ -21,7 +21,15 @@ onMounted(async () => {
   const success = await loginWithToken(token)
   if (success) {
     toast.success('Welcome back!')
-    router.replace('/dashboard')
+    
+    const pendingZip = localStorage.getItem('pending_listing_zip_code')
+    const pendingPackageId = localStorage.getItem('pending_listing_package_id')
+    
+    if (pendingZip && pendingPackageId) {
+      router.replace('/listings/create')
+    } else {
+      router.replace('/dashboard')
+    }
   } else {
     failed.value = true
   }
