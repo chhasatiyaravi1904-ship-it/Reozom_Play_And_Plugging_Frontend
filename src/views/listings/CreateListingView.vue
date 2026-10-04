@@ -115,7 +115,7 @@ async function handleSubmit() {
         <ErrorState
           v-if="routingFailed"
           title="Listing Initialization Failed"
-          description="We couldn't determine the correct listing process. Please contact support or try a different address."
+          :description="listingStore.error || 'We couldn\'t determine the correct listing process. Please contact support or try a different address.'"
         >
           <template #action>
             <BaseButton size="sm" @click="routingFailed = false">Try Again</BaseButton>

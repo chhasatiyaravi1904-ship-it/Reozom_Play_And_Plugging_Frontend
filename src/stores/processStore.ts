@@ -27,7 +27,9 @@ export const useProcessStore = defineStore('processStore', () => {
         status: p.status === 'draft' ? 'Draft' : 'Active',
         isDefault: p.type === 'default',
         lastModified: p.updated_at ? new Date(p.updated_at).toLocaleDateString() : 'Just now',
-        config: p.config
+        config: p.config,
+        service_package_id: p.service_package_id,
+        assigned_zips: p.assigned_zips
       }))
     } catch (e: any) {
       console.error('Failed to load processes', e)
@@ -56,7 +58,9 @@ export const useProcessStore = defineStore('processStore', () => {
         status: p.status === 'draft' ? 'Draft' : 'Active',
         isDefault: p.type === 'default',
         lastModified: 'Just now',
-        config: p.config
+        config: p.config,
+        service_package_id: p.service_package_id,
+        assigned_zips: p.assigned_zips
       }
       processes.value.push(newProcess)
       return newProcess
@@ -72,6 +76,8 @@ export const useProcessStore = defineStore('processStore', () => {
       if (updates.name !== undefined) apiUpdates.name = updates.name
       if (updates.status !== undefined) apiUpdates.status = updates.status === 'Active' ? 'active' : 'draft'
       if (updates.isDefault !== undefined) apiUpdates.type = updates.isDefault ? 'default' : 'custom'
+      if (updates.service_package_id !== undefined) apiUpdates.service_package_id = updates.service_package_id
+      if (updates.assigned_zips !== undefined) apiUpdates.assigned_zips = updates.assigned_zips
       
       const response = await apiUpdateProcess(id, apiUpdates)
       

@@ -1,10 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 const activeHash = ref(route.hash || '#hero')
+
+const goToDashboard = () => {
+  if (authStore.user?.role === 'admin') {
+    router.push({ name: 'admin-dashboard' })
+  } else if (authStore.user?.role === 'agent') {
+    router.push({ name: 'agent-dashboard' })
+  } else {
+    router.push({ name: 'dashboard' })
+  }
+}
 
 // Simple scroll spy to highlight the active section while scrolling
 const updateActiveHash = () => {
@@ -77,7 +89,7 @@ const navItems = [
         </a>
       </nav>
       <!-- Trailing Auth CTAs -->
-      <div class="hidden sm:flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-3" v-if="!authStore.isAuthenticated">
         <button
           class="px-4 py-2 border border-outline-variant/60 rounded-lg text-primary hover:bg-surface-container transition-colors text-label-lg font-label-lg"
           @click="router.push('/auth/login')"
@@ -92,13 +104,29 @@ const navItems = [
           Register
         </button>
       </div>
+      <div class="hidden sm:flex items-center gap-3" v-else>
+        <button
+          class="px-5 py-2 bg-primary-container text-on-primary hover:bg-primary transition-all duration-150 rounded-lg shadow-sm font-label-lg text-label-lg flex items-center gap-1.5 active:scale-[0.99]"
+          @click="goToDashboard"
+        >
+          Dashboard
+        </button>
+      </div>
       <!-- Mobile Hamburger Button -->
       <div class="lg:hidden flex items-center gap-2">
         <button
+          v-if="!authStore.isAuthenticated"
           class="px-3 py-1.5 bg-primary-container text-on-primary rounded-lg text-label-md font-label-md"
           @click="router.push('/auth/register')"
         >
           Sign In
+        </button>
+        <button
+          v-else
+          class="px-3 py-1.5 bg-primary-container text-on-primary rounded-lg text-label-md font-label-md"
+          @click="goToDashboard"
+        >
+          Dashboard
         </button>
         <button
           aria-label="Toggle navigation menu"
@@ -125,7 +153,7 @@ const navItems = [
         {{ item.label }}
       </a>
       
-      <div class="pt-3 border-t border-outline-variant/20 flex gap-3">
+      <div class="pt-3 border-t border-outline-variant/20 flex gap-3" v-if="!authStore.isAuthenticated">
         <button
           class="flex-1 py-2.5 border border-outline-variant/80 rounded-lg text-primary text-label-md font-label-md text-center"
           @click="router.push('/auth/login')"
@@ -137,6 +165,14 @@ const navItems = [
           @click="router.push('/auth/register')"
         >
           Register
+        </button>
+      </div>
+      <div class="pt-3 border-t border-outline-variant/20 flex gap-3" v-else>
+        <button
+          class="flex-1 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-label-md text-center"
+          @click="goToDashboard"
+        >
+          Go to Dashboard
         </button>
       </div>
     </div>

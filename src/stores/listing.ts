@@ -58,7 +58,7 @@ export const useListingStore = defineStore('listing', () => {
       activeListing.value = data
       listings.value.unshift(data)
       return data
-    } catch (err) {
+    } catch (err: any) {
       if (import.meta.env.DEV && isNetworkError(err)) {
         const listing: ListingSummary = {
           ...sampleListing,
@@ -73,7 +73,7 @@ export const useListingStore = defineStore('listing', () => {
         return listing
       }
       status.value = 'error'
-      error.value = 'Unable to start your listing. Please try again.'
+      error.value = err?.response?.data?.message || 'Unable to start your listing. Please try again.'
       return null
     } finally {
       if (status.value !== 'error') status.value = 'idle'
