@@ -189,6 +189,6 @@ const activeSections = computed(() => {
 
 const getSectionFields = (section) => {
   if (!section || !section.fields) return []
-  return section.fields.filter(f => f.active)
+  return section.fields.filter(f => f.active !== false)
 }
 </script>

@@ -23,10 +23,16 @@ export function useListingSteps(listingId: number) {
     }))
   })
 
+  const NAMED_PAGES = ['disclosures', 'documents', 'review']
+
   function routeFor(stepId: string): string {
-    const isAgent = window.location.pathname.startsWith('/agent');
-    const basePath = isAgent ? '/agent' : '';
-    
+    const isAgent = window.location.pathname.startsWith('/agent')
+    const basePath = isAgent ? '/agent' : ''
+
+    if (NAMED_PAGES.includes(stepId)) {
+      return `${basePath}/listings/${listingId}/${stepId}`
+    }
+
     return `${basePath}/listings/${listingId}/step/${stepId}`
   }
 

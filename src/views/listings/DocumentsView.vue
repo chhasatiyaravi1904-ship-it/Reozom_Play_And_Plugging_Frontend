@@ -62,10 +62,14 @@ async function handleRemove(documentId: string) {
   await documentStore.remove(listingId.value, documentId)
 }
 
+async function handleDownload(documentId: string) {
+  const success = await documentStore.download(listingId.value, documentId)
+  if (!success) toast.error('Failed to download document.')
+}
+
 function handleBack() {
-  const index = steps.value.findIndex((s) => s.id === 'documents')
-  const previous = steps.value[index - 1]
-  if (index > 0 && previous) router.push(routeFor(previous.id))
+  // Documents page always follows Disclosures — go back there
+  router.push(routeFor('disclosures'))
 }
 
 function handleContinue() {
@@ -108,6 +112,7 @@ function handleContinue() {
             :documents="documentStore.documents"
             @upload="startUpload"
             @remove="handleRemove"
+            @download="handleDownload"
           />
         </template>
 

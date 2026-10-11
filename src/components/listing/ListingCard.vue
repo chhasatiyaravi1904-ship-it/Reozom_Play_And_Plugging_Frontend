@@ -6,7 +6,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import type { ListingSummary } from '@/types/listing'
 
-defineProps<{
+const props = defineProps<{
   listing: ListingSummary
 }>()
 
@@ -15,6 +15,8 @@ const linkPath = computed(() => {
   const basePath = route.path.startsWith('/agent') ? '/agent' : ''
   return `${basePath}/listings/`
 })
+
+const isSubmitted = computed(() => props.listing.status === 'submitted')
 </script>
 
 <template>
@@ -43,8 +45,8 @@ const linkPath = computed(() => {
     </div>
 
     <RouterLink :to="`${linkPath}${listing.id}`" class="shrink-0">
-      <BaseButton size="sm">
-        Continue
+      <BaseButton size="sm" :variant="isSubmitted ? 'secondary' : 'primary'">
+        {{ isSubmitted ? 'View Listing' : 'Continue' }}
         <ArrowRight class="ml-1.5 h-4 w-4" />
       </BaseButton>
     </RouterLink>

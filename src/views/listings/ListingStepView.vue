@@ -75,21 +75,8 @@ async function handleContinue() {
   if (next) {
     router.push(routeFor(next.id))
   } else {
-    try {
-      await fetch(`/api/listings/${listingId.value}/submit`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      const isAgent = window.location.pathname.startsWith('/agent');
-      const basePath = isAgent ? '/agent' : '';
-      router.push(`${basePath}/listings`)
-    } catch (e) {
-      console.error(e)
-    }
+    // All dynamic steps done — proceed to the fixed post-step pages
+    router.push(routeFor('disclosures'))
   }
 }
 </script>

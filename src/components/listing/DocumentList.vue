@@ -9,6 +9,7 @@ defineProps<{
 defineEmits<{
   (e: 'upload', documentId: string): void
   (e: 'remove', documentId: string): void
+  (e: 'download', documentId: string): void
 }>()
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -40,14 +41,22 @@ const statusLabel: Record<string, string> = {
 
       <div class="flex items-center gap-3">
         <BaseBadge :variant="statusVariant[doc.status]">{{ statusLabel[doc.status] }}</BaseBadge>
-        <button
-          v-if="doc.status === 'uploaded'"
-          type="button"
-          class="text-xs font-medium text-danger hover:underline"
-          @click="$emit('remove', doc.id)"
-        >
-          Remove
-        </button>
+        <template v-if="doc.status === 'uploaded'">
+          <button
+            type="button"
+            class="text-xs font-medium text-primary hover:underline"
+            @click="$emit('download', doc.id)"
+          >
+            Download
+          </button>
+          <button
+            type="button"
+            class="text-xs font-medium text-danger hover:underline"
+            @click="$emit('remove', doc.id)"
+          >
+            Remove
+          </button>
+        </template>
         <button
           v-else
           type="button"

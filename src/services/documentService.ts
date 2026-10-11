@@ -28,3 +28,9 @@ export const uploadDocument = (
 export const deleteDocument = (listingId: number, documentId: string) => {
   return api.delete(`/listings/${listingId}/documents/${documentId}`)
 }
+
+export const downloadDocument = (listingId: number, documentId: string) => {
+  return api.get(`/listings/${listingId}/documents/${documentId}/download`, {
+    responseType: 'blob'
+  })
+}

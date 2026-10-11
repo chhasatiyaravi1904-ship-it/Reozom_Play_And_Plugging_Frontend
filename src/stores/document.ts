@@ -65,5 +65,24 @@ export const useDocumentStore = defineStore('document', () => {
     return true
   }
 
-  return { documents, status, error, fetchDocuments, upload, remove }
+  async function download(listingId: number, documentId: string) {
+    const doc = documents.value.find((d) => d.id === documentId)
+    try {
+      const response = await documentService.downloadDocument(listingId, documentId)
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', doc?.fileName || 'document.pdf')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      return true
+    } catch (err) {
+      return false
+    }
+  }
+
+  return { documents, status, error, fetchDocuments, upload, remove, download }
 })

@@ -13,6 +13,16 @@ const router = createRouter({
       component: () => import('@/views/LandingView.vue'),
     },
     {
+      path: '/properties',
+      name: 'public-listings-directory',
+      component: () => import('@/views/public/PublicListingsDirectoryView.vue'),
+    },
+    {
+      path: '/properties/:id',
+      name: 'public-listing-detail',
+      component: () => import('@/views/public/PublicListingDetailView.vue'),
+    },
+    {
       path: '/auth',
       component: () => import('@/layouts/AuthLayout.vue'),
       meta: { guestOnly: true },

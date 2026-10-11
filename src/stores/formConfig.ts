@@ -28,10 +28,41 @@ export const useFormConfigStore = defineStore('formConfig', () => {
     activeProcessId.value = processId
     try {
       const response = await getListingProcess(processId)
-      stepsByProcess.value[processId] = response.data.config || []
+      const processData = response.data.config || []
+      
+      const hasSystemStep = processData.some((s: any) => s.id === 'system_public_info')
+      if (!hasSystemStep) {
+        const systemStep = {
+          id: 'system_public_info',
+          name: 'Public Listing Information',
+          type: 'public_listing',
+          isSystem: true,
+          order: 1,
+          visible: true,
+          sections: [
+            {
+              id: 'public_basic_information',
+              order: 1,
+              name: 'Basic Information',
+              fields: [
+                { id: 'listing_title', name: 'listing_title', label: 'Listing Title', type: 'text', required: true },
+                { id: 'listing_price', name: 'listing_price', label: 'Price', type: 'number', required: true },
+                { id: 'property_type', name: 'property_type', label: 'Property Type', type: 'select', required: true, options: [ {label: 'Single Family', value: 'single_family'}, {label: 'Condo', value: 'condo'}, {label: 'Townhouse', value: 'townhouse'} ] },
+                { id: 'bedrooms', name: 'bedrooms', label: 'Bedrooms', type: 'number', required: true },
+                { id: 'bathrooms', name: 'bathrooms', label: 'Bathrooms', type: 'number', required: true },
+                { id: 'square_feet', name: 'square_feet', label: 'Square Feet', type: 'number', required: true }
+              ]
+            }
+          ]
+        }
+        processData.unshift(systemStep)
+        processData.forEach((s: any, idx: number) => { s.order = idx + 1 })
+      }
+      
+      stepsByProcess.value[processId] = processData
       const processSteps = stepsByProcess.value[processId]
       activeStepId.value = processSteps.length > 0 ? processSteps[0].id : ''
-      hasChanges.value = false
+      hasChanges.value = !hasSystemStep // Trigger autosave if we injected it
     } catch (e) {
       console.error('Failed to load process config', e)
       stepsByProcess.value[processId] = []
@@ -67,6 +98,9 @@ export const useFormConfigStore = defineStore('formConfig', () => {
   }
 
   const deleteStep = (stepId: string) => {
+    const step = steps.value.find((s: any) => s.id === stepId)
+    if (step && step.isSystem) return // Prevent deleting system step
+
     steps.value = steps.value.filter((s: any) => s.id !== stepId)
     steps.value.forEach((step: any, idx: number) => {
       step.order = idx + 1

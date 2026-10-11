@@ -73,10 +73,16 @@
       <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-50/50">
         <div v-if="activeStep" class="max-w-4xl mx-auto">
           <!-- Step Header -->
-          <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
-              <h2 class="text-xl md:text-2xl font-bold text-neutral-900">{{ activeStep.name }}</h2>
+              <div class="flex items-center gap-3">
+                <h2 class="text-xl md:text-2xl font-bold text-neutral-900">{{ activeStep.name }}</h2>
+                <span v-if="activeStep.isSystem" class="text-xs font-bold uppercase tracking-wider text-primary bg-primary-soft px-2 py-1 rounded border border-primary/20">System Step</span>
+              </div>
               <p class="text-sm text-neutral-500 mt-1" v-if="activeStep.description">{{ activeStep.description }}</p>
+              <p class="text-sm text-neutral-600 bg-neutral-100 p-3 rounded-md border border-neutral-200 mt-3" v-if="activeStep.isSystem">
+                This step provides information shown on the public listing.
+              </p>
             </div>
             
             <button
@@ -346,8 +352,8 @@ const activeStep = computed(() => formStore.activeStep)
 
 const getFilteredFields = (fields) => {
   if (!fields) return []
-  if (activeTab.value === 'active') return fields.filter(f => f.active)
-  if (activeTab.value === 'issues') return fields.filter(f => !f.active)
+  if (activeTab.value === 'active') return fields.filter(f => f.active !== false)
+  if (activeTab.value === 'issues') return fields.filter(f => f.active === false)
   return fields
 }
 
@@ -359,8 +365,8 @@ const getTabLabel = (tab) => {
     activeStep.value.sections.forEach(sec => {
       const fields = sec.fields || []
       total += fields.length
-      if (tab === 'active') count += fields.filter(f => f.active).length
-      if (tab === 'issues') count += fields.filter(f => !f.active).length
+      if (tab === 'active') count += fields.filter(f => f.active !== false).length
+      if (tab === 'issues') count += fields.filter(f => f.active === false).length
     })
   }
 

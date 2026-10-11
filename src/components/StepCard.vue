@@ -17,7 +17,10 @@
         <IconGripVertical :size="18" />
       </div>
       <div class="flex-1">
-        <div class="text-xs font-semibold text-primary">{{ `Step ${step.order}` }}</div>
+        <div class="flex items-center gap-2">
+          <div class="text-xs font-semibold text-primary">{{ `Step ${step.order}` }}</div>
+          <div v-if="step.isSystem" class="text-[10px] uppercase font-bold text-white bg-primary px-1.5 py-0.5 rounded">System</div>
+        </div>
         <div class="text-sm font-medium text-neutral-900">{{ step.name }}</div>
       </div>
       <div class="text-xs font-semibold text-neutral-500 bg-neutral-200 px-2 py-1 rounded-full">

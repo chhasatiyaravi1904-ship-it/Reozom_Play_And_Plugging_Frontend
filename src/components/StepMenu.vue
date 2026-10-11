@@ -7,6 +7,7 @@
       Edit Step
     </button>
     <button
+      v-if="!step.isSystem"
       class="w-full text-left px-4 py-2 text-sm text-danger hover:bg-red-50 transition"
       @click="emit('delete')"
     >

@@ -28,9 +28,14 @@ function isVisible(question: (typeof sampleDisclosures)[number]): boolean {
 }
 
 function handleBack() {
-  const index = steps.value.findIndex((s) => s.id === 'disclosures')
-  const previous = steps.value[index - 1]
-  if (index > 0 && previous) router.push(routeFor(previous.id))
+  // Go back to the last dynamic workflow step (disclosures is not itself a workflow step)
+  const lastStep = steps.value[steps.value.length - 1]
+  if (lastStep) {
+    router.push(routeFor(lastStep.id))
+  } else {
+    const isAgent = router.currentRoute.value.path.startsWith('/agent')
+    router.push(isAgent ? '/agent/listings' : '/listings')
+  }
 }
 
 function handleContinue() {
