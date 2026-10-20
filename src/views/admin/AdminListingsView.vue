@@ -1,20 +1,578 @@
 <script setup lang="ts">
-import { Building2 } from 'lucide-vue-next'
+import { ref, reactive, onMounted, computed } from 'vue'
+import {
+  Building2,
+  CheckCircle,
+  Eye,
+  FileText,
+  Image,
+  RefreshCw,
+  Search,
+  Slash,
+  XCircle,
+} from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseBadge from '@/components/ui/BaseBadge.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ErrorState from '@/components/ui/ErrorState.vue'
+import Modal from '@/components/ui/Modal.vue'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
+import Tabs from '@/components/ui/Tabs.vue'
+import { useToastStore } from '@/stores/toast'
+import * as adminListingService from '@/services/adminListingService'
+import type { AdminListingDetail } from '@/services/adminListingService'
+
+const toast = useToastStore()
+
+const listings = ref<AdminListingDetail[]>([])
+const isLoading = ref(false)
+const errorMessage = ref<string | null>(null)
+
+const queryParams = reactive({
+  search: '',
+  status: 'all',
+  page: 1,
+  per_page: 10,
+})
+
+const pagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 10,
+  total: 0,
+})
+
+const statusTabs = [
+  { id: 'all', label: 'All Listings' },
+  { id: 'published', label: 'Published' },
+  { id: 'submitted', label: 'Submitted (Review)' },
+  { id: 'in_progress', label: 'In Progress (Draft)' },
+  { id: 'unpublished', label: 'Unpublished' },
+  { id: 'rejected', label: 'Rejected' },
+]
+
+// Modal & Moderation Action States
+const selectedListing = ref<AdminListingDetail | null>(null)
+const isDetailModalOpen = ref(false)
+const isRejectModalOpen = ref(false)
+const rejectionReason = ref('')
+const isActionLoading = ref(false)
+const detailTab = ref<'overview' | 'answers' | 'media' | 'documents'>('overview')
+
+async function loadListings() {
+  isLoading.value = true
+  errorMessage.value = null
+  try {
+    const res = await adminListingService.fetchAdminListings({
+      search: queryParams.search || undefined,
+      status: queryParams.status === 'all' ? undefined : queryParams.status,
+      page: queryParams.page,
+      per_page: queryParams.per_page,
+    })
+    listings.value = res.data.data
+    pagination.value = res.data.meta
+  } catch (err: any) {
+    errorMessage.value = err?.response?.data?.message || 'Failed to load listings.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function handleTabChange(tabId: string) {
+  queryParams.status = tabId
+  queryParams.page = 1
+  loadListings()
+}
+
+function handleSearch(query: string) {
+  queryParams.search = query
+  queryParams.page = 1
+  loadListings()
+}
+
+function handlePageChange(page: number) {
+  queryParams.page = page
+  loadListings()
+}
+
+async function openDetailModal(listing: AdminListingDetail) {
+  selectedListing.value = listing
+  detailTab.value = 'overview'
+  isDetailModalOpen.value = true
+  try {
+    const res = await adminListingService.fetchAdminListing(listing.id)
+    selectedListing.value = res.data.data
+  } catch {
+    // Keep list view copy if detailed fetch fails
+  }
+}
+
+async function handlePublish(listing: AdminListingDetail) {
+  isActionLoading.value = true
+  try {
+    const res = await adminListingService.publishListing(listing.id)
+    toast.success(`Listing ${listing.reference_code || listing.id} approved and published.`)
+    if (selectedListing.value?.id === listing.id) {
+      selectedListing.value = res.data.data
+    }
+    await loadListings()
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Failed to publish listing.')
+  } finally {
+    isActionLoading.value = false
+  }
+}
+
+async function handleUnpublish(listing: AdminListingDetail) {
+  isActionLoading.value = true
+  try {
+    const res = await adminListingService.unpublishListing(listing.id)
+    toast.success(`Listing ${listing.reference_code || listing.id} unpublished.`)
+    if (selectedListing.value?.id === listing.id) {
+      selectedListing.value = res.data.data
+    }
+    await loadListings()
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Failed to unpublish listing.')
+  } finally {
+    isActionLoading.value = false
+  }
+}
+
+function openRejectModal(listing: AdminListingDetail) {
+  selectedListing.value = listing
+  rejectionReason.value = ''
+  isRejectModalOpen.value = true
+}
+
+async function confirmReject() {
+  if (!selectedListing.value || !rejectionReason.value.trim()) return
+  isActionLoading.value = true
+  try {
+    const res = await adminListingService.rejectListing(
+      selectedListing.value.id,
+      rejectionReason.value.trim(),
+    )
+    toast.success(`Listing rejected with feedback provided.`)
+    isRejectModalOpen.value = false
+    if (selectedListing.value?.id === res.data.data.id) {
+      selectedListing.value = res.data.data
+    }
+    await loadListings()
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Failed to reject listing.')
+  } finally {
+    isActionLoading.value = false
+  }
+}
+
+function getStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
+  switch (status) {
+    case 'published':
+      return 'success'
+    case 'submitted':
+      return 'warning'
+    case 'in_progress':
+      return 'info'
+    case 'rejected':
+      return 'danger'
+    case 'unpublished':
+      return 'neutral'
+    default:
+      return 'neutral'
+  }
+}
+
+onMounted(() => {
+  loadListings()
+})
 </script>
 
 <template>
-  <div>
-    <PageHeader title="Listings" description="Review listings submitted across every agent." />
+  <div class="space-y-6">
+    <PageHeader
+      title="Listing Moderation"
+      description="Review, verify, approve, unpublish, and inspect submitted listings across all agents."
+    >
+      <template #actions>
+        <BaseButton variant="secondary" :disabled="isLoading" @click="loadListings">
+          <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isLoading }" />
+          Refresh
+        </BaseButton>
+      </template>
+    </PageHeader>
 
-    <BaseCard class="mt-6 p-6">
-      <EmptyState
-        :icon="Building2"
-        title="No listings loaded yet"
-        description="This page will show submitted seller listings once the admin listings API is connected."
-      />
+    <!-- Filter Tabs & Search Bar -->
+    <BaseCard class="p-4">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <Tabs
+          :tabs="statusTabs"
+          :active-tab="queryParams.status"
+          @update:active-tab="handleTabChange"
+        />
+
+        <div class="w-full md:w-72">
+          <SearchInput
+            :model-value="queryParams.search"
+            placeholder="Search address, code, seller..."
+            @update:model-value="handleSearch"
+          />
+        </div>
+      </div>
     </BaseCard>
+
+    <!-- Listings Table Card -->
+    <BaseCard class="overflow-hidden">
+      <div v-if="isLoading" class="p-8">
+        <LoadingState label="Loading listings for moderation..." />
+      </div>
+
+      <div v-else-if="errorMessage" class="p-8">
+        <ErrorState :description="errorMessage" @retry="loadListings" />
+      </div>
+
+      <div v-else-if="listings.length === 0" class="p-8">
+        <EmptyState
+          :icon="Building2"
+          title="No listings found"
+          description="There are no listings matching the selected status or search filter."
+        />
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-fg">
+          <thead class="border-b border-border bg-bg-muted/50 text-xs uppercase text-fg-muted font-semibold">
+            <tr>
+              <th class="px-6 py-4">Ref Code</th>
+              <th class="px-6 py-4">Property Address</th>
+              <th class="px-6 py-4">Seller</th>
+              <th class="px-6 py-4">Service Package</th>
+              <th class="px-6 py-4">Status</th>
+              <th class="px-6 py-4">Progress</th>
+              <th class="px-6 py-4 text-right">Moderation Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            <tr
+              v-for="listing in listings"
+              :key="listing.id"
+              class="transition-colors hover:bg-bg-muted/30"
+            >
+              <td class="px-6 py-4 font-mono font-medium text-primary">
+                {{ listing.reference_code || `REO-${listing.id}` }}
+              </td>
+              <td class="px-6 py-4">
+                <div class="font-medium text-fg">{{ listing.address || 'Address pending' }}</div>
+                <div class="text-xs text-fg-muted">
+                  {{ listing.city ? `${listing.city}, ${listing.state} ${listing.zip}` : listing.zip }}
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="font-medium">{{ listing.user?.name || 'Seller' }}</div>
+                <div class="text-xs text-fg-muted">{{ listing.user?.email }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="font-medium">{{ listing.service_package?.name || 'Default' }}</div>
+                <div v-if="listing.service_package?.price" class="text-xs text-fg-muted">
+                  ${{ listing.service_package.price }}
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex flex-col gap-1 items-start">
+                  <BaseBadge :variant="getStatusBadgeVariant(listing.status)">
+                    {{ listing.status.toUpperCase() }}
+                  </BaseBadge>
+                  <span v-if="listing.moderation_status && listing.moderation_status !== 'none'" class="text-[11px] text-fg-muted">
+                    Mod: {{ listing.moderation_status }}
+                  </span>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-xs font-medium">
+                  {{ listing.steps_completed }} / {{ listing.steps_total }} steps
+                </div>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <BaseButton
+                    size="sm"
+                    variant="secondary"
+                    title="View Details & Documents"
+                    @click="openDetailModal(listing)"
+                  >
+                    <Eye class="h-3.5 w-3.5" />
+                  </BaseButton>
+
+                  <BaseButton
+                    v-if="listing.status !== 'published'"
+                    size="sm"
+                    variant="primary"
+                    :disabled="isActionLoading"
+                    title="Approve & Publish to Public"
+                    @click="handlePublish(listing)"
+                  >
+                    <CheckCircle class="mr-1 h-3.5 w-3.5" />
+                    Publish
+                  </BaseButton>
+
+                  <BaseButton
+                    v-if="listing.status === 'published'"
+                    size="sm"
+                    variant="secondary"
+                    :disabled="isActionLoading"
+                    title="Unpublish from Public"
+                    @click="handleUnpublish(listing)"
+                  >
+                    <Slash class="mr-1 h-3.5 w-3.5" />
+                    Unpublish
+                  </BaseButton>
+
+                  <BaseButton
+                    v-if="listing.status !== 'rejected'"
+                    size="sm"
+                    variant="danger"
+                    :disabled="isActionLoading"
+                    title="Reject Listing"
+                    @click="openRejectModal(listing)"
+                  >
+                    <XCircle class="h-3.5 w-3.5" />
+                  </BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination Bar -->
+        <div v-if="pagination.last_page > 1" class="border-t border-border p-4">
+          <PaginationBar
+            :current-page="pagination.current_page"
+            :total-pages="pagination.last_page"
+            :total-items="pagination.total"
+            :per-page="pagination.per_page"
+            @page-change="handlePageChange"
+          />
+        </div>
+      </div>
+    </BaseCard>
+
+    <!-- Listing Detail & Moderation Modal -->
+    <Modal
+      :open="isDetailModalOpen"
+      size="2xl"
+      :title="`Listing Moderation: ${selectedListing?.reference_code || selectedListing?.id}`"
+      @close="isDetailModalOpen = false"
+    >
+      <div v-if="selectedListing" class="space-y-6">
+        <!-- Status & Meta Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-bg-muted/50 p-4">
+          <div>
+            <div class="text-xs text-fg-muted">Current Public Status</div>
+            <div class="mt-1 flex items-center gap-2">
+              <BaseBadge :variant="getStatusBadgeVariant(selectedListing.status)">
+                {{ selectedListing.status.toUpperCase() }}
+              </BaseBadge>
+              <span v-if="selectedListing.moderation_status" class="text-xs text-fg-muted">
+                ({{ selectedListing.moderation_status }})
+              </span>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-fg-muted">Seller Account</div>
+            <div class="font-medium text-sm">{{ selectedListing.user?.name }} ({{ selectedListing.user?.email }})</div>
+          </div>
+          <div>
+            <div class="text-xs text-fg-muted">Assigned Service Package</div>
+            <div class="font-medium text-sm">{{ selectedListing.service_package?.name || 'Default' }}</div>
+          </div>
+        </div>
+
+        <!-- Detail Navigation Tabs -->
+        <div class="flex border-b border-border">
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-medium border-b-2"
+            :class="detailTab === 'overview' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
+            @click="detailTab = 'overview'"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-medium border-b-2"
+            :class="detailTab === 'answers' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
+            @click="detailTab = 'answers'"
+          >
+            Form Answers ({{ selectedListing.answers?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-medium border-b-2"
+            :class="detailTab === 'documents' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
+            @click="detailTab = 'documents'"
+          >
+            Documents ({{ selectedListing.documents?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-medium border-b-2"
+            :class="detailTab === 'media' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
+            @click="detailTab = 'media'"
+          >
+            Photos ({{ selectedListing.images?.length || 0 }})
+          </button>
+        </div>
+
+        <!-- Tab 1: Overview -->
+        <div v-if="detailTab === 'overview'" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-xs text-fg-muted block">Property Address</span>
+              <span class="font-medium">{{ selectedListing.address }}, {{ selectedListing.city }}, {{ selectedListing.state }} {{ selectedListing.zip }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-fg-muted block">Steps Completed</span>
+              <span class="font-medium">{{ selectedListing.steps_completed }} of {{ selectedListing.steps_total }} steps</span>
+            </div>
+            <div v-if="selectedListing.moderator">
+              <span class="text-xs text-fg-muted block">Last Moderated By</span>
+              <span class="font-medium">{{ selectedListing.moderator.name }} ({{ selectedListing.moderator.email }})</span>
+            </div>
+            <div v-if="selectedListing.rejection_reason" class="col-span-2 rounded bg-danger/10 p-3 text-danger text-sm">
+              <span class="font-semibold block">Rejection Feedback:</span>
+              {{ selectedListing.rejection_reason }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Answers -->
+        <div v-if="detailTab === 'answers'" class="max-h-80 overflow-y-auto space-y-4">
+          <div v-if="!selectedListing.answers?.length" class="text-fg-muted text-sm italic">
+            No form step answers have been saved yet.
+          </div>
+          <div
+            v-for="ans in selectedListing.answers"
+            :key="ans.id"
+            class="rounded border border-border p-3 text-sm space-y-2 bg-bg-muted/20"
+          >
+            <div class="font-semibold text-primary">Step: {{ ans.step_id }}</div>
+            <pre class="text-xs bg-bg p-2 rounded overflow-x-auto text-fg font-mono">{{ JSON.stringify(ans.values, null, 2) }}</pre>
+          </div>
+        </div>
+
+        <!-- Tab 3: Documents -->
+        <div v-if="detailTab === 'documents'" class="space-y-3">
+          <div v-if="!selectedListing.documents?.length" class="text-fg-muted text-sm italic">
+            No compliance documents uploaded yet.
+          </div>
+          <div
+            v-for="doc in selectedListing.documents"
+            :key="doc.id"
+            class="flex items-center justify-between rounded border border-border p-3"
+          >
+            <div class="flex items-center gap-3">
+              <FileText class="h-5 w-5 text-primary" />
+              <div>
+                <div class="font-medium text-sm">{{ doc.original_name }}</div>
+                <div class="text-xs text-fg-muted">Type: {{ doc.type }} | Size: {{ Math.round(doc.size / 1024) }} KB</div>
+              </div>
+            </div>
+            <BaseBadge variant="success">Verified</BaseBadge>
+          </div>
+        </div>
+
+        <!-- Tab 4: Photos -->
+        <div v-if="detailTab === 'media'" class="grid grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+          <div v-if="!selectedListing.images?.length" class="col-span-3 text-fg-muted text-sm italic">
+            No photos uploaded yet.
+          </div>
+          <div
+            v-for="img in selectedListing.images"
+            :key="img.id"
+            class="relative rounded overflow-hidden border border-border aspect-video bg-bg-muted"
+          >
+            <img :src="img.url" class="object-cover w-full h-full" alt="Property image" />
+            <span v-if="img.is_primary" class="absolute top-1 left-1 bg-primary text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
+              Primary
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-between w-full">
+          <BaseButton variant="secondary" @click="isDetailModalOpen = false">Close</BaseButton>
+          <div class="flex gap-2">
+            <BaseButton
+              v-if="selectedListing && selectedListing.status !== 'published'"
+              variant="primary"
+              :disabled="isActionLoading"
+              @click="handlePublish(selectedListing)"
+            >
+              Approve & Publish
+            </BaseButton>
+            <BaseButton
+              v-if="selectedListing && selectedListing.status === 'published'"
+              variant="secondary"
+              :disabled="isActionLoading"
+              @click="handleUnpublish(selectedListing)"
+            >
+              Unpublish
+            </BaseButton>
+            <BaseButton
+              v-if="selectedListing && selectedListing.status !== 'rejected'"
+              variant="danger"
+              :disabled="isActionLoading"
+              @click="openRejectModal(selectedListing)"
+            >
+              Reject with Feedback
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </Modal>
+
+    <!-- Reject Confirmation Modal -->
+    <Modal
+      :open="isRejectModalOpen"
+      size="md"
+      title="Reject Listing"
+      @close="isRejectModalOpen = false"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-fg-muted">
+          Please provide a reason for rejecting listing
+          <strong class="text-fg">{{ selectedListing?.reference_code || selectedListing?.id }}</strong>.
+          The seller will receive this feedback to make corrections.
+        </p>
+
+        <div>
+          <label class="block text-xs font-semibold text-fg mb-1">Rejection Reason / Feedback *</label>
+          <textarea
+            v-model="rejectionReason"
+            rows="4"
+            class="w-full rounded border border-border bg-bg p-2.5 text-sm text-fg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            placeholder="E.g., Property deed is unclear or blurry. Please upload a higher resolution document."
+          ></textarea>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <BaseButton variant="secondary" @click="isRejectModalOpen = false">Cancel</BaseButton>
+          <BaseButton
+            variant="danger"
+            :disabled="!rejectionReason.trim() || isActionLoading"
+            @click="confirmReject"
+          >
+            Confirm Rejection
+          </BaseButton>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>

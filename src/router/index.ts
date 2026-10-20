@@ -241,7 +241,7 @@ const router = createRouter({
     {
       path: '/',
       component: () => import('@/layouts/SellerLayout.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, roles: ['seller', 'buyer'] },
       children: [
         {
           path: 'dashboard',

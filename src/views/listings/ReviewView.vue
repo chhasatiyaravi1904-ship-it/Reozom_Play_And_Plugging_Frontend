@@ -33,6 +33,25 @@ const reviewSections = computed(() => [
   { label: 'Documents', route: routeFor('documents') },
 ])
 
+const lastWorkflowStep = computed(() => {
+  const steps = workflowStore.workflow?.steps ?? []
+  return steps[steps.length - 1]
+})
+
+const backRoute = computed(() => {
+  if (lastWorkflowStep.value) {
+    return routeFor(lastWorkflowStep.value.id)
+  }
+  return route.path.startsWith('/agent') ? '/agent/listings' : '/listings'
+})
+
+const isSubmittedRoute = computed(
+  () =>
+    route.path.endsWith('/submit') ||
+    listingStore.activeListing?.status === 'published' ||
+    listingStore.activeListing?.status === 'submitted',
+)
+
 onMounted(() => {
   if (!workflowStore.workflow) workflowStore.fetchWorkflow(listingId.value)
   if (!listingStore.activeListing) listingStore.fetchListing(listingId.value)
@@ -43,6 +62,7 @@ async function handleSubmit() {
   const success = await listingStore.submitListing(listingId.value)
   isSubmitting.value = false
   if (success) {
+    toast.success('Listing submitted successfully.')
     const basePath = route.path.startsWith('/agent') ? '/agent' : ''
     router.push(`${basePath}/listings/${listingId.value}/submit`)
   } else {
@@ -65,6 +85,32 @@ async function handleSubmit() {
         <BaseButton size="sm" @click="workflowStore.fetchWorkflow(listingId)">Try Again</BaseButton>
       </template>
     </ErrorState>
+
+    <!-- Submission Confirmed State -->
+    <BaseCard v-else-if="isSubmittedRoute" class="text-center p-8 space-y-4">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-success">
+        <span class="material-symbols-outlined text-3xl">check_circle</span>
+      </div>
+      <h1 class="text-2xl font-semibold text-fg">Listing Submitted Successfully</h1>
+      <p class="text-sm text-fg-muted max-w-md mx-auto">
+        Your property listing has passed automated validation checks.
+        <span v-if="listingStore.activeListing?.status === 'published'" class="font-medium text-success block mt-1">
+          Status: Published to Public Property Search
+        </span>
+        <span v-else class="text-fg-muted block mt-1">
+          Status: Under Administrative Review
+        </span>
+      </p>
+
+      <div class="pt-4 flex justify-center gap-3">
+        <BaseButton
+          variant="primary"
+          @click="router.push(route.path.startsWith('/agent') ? '/agent/listings' : '/listings')"
+        >
+          View All Listings
+        </BaseButton>
+      </div>
+    </BaseCard>
 
     <BaseCard v-else>
       <h1 class="text-xl font-semibold text-fg">Review & Summary</h1>
@@ -93,7 +139,7 @@ async function handleSubmit() {
 
       <template #footer>
         <div class="flex items-center justify-between">
-          <RouterLink :to="routeFor('documents')">
+          <RouterLink :to="backRoute">
             <BaseButton variant="secondary">Back</BaseButton>
           </RouterLink>
           <BaseButton :loading="isSubmitting" @click="handleSubmit">

@@ -9,6 +9,7 @@ import ErrorState from '@/components/ui/ErrorState.vue'
 import Stepper from '@/components/listing/Stepper.vue'
 import DynamicWorkflow from '@/components/listing/DynamicWorkflow.vue'
 import { useWorkflowStore } from '@/stores/workflow'
+import { useListingStore } from '@/stores/listing'
 import { useListingSteps } from '@/composables/useListingSteps'
 import { useAutoSave } from '@/composables/useAutoSave'
 import type { FieldValue } from '@/types/field'
@@ -19,7 +20,8 @@ const listingId = computed(() => Number(route.params.listingId))
 const stepId = computed(() => String(route.params.stepId))
 
 const workflowStore = useWorkflowStore()
-const { steps, routeFor } = useListingSteps(listingId.value)
+const listingStore = useListingStore()
+const { steps, routeFor, dynamicSteps } = useListingSteps(listingId.value)
 
 const errors = reactive<Record<string, string>>({})
 
@@ -31,11 +33,12 @@ const { state: saveState, schedule } = useAutoSave(() =>
 
 onMounted(() => {
   if (!workflowStore.workflow) workflowStore.fetchWorkflow(listingId.value)
+  if (!listingStore.activeListing) listingStore.fetchListing(listingId.value)
 })
 
-const isLastStep = computed(() => {
-  const index = steps.value.findIndex((s) => s.id === stepId.value)
-  return index === steps.value.length - 1
+const isLastDynamicStep = computed(() => {
+  const index = dynamicSteps.value.findIndex((s) => s.id === stepId.value)
+  return index === dynamicSteps.value.length - 1
 })
 
 watch(stepId, () => {
@@ -62,21 +65,21 @@ function validate(): boolean {
 }
 
 async function handleBack() {
-  const index = steps.value.findIndex((s) => s.id === stepId.value)
-  const previous = steps.value[index - 1]
+  const index = dynamicSteps.value.findIndex((s) => s.id === stepId.value)
+  const previous = dynamicSteps.value[index - 1]
   if (index > 0 && previous) router.push(routeFor(previous.id))
 }
 
 async function handleContinue() {
   if (!validate()) return
   await workflowStore.saveStep(listingId.value, stepId.value)
-  const index = steps.value.findIndex((s) => s.id === stepId.value)
-  const next = steps.value[index + 1]
+  const index = dynamicSteps.value.findIndex((s) => s.id === stepId.value)
+  const next = dynamicSteps.value[index + 1]
   if (next) {
     router.push(routeFor(next.id))
   } else {
-    // All dynamic steps done — proceed to the fixed post-step pages
-    router.push(routeFor('disclosures'))
+    // All dynamic steps done — proceed to review
+    router.push(routeFor('review'))
   }
 }
 </script>
@@ -96,7 +99,7 @@ async function handleContinue() {
           <h1 class="text-headline-md font-headline-md text-primary">{{ currentStep?.name || 'Loading...' }}</h1>
         </div>
         <div class="text-right">
-          <span class="text-primary font-label-md text-label-md block">Step {{ steps.findIndex(s => s.id === stepId) + 1 }} of {{ steps.length }}</span>
+          <span class="text-primary font-label-md text-label-md block">Step {{ dynamicSteps.findIndex(s => s.id === stepId) + 1 }} of {{ dynamicSteps.length }}</span>
         </div>
       </div>
     </div>
@@ -142,7 +145,7 @@ async function handleContinue() {
         <button 
           @click="handleBack" 
           class="px-6 h-12 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors font-label-lg text-label-lg"
-          :class="steps.findIndex((s) => s.id === stepId) === 0 ? 'invisible' : ''"
+          :class="dynamicSteps.findIndex((s) => s.id === stepId) === 0 ? 'invisible' : ''"
         >
           ← Back
         </button>
@@ -150,7 +153,7 @@ async function handleContinue() {
           @click="handleContinue" 
           class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm"
         >
-          {{ isLastStep ? 'Review Listing' : 'Save & Continue' }}
+          {{ isLastDynamicStep ? 'Review Listing' : 'Save & Continue' }}
           <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>

@@ -24,3 +24,36 @@ export const submitListing = (listingId: number) => {
 export const resolveWorkflow = (address: PropertyAddress) => {
   return api.post<ListingRouting>('/listings/resolve-workflow', address)
 }
+
+export const fetchDisclosures = (listingId: number) => {
+  return api.get<{
+    success: boolean
+    data: {
+      listingId: number
+      steps: Array<{
+        id: string
+        name: string
+        order: number
+        sections: Array<{
+          id: string
+          name: string
+          order: number
+          fields: Array<{
+            id: string
+            name: string
+            label: string
+            type: string
+            required: boolean
+            options?: Array<{ label: string; value: string }>
+          }>
+        }>
+      }>
+      answers: Record<string, Record<string, any>>
+    }
+  }>(`/listings/${listingId}/disclosures`)
+}
+
+export const saveDisclosures = (listingId: number, answers: Record<string, Record<string, any>>) => {
+  return api.post(`/listings/${listingId}/disclosures`, { answers })
+}
+
