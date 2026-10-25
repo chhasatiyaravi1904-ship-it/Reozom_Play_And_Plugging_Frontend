@@ -5,6 +5,7 @@ import {
   CheckCircle,
   Eye,
   FileText,
+  Handshake,
   Image,
   RefreshCw,
   Search,
@@ -24,6 +25,7 @@ import SearchInput from '@/components/ui/SearchInput.vue'
 import Tabs from '@/components/ui/Tabs.vue'
 import { useToastStore } from '@/stores/toast'
 import * as adminListingService from '@/services/adminListingService'
+import * as offerApi from '@/services/offerService'
 import type { AdminListingDetail } from '@/services/adminListingService'
 
 const toast = useToastStore()
@@ -47,12 +49,12 @@ const pagination = ref({
 })
 
 const statusTabs = [
-  { id: 'all', label: 'All Listings' },
-  { id: 'published', label: 'Published' },
-  { id: 'submitted', label: 'Submitted (Review)' },
-  { id: 'in_progress', label: 'In Progress (Draft)' },
-  { id: 'unpublished', label: 'Unpublished' },
-  { id: 'rejected', label: 'Rejected' },
+  { value: 'all', label: 'All Listings' },
+  { value: 'published', label: 'Published' },
+  { value: 'submitted', label: 'Submitted (Review)' },
+  { value: 'in_progress', label: 'In Progress (Draft)' },
+  { value: 'unpublished', label: 'Unpublished' },
+  { value: 'rejected', label: 'Rejected' },
 ]
 
 // Modal & Moderation Action States
@@ -61,7 +63,9 @@ const isDetailModalOpen = ref(false)
 const isRejectModalOpen = ref(false)
 const rejectionReason = ref('')
 const isActionLoading = ref(false)
-const detailTab = ref<'overview' | 'answers' | 'media' | 'documents'>('overview')
+const detailTab = ref<'overview' | 'answers' | 'media' | 'documents' | 'offers'>('overview')
+const listingOffers = ref<any[]>([])
+const isLoadingOffers = ref(false)
 
 async function loadListings() {
   isLoading.value = true
@@ -73,8 +77,31 @@ async function loadListings() {
       page: queryParams.page,
       per_page: queryParams.per_page,
     })
-    listings.value = res.data.data
-    pagination.value = res.data.meta
+    const raw: any = res.data
+    let items: AdminListingDetail[] = []
+    if (Array.isArray(raw)) {
+      items = raw
+    } else if (raw && Array.isArray(raw.data)) {
+      items = raw.data
+    }
+    listings.value = items
+
+    const rawMeta = raw?.meta || (raw as any)?.pagination
+    if (rawMeta) {
+      pagination.value = {
+        current_page: rawMeta.current_page || queryParams.page,
+        last_page: rawMeta.last_page || 1,
+        per_page: rawMeta.per_page || queryParams.per_page,
+        total: rawMeta.total ?? items.length,
+      }
+    } else {
+      pagination.value = {
+        current_page: queryParams.page,
+        last_page: 1,
+        per_page: queryParams.per_page,
+        total: items.length,
+      }
+    }
   } catch (err: any) {
     errorMessage.value = err?.response?.data?.message || 'Failed to load listings.'
   } finally {
@@ -99,13 +126,29 @@ function handlePageChange(page: number) {
   loadListings()
 }
 
+async function loadListingOffers(listingId: number) {
+  isLoadingOffers.value = true
+  try {
+    const res = await offerApi.getAdminOffers({ listing_id: listingId })
+    listingOffers.value = res.data.offers?.data || []
+  } catch {
+    listingOffers.value = []
+  } finally {
+    isLoadingOffers.value = false
+  }
+}
+
 async function openDetailModal(listing: AdminListingDetail) {
   selectedListing.value = listing
   detailTab.value = 'overview'
   isDetailModalOpen.value = true
+  loadListingOffers(listing.id)
   try {
     const res = await adminListingService.fetchAdminListing(listing.id)
-    selectedListing.value = res.data.data
+    const detail = (res.data as any)?.data ?? res.data
+    if (detail && typeof detail === 'object' && 'id' in detail) {
+      selectedListing.value = detail
+    }
   } catch {
     // Keep list view copy if detailed fetch fails
   }
@@ -116,8 +159,9 @@ async function handlePublish(listing: AdminListingDetail) {
   try {
     const res = await adminListingService.publishListing(listing.id)
     toast.success(`Listing ${listing.reference_code || listing.id} approved and published.`)
-    if (selectedListing.value?.id === listing.id) {
-      selectedListing.value = res.data.data
+    const updated = (res.data as any)?.data ?? res.data
+    if (selectedListing.value?.id === listing.id && updated && typeof updated === 'object') {
+      selectedListing.value = updated
     }
     await loadListings()
   } catch (err: any) {
@@ -132,8 +176,9 @@ async function handleUnpublish(listing: AdminListingDetail) {
   try {
     const res = await adminListingService.unpublishListing(listing.id)
     toast.success(`Listing ${listing.reference_code || listing.id} unpublished.`)
-    if (selectedListing.value?.id === listing.id) {
-      selectedListing.value = res.data.data
+    const updated = (res.data as any)?.data ?? res.data
+    if (selectedListing.value?.id === listing.id && updated && typeof updated === 'object') {
+      selectedListing.value = updated
     }
     await loadListings()
   } catch (err: any) {
@@ -159,8 +204,9 @@ async function confirmReject() {
     )
     toast.success(`Listing rejected with feedback provided.`)
     isRejectModalOpen.value = false
-    if (selectedListing.value?.id === res.data.data.id) {
-      selectedListing.value = res.data.data
+    const updated = (res.data as any)?.data ?? res.data
+    if (selectedListing.value?.id === updated?.id && updated && typeof updated === 'object') {
+      selectedListing.value = updated
     }
     await loadListings()
   } catch (err: any) {
@@ -170,7 +216,7 @@ async function confirmReject() {
   }
 }
 
-function getStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
+function getStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger' | 'info' | 'secondary' {
   switch (status) {
     case 'published':
       return 'success'
@@ -181,9 +227,9 @@ function getStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger'
     case 'rejected':
       return 'danger'
     case 'unpublished':
-      return 'neutral'
+      return 'secondary'
     default:
-      return 'neutral'
+      return 'secondary'
   }
 }
 
@@ -211,8 +257,8 @@ onMounted(() => {
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Tabs
           :tabs="statusTabs"
-          :active-tab="queryParams.status"
-          @update:active-tab="handleTabChange"
+          :model-value="queryParams.status"
+          @update:model-value="handleTabChange"
         />
 
         <div class="w-full md:w-72">
@@ -235,7 +281,7 @@ onMounted(() => {
         <ErrorState :description="errorMessage" @retry="loadListings" />
       </div>
 
-      <div v-else-if="listings.length === 0" class="p-8">
+      <div v-else-if="!listings || listings.length === 0" class="p-8">
         <EmptyState
           :icon="Building2"
           title="No listings found"
@@ -258,7 +304,7 @@ onMounted(() => {
           </thead>
           <tbody class="divide-y divide-border">
             <tr
-              v-for="listing in listings"
+              v-for="listing in (listings || [])"
               :key="listing.id"
               class="transition-colors hover:bg-bg-muted/30"
             >
@@ -350,11 +396,10 @@ onMounted(() => {
         <!-- Pagination Bar -->
         <div v-if="pagination.last_page > 1" class="border-t border-border p-4">
           <PaginationBar
-            :current-page="pagination.current_page"
-            :total-pages="pagination.last_page"
+            :page="pagination.current_page"
             :total-items="pagination.total"
             :per-page="pagination.per_page"
-            @page-change="handlePageChange"
+            @update:page="handlePageChange"
           />
         </div>
       </div>
@@ -362,10 +407,9 @@ onMounted(() => {
 
     <!-- Listing Detail & Moderation Modal -->
     <Modal
-      :open="isDetailModalOpen"
-      size="2xl"
+      v-model="isDetailModalOpen"
+      size="lg"
       :title="`Listing Moderation: ${selectedListing?.reference_code || selectedListing?.id}`"
-      @close="isDetailModalOpen = false"
     >
       <div v-if="selectedListing" class="space-y-6">
         <!-- Status & Meta Bar -->
@@ -424,6 +468,15 @@ onMounted(() => {
             @click="detailTab = 'media'"
           >
             Photos ({{ selectedListing.images?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-1.5"
+            :class="detailTab === 'offers' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
+            @click="detailTab = 'offers'"
+          >
+            <Handshake class="h-4 w-4" />
+            Offers ({{ listingOffers.length }})
           </button>
         </div>
 
@@ -501,6 +554,44 @@ onMounted(() => {
             </span>
           </div>
         </div>
+
+        <!-- Tab 5: Offers -->
+        <div v-if="detailTab === 'offers'" class="space-y-3 max-h-80 overflow-y-auto">
+          <div v-if="isLoadingOffers" class="text-fg-muted text-sm py-4 text-center">
+            Loading offers for this listing...
+          </div>
+          <div v-else-if="!listingOffers.length" class="text-fg-muted text-sm italic py-6 text-center bg-bg-muted/30 rounded-xl border border-dashed border-border">
+            No buyer offers have been submitted for this property yet.
+          </div>
+          <div
+            v-else
+            v-for="off in listingOffers"
+            :key="off.id"
+            class="flex items-center justify-between rounded-xl border border-border p-3.5 bg-surface hover:bg-surface-raised transition text-xs"
+          >
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-fg text-sm">${{ Number(off.offer_amount).toLocaleString() }}</span>
+                <BaseBadge :variant="getStatusBadgeVariant(off.status)" class="capitalize">
+                  {{ off.status.replace(/_/g, ' ') }}
+                </BaseBadge>
+                <span class="font-mono text-[11px] text-fg-muted">({{ off.reference_code }})</span>
+              </div>
+              <div class="text-fg-muted mt-1">
+                Buyer: <span class="text-fg font-medium">{{ off.buyer_name || off.buyer?.name || 'Buyer' }}</span>
+                <span v-if="off.buyer_email || off.buyer?.email"> ({{ off.buyer_email || off.buyer?.email }})</span>
+                • Payment: <span class="capitalize text-fg font-medium">{{ off.payment_method }}</span>
+                • Closing: <span class="text-fg font-medium">{{ off.closing_date }}</span>
+              </div>
+            </div>
+            <router-link
+              :to="`/admin/offers?search=${encodeURIComponent(off.reference_code)}`"
+              class="text-xs text-primary hover:underline font-semibold ml-4 shrink-0 inline-flex items-center gap-1"
+            >
+              Inspect Offer &rarr;
+            </router-link>
+          </div>
+        </div>
       </div>
 
       <template #footer>
@@ -538,10 +629,9 @@ onMounted(() => {
 
     <!-- Reject Confirmation Modal -->
     <Modal
-      :open="isRejectModalOpen"
+      v-model="isRejectModalOpen"
       size="md"
       title="Reject Listing"
-      @close="isRejectModalOpen = false"
     >
       <div class="space-y-4">
         <p class="text-sm text-fg-muted">

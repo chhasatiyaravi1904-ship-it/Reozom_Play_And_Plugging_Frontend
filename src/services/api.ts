@@ -20,6 +20,7 @@ interface ApiEnvelope<T> {
   success: boolean
   message?: string
   data?: T
+  meta?: any
 }
 
 function isApiEnvelope(body: unknown): body is ApiEnvelope<unknown> {
@@ -31,7 +32,12 @@ apiClient.interceptors.response.use(
     // Unwrap Laravel's { success, message, data } envelope so callers
     // (services/stores) work with the actual payload directly.
     if (isApiEnvelope(response.data)) {
-      response.data = response.data.data ?? null
+      const envelope = response.data
+      const unwrapped = envelope.data ?? null
+      if (envelope.meta && unwrapped && typeof unwrapped === 'object') {
+        ;(unwrapped as any).meta = envelope.meta
+      }
+      response.data = unwrapped
     }
     return response
   },

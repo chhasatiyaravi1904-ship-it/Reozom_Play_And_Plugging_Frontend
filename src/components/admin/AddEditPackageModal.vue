@@ -46,7 +46,7 @@ onMounted(async () => {
   try {
     const res = await fetchAdminPermissions()
     // Depending on API structure, it might be in data or direct
-    availablePermissions.value = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
+    availablePermissions.value = Array.isArray((res.data as any)?.data) ? (res.data as any).data : (Array.isArray(res.data) ? res.data : [])
   } catch (err) {
     console.error('Failed to load permissions:', err)
   }

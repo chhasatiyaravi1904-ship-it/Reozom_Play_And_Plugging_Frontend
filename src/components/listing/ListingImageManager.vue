@@ -230,7 +230,9 @@ const moveImage = async (index: number, direction: number) => {
   
   // Swap locally
   const temp = images.value[index]
-  images.value[index] = images.value[targetIndex]
+  const target = images.value[targetIndex]
+  if (!temp || !target) return
+  images.value[index] = target
   images.value[targetIndex] = temp
   
   // Update sort_order locally
@@ -242,8 +244,11 @@ const moveImage = async (index: number, direction: number) => {
   } catch (err) {
     // Revert on failure
     const revTemp = images.value[index]
-    images.value[index] = images.value[targetIndex]
-    images.value[targetIndex] = revTemp
+    const targetItem = images.value[targetIndex]
+    if (revTemp && targetItem) {
+      images.value[index] = targetItem
+      images.value[targetIndex] = revTemp
+    }
     error.value = 'Failed to reorder images.'
   }
 }

@@ -78,8 +78,8 @@ async function handleContinue() {
   if (next) {
     router.push(routeFor(next.id))
   } else {
-    // All dynamic steps done — proceed to review
-    router.push(routeFor('review'))
+    // All dynamic steps done — proceed to disclosures milestone
+    router.push(routeFor('disclosures'))
   }
 }
 </script>
@@ -153,7 +153,7 @@ async function handleContinue() {
           @click="handleContinue" 
           class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm"
         >
-          {{ isLastDynamicStep ? 'Review Listing' : 'Save & Continue' }}
+          {{ isLastDynamicStep ? 'Continue to Disclosures' : 'Save & Continue' }}
           <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>

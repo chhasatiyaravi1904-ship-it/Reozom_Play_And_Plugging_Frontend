@@ -738,7 +738,7 @@
 </div>
 </div>
 <div class="flex items-center gap-2">
-<button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-lowest text-outline hover:text-primary text-label-md font-label-md disabled:opacity-40 transition-colors" disabled="">
+<button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-lowest text-outline hover:text-primary text-label-md font-label-md disabled:opacity-40 transition-colors" disabled>
               Previous
             </button>
 <div class="flex items-center gap-1">

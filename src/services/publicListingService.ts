@@ -15,6 +15,7 @@ export interface PublicListing {
   reference_code: string
   status: string
   address: {
+    street?: string
     city: string
     state: string
     zip: string
@@ -47,8 +48,8 @@ export interface PublicListingResponse {
   data: PublicListing
 }
 
-export const fetchPublicListings = (page = 1) => {
-  return api.get<PaginatedResponse<PublicListing>>('/public/listings', { params: { page } })
+export const fetchPublicListings = (page = 1, params?: Record<string, any>) => {
+  return api.get<PaginatedResponse<PublicListing>>('/public/listings', { params: { page, ...params } })
 }
 
 export const fetchPublicListing = (listingId: number) => {

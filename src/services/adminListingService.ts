@@ -1,5 +1,5 @@
 import api from './api'
-import type { ListingSummary } from '@/types/listing'
+import type { ListingStatus } from '@/types/listing'
 
 export interface AdminListingQueryParams {
   search?: string
@@ -9,7 +9,18 @@ export interface AdminListingQueryParams {
   per_page?: number
 }
 
-export interface AdminListingDetail extends ListingSummary {
+export interface AdminListingDetail {
+  id: number
+  reference_code: string
+  status: ListingStatus
+  address: string
+  city: string
+  state: string
+  zip: string
+  steps_completed: number
+  steps_total: number
+  created_at: string
+  updated_at: string
   moderation_status?: string
   moderated_by?: number
   moderated_at?: string
@@ -57,6 +68,8 @@ export interface AdminListingDetail extends ListingSummary {
     path: string
     size: number
     created_at: string
+    verification_status?: string
+    review_notes?: string
   }>
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, CheckCircle } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -7,9 +7,13 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import Stepper from '@/components/listing/Stepper.vue'
 import ListingImageManager from '@/components/listing/ListingImageManager.vue'
+import ListingOffersTab from '@/components/offers/ListingOffersTab.vue'
+import ListingStatusHistoryModal from '@/components/listings/ListingStatusHistoryModal.vue'
 import { useListingStore } from '@/stores/listing'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useListingSteps } from '@/composables/useListingSteps'
+
+const isStatusModalOpen = ref(false)
 
 const route = useRoute()
 const router = useRouter()
@@ -109,7 +113,38 @@ function continueListing() {
         </BaseButton>
       </div>
 
+      <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status:</span>
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-800">
+            {{ listingStore.activeListing?.status || 'Draft' }}
+          </span>
+        </div>
+        <button
+          @click="isStatusModalOpen = true"
+          class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+        >
+          View Status History & Audit Log
+        </button>
+      </div>
+
+      <!-- Purchase Offers (Active once published or under contract) -->
+      <div v-if="listingStore.activeListing" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <ListingOffersTab
+          :listing-id="listingId"
+          :listing-status="listingStore.activeListing.status"
+          @listing-updated="listingStore.fetchListing(listingId)"
+        />
+      </div>
+
       <ListingImageManager :listing-id="listingId" />
+
+      <!-- Status History Modal -->
+      <ListingStatusHistoryModal
+        :is-open="isStatusModalOpen"
+        :listing-id="listingId"
+        @close="isStatusModalOpen = false"
+      />
     </template>
   </div>
 </template>

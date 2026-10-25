@@ -296,10 +296,7 @@
           <!-- Search Inputs Grid -->
           <form
             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
-            onsubmit="
-              event.preventDefault()
-              document.getElementById('listings').scrollIntoView()
-            "
+            @submit.prevent="handleListingSearch"
           >
             <!-- Location Input -->
             <div class="lg:col-span-2">
@@ -314,6 +311,7 @@
                   >location_on</span
                 >
                 <input
+                  v-model="searchLocation"
                   class="w-full h-11 pl-10 pr-3 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
                   placeholder="Austin, TX or 78701"
                   type="text"
@@ -327,14 +325,14 @@
                 >Property Type</label
               >
               <select
+                v-model="searchPropertyType"
                 class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
               >
-                <option>All Types</option>
-                <option>Single Family</option>
-                <option>Modern Villa</option>
-                <option>Condominium</option>
-                <option>Penthouse</option>
-                <option>Townhouse</option>
+                <option value="all">All Types</option>
+                <option value="single_family">Single Family</option>
+                <option value="condo">Condominium</option>
+                <option value="townhouse">Townhouse</option>
+                <option value="multi_family">Multi-Family</option>
               </select>
             </div>
             <!-- Price Range Dropdown -->
@@ -344,13 +342,14 @@
                 >Price Range</label
               >
               <select
+                v-model="searchPriceRange"
                 class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
               >
-                <option>Any Price</option>
-                <option>$300k - $500k</option>
-                <option>$500k - $800k</option>
-                <option>$800k - $1.5M</option>
-                <option>$1.5M+</option>
+                <option value="all">Any Price</option>
+                <option value="300-500">$300k - $500k</option>
+                <option value="500-800">$500k - $800k</option>
+                <option value="800-1500">$800k - $1.5M</option>
+                <option value="1500+">$1.5M+</option>
               </select>
             </div>
             <!-- Submit Button -->
@@ -372,7 +371,7 @@
       </section>
       <!-- SECTION 4: FEATURED LISTINGS -->
       <section class="py-20 max-w-7xl mx-auto px-6 md:px-10" id="listings">
-        <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-8">
           <div>
             <div
               class="inline-flex items-center gap-1.5 text-secondary font-label-md text-label-md tracking-wider mb-2"
@@ -389,96 +388,107 @@
           </div>
           <div class="mt-4 md:mt-0 flex gap-2">
             <button
-              class="px-4 py-2 text-label-md font-label-md rounded-lg border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container transition-colors"
+              class="px-4 py-2 text-label-md font-label-md rounded-lg border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container transition-colors flex items-center gap-1.5 shadow-xs"
+              @click="$router.push('/properties')"
             >
-              All Listings (1,482)
+              <span>All Listings ({{ publicListingStore.meta.total || 0 }})</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
           </div>
         </div>
-        <!-- Listing Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <!-- Card 1 -->
-          <div
-            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col group"
+
+        <!-- Quick Category Filter Chips -->
+        <div class="flex flex-wrap gap-2 mb-8">
+          <button
+            v-for="cat in [
+              { label: 'All Properties', val: 'all' },
+              { label: 'Single Family', val: 'single_family' },
+              { label: 'Condominium', val: 'condo' },
+              { label: 'Townhouse', val: 'townhouse' },
+              { label: 'Multi-Family', val: 'multi_family' },
+            ]"
+            :key="cat.val"
+            @click="filterByType(cat.val)"
+            class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer"
+            :class="
+              activeTypeFilter === cat.val
+                ? 'bg-secondary text-surface-container-lowest border-secondary shadow-xs'
+                : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/50 hover:bg-surface-container'
+            "
           >
-            <div class="relative h-56 overflow-hidden">
-              <img
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                data-alt="Modern contemporary family home exterior in Austin Texas with clean architectural stone siding, large warm front porch, lush green lawn, warm dusk lighting, and minimalist glass garage doors."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGGeNeyb2QMQqbhSi2TfNXrpTWe3pe_sYj8vd2pW-ird0SFBqsrBgYyZQYpbpAYtXSwXCLGdh8GhOt5XaKg5vFLwiOJW_6_JNeTJm8Kx7Rf_R9CrGpkjdjyWkGi0-E5IjjneDDH_CCysABSrdbhaAiiSDkVymgNk-MpiPVZ432ysBIxL-jtyPjYH6vlcxlafRUva0ZoUXqeulcOIkStyWnNdsNDIQD92HyTqhJkNic4dOz0wImZVk"
-              />
-              <div class="absolute top-3 left-3 flex gap-2">
-                <span
-                  class="bg-surface-container-lowest/90 backdrop-blur-xs text-secondary px-2.5 py-1 rounded-full text-label-sm font-label-sm font-bold border border-secondary/20"
-                >
-                  • Verified Plan
-                </span>
-              </div>
-              <div class="absolute top-3 right-3">
-                <button
-                  aria-label="Save listing"
-                  class="p-1.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-xs text-on-surface hover:text-error transition-colors"
-                >
-                  <span class="material-symbols-outlined text-base" data-icon="favorite"
-                    >favorite</span
-                  >
-                </button>
-              </div>
-              <div class="absolute bottom-3 left-3">
-                <span
-                  class="bg-primary-container/90 backdrop-blur-xs text-on-primary px-2.5 py-0.5 rounded-md text-label-sm font-label-sm"
-                  >Single Family</span
-                >
-              </div>
-            </div>
+            {{ cat.label }}
+          </button>
+        </div>
+
+        <!-- Loading Skeletons (only when no listings are present yet) -->
+        <div
+          v-if="publicListingStore.status === 'loading' && (!publicListingStore.listings || publicListingStore.listings.length === 0)"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
+          <div
+            v-for="i in 4"
+            :key="i"
+            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 overflow-hidden animate-pulse flex flex-col h-[420px]"
+          >
+            <div class="h-56 bg-surface-container"></div>
             <div class="p-5 flex-1 flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-baseline mb-1">
-                  <span class="font-headline-lg text-headline-lg text-primary">$425,000</span>
-                  <span class="text-label-sm font-label-sm text-secondary font-bold"
-                    >Direct Offer Ready</span
-                  >
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-primary">Modern Family Home</h3>
-                <p
-                  class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="location_on"
-                    >location_on</span
-                  >
-                  Austin, TX · 78701
-                </p>
+              <div class="space-y-3">
+                <div class="h-6 bg-surface-container rounded w-1/2"></div>
+                <div class="h-5 bg-surface-container rounded w-3/4"></div>
+                <div class="h-4 bg-surface-container rounded w-1/3"></div>
               </div>
-              <div class="pt-4 mt-4 border-t border-outline-variant/30">
-                <div
-                  class="grid grid-cols-3 text-center text-on-surface-variant text-body-sm font-body-sm pb-4"
-                >
-                  <div><strong class="text-primary block font-numeric-data">3</strong> Beds</div>
-                  <div class="border-x border-outline-variant/30">
-                    <strong class="text-primary block font-numeric-data">2</strong> Baths
-                  </div>
-                  <div>
-                    <strong class="text-primary block font-numeric-data">2,100</strong> sq ft
-                  </div>
-                </div>
-                <button
-                  class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  @click="$router.push('/auth/register')"
-                >
-                  View Details &amp; Offer
-                </button>
-              </div>
+              <div class="h-10 bg-surface-container rounded mt-4"></div>
             </div>
           </div>
-          <!-- Card 2 -->
-          <div
-            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col group"
+        </div>
+
+        <!-- Error State (only when no listings available) -->
+        <div
+          v-else-if="publicListingStore.status === 'error' && (!publicListingStore.listings || publicListingStore.listings.length === 0)"
+          class="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/40"
+        >
+          <span class="material-symbols-outlined text-4xl text-error mb-2">error</span>
+          <p class="text-on-surface-variant text-body-md mb-4">Unable to load live listings feed.</p>
+          <button
+            class="px-5 py-2.5 bg-primary-container text-on-primary rounded-lg font-label-md"
+            @click="loadFeaturedListings()"
           >
-            <div class="relative h-56 overflow-hidden">
+            Retry Loading
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          v-else-if="!publicListingStore.listings || publicListingStore.listings.length === 0"
+          class="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/40"
+        >
+          <span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">home_work</span>
+          <h3 class="text-headline-sm font-headline-sm text-primary">No Matching Properties Found</h3>
+          <p class="text-on-surface-variant text-body-sm mt-1 mb-4">
+            Try adjusting your search location or property type filters.
+          </p>
+          <button
+            class="px-5 py-2.5 bg-secondary text-surface-container-lowest rounded-lg font-label-md"
+            @click="filterByType('all')"
+          >
+            Reset Filters
+          </button>
+        </div>
+
+        <!-- Dynamic Listing Cards Grid -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            v-for="listing in publicListingStore.listings"
+            :key="listing.id"
+            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col group cursor-pointer"
+            @click="$router.push('/properties/' + listing.id)"
+          >
+            <div class="relative h-56 overflow-hidden bg-surface-container">
               <img
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                data-alt="Luxury architectural waterfront villa in Seattle Washington on Puget Sound with expansive cantilevered cedar decks, floor-to-ceiling glass windows overlooking water, overcast atmospheric PNW lighting, modern zinc metal trims."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0hcetUdoL-od6ZHHzGETkof1ncXj-iXKFjjOdgToCb0vP4Q-OkWLW20I2D3aiGz19NIzHTduxA5iLdpLofviC5RSpaIgkDLmHXp04_qaxfwD-I6SCAF1nyqKf_1myBbUTZgRcNPcBXn_Y6LpG8J1UY3sf-SbSFPEpwB1UrIqip-_URtqPq2U9JaECydmeCyw7Ke1IXsQgMGQQcToi6NnZ8JOrJlTcsYUxVSv9RYlKNw3GviASAq8"
+                :alt="listing.values?.listing_title || 'Property photo'"
+                :src="getListingImage(listing)"
+                loading="lazy"
               />
               <div class="absolute top-3 left-3 flex gap-2">
                 <span
@@ -490,207 +500,69 @@
               <div class="absolute top-3 right-3">
                 <button
                   aria-label="Save listing"
-                  class="p-1.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-xs text-on-surface hover:text-error transition-colors"
+                  class="p-1.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-xs transition-colors"
+                  :class="savedListingIds.includes(listing.id) ? 'text-error font-bold' : 'text-on-surface hover:text-error'"
+                  @click.stop="toggleFavorite(listing.id)"
                 >
-                  <span class="material-symbols-outlined text-base" data-icon="favorite"
-                    >favorite</span
-                  >
+                  <span class="material-symbols-outlined text-base" data-icon="favorite">favorite</span>
                 </button>
               </div>
               <div class="absolute bottom-3 left-3">
                 <span
                   class="bg-primary-container/90 backdrop-blur-xs text-on-primary px-2.5 py-0.5 rounded-md text-label-sm font-label-sm"
-                  >Luxury Estate</span
                 >
-              </div>
-            </div>
-            <div class="p-5 flex-1 flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-baseline mb-1">
-                  <span class="font-headline-lg text-headline-lg text-primary">$895,000</span>
-                  <span class="text-label-sm font-label-sm text-secondary font-bold"
-                    >Direct Offer Ready</span
-                  >
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-primary">
-                  Architectural Waterfront Villa
-                </h3>
-                <p
-                  class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="location_on"
-                    >location_on</span
-                  >
-                  Seattle, WA · 98101
-                </p>
-              </div>
-              <div class="pt-4 mt-4 border-t border-outline-variant/30">
-                <div
-                  class="grid grid-cols-3 text-center text-on-surface-variant text-body-sm font-body-sm pb-4"
-                >
-                  <div><strong class="text-primary block font-numeric-data">4</strong> Beds</div>
-                  <div class="border-x border-outline-variant/30">
-                    <strong class="text-primary block font-numeric-data">3.5</strong> Baths
-                  </div>
-                  <div>
-                    <strong class="text-primary block font-numeric-data">3,450</strong> sq ft
-                  </div>
-                </div>
-                <button
-                  class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  @click="$router.push('/auth/register')"
-                >
-                  View Details &amp; Offer
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- Card 3 -->
-          <div
-            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col group"
-          >
-            <div class="relative h-56 overflow-hidden">
-              <img
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                data-alt="Minimalist urban loft apartment interior in Denver Colorado with exposed polished concrete ceilings, custom matte black steel partitions, warm white oak flooring, morning sunlight beaming through industrial mullioned windows."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSry77r4dyhfS5TWBV3FRuImyVBo5vQowQEacselzsnPrk4WmilkbPGTVYotko-MJj6ptor9bsnt6G4kN2N8GrfNC8colVQry-t0lYZ8kOv0zLXmfXy3coW3fqhf0M_pqoXPZCW5wdVdKIPEifxAyjz_1jm8W04LWtEzfmfK9jvLzqK6dmjWgDpXcovKyzts0YjkeYhlCfGRNqcKVNSCKGcxeG82IfvEFWco5nvJ7gNi5IrgEnk5w"
-              />
-              <div class="absolute top-3 left-3 flex gap-2">
-                <span
-                  class="bg-surface-container-lowest/90 backdrop-blur-xs text-secondary px-2.5 py-1 rounded-full text-label-sm font-label-sm font-bold border border-secondary/20"
-                >
-                  • Verified Plan
+                  {{ formatPropertyType(listing.values?.property_type) }}
                 </span>
               </div>
-              <div class="absolute top-3 right-3">
-                <button
-                  aria-label="Save listing"
-                  class="p-1.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-xs text-on-surface hover:text-error transition-colors"
-                >
-                  <span class="material-symbols-outlined text-base" data-icon="favorite"
-                    >favorite</span
-                  >
-                </button>
-              </div>
-              <div class="absolute bottom-3 left-3">
-                <span
-                  class="bg-primary-container/90 backdrop-blur-xs text-on-primary px-2.5 py-0.5 rounded-md text-label-sm font-label-sm"
-                  >Condominium</span
-                >
-              </div>
             </div>
+
             <div class="p-5 flex-1 flex flex-col justify-between">
               <div>
                 <div class="flex justify-between items-baseline mb-1">
-                  <span class="font-headline-lg text-headline-lg text-primary">$620,000</span>
-                  <span class="text-label-sm font-label-sm text-secondary font-bold"
-                    >Direct Offer Ready</span
-                  >
+                  <span class="font-headline-lg text-headline-lg text-primary">
+                    {{ formatPrice(listing.values?.listing_price) }}
+                  </span>
+                  <span class="text-label-sm font-label-sm text-secondary font-bold">
+                    Direct Offer Ready
+                  </span>
                 </div>
-                <h3 class="font-headline-sm text-headline-sm text-primary">
-                  Minimalist Urban Loft
+                <h3 class="font-headline-sm text-headline-sm text-primary line-clamp-1">
+                  {{ listing.values?.listing_title || 'Architectural Residence' }}
                 </h3>
-                <p
-                  class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="location_on"
-                    >location_on</span
-                  >
-                  Denver, CO · 80202
+                <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+                  <span class="material-symbols-outlined text-sm" data-icon="location_on">location_on</span>
+                  {{ listing.address?.city }}, {{ listing.address?.state }} · {{ listing.address?.zip }}
                 </p>
               </div>
-              <div class="pt-4 mt-4 border-t border-outline-variant/30">
-                <div
-                  class="grid grid-cols-3 text-center text-on-surface-variant text-body-sm font-body-sm pb-4"
-                >
-                  <div><strong class="text-primary block font-numeric-data">2</strong> Beds</div>
+
+              <div class="pt-4 border-t border-outline-variant/30 mt-4">
+                <div class="grid grid-cols-3 gap-2 text-center text-label-sm font-label-sm text-on-surface-variant mb-4">
+                  <div>
+                    <strong class="text-primary block font-numeric-data">
+                      {{ listing.values?.bedrooms || '-' }}
+                    </strong>
+                    Beds
+                  </div>
                   <div class="border-x border-outline-variant/30">
-                    <strong class="text-primary block font-numeric-data">2</strong> Baths
+                    <strong class="text-primary block font-numeric-data">
+                      {{ listing.values?.bathrooms || '-' }}
+                    </strong>
+                    Baths
                   </div>
                   <div>
-                    <strong class="text-primary block font-numeric-data">1,650</strong> sq ft
+                    <strong class="text-primary block font-numeric-data">
+                      {{ formatNumber(listing.values?.square_feet) }}
+                    </strong>
+                    sq ft
                   </div>
                 </div>
+
                 <button
-                  class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  @click="$router.push('/auth/register')"
+                  class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors flex items-center justify-center gap-1.5"
+                  @click.stop="$router.push('/properties/' + listing.id)"
                 >
-                  View Details &amp; Offer
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- Card 4 -->
-          <div
-            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col group"
-          >
-            <div class="relative h-56 overflow-hidden">
-              <img
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                data-alt="Mid-century modern desert home in Scottsdale Arizona with adobe style sand-toned masonry, desert garden with saguaro cacti, clean geometric courtyard, sunset golden hour warm glow, recessed architectural lighting."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoEe88zBV2lhABB3vYQPysh8GYQ4Lc7QpxEFNsyYqq01X1fXS4Ew6IVtaA8OAqPzhyksVaDzzotADBX2axErJfF-zu2SklQaLYCMibl0mP5qf0y0OBlTjuqr_10RPOzK_4_3jBN7DOm9G28df3w6Lhx-q2UiRd0Xa4fXR3RT86wxnXSncX2Wbxq6QXLkvCp8V3oj-YABt6a6mkb42tS4HRuJjnHDLZJFJb2OOpGVQHkYzCX-5-inA"
-              />
-              <div class="absolute top-3 left-3 flex gap-2">
-                <span
-                  class="bg-surface-container-lowest/90 backdrop-blur-xs text-secondary px-2.5 py-1 rounded-full text-label-sm font-label-sm font-bold border border-secondary/20"
-                >
-                  • Verified Plan
-                </span>
-              </div>
-              <div class="absolute top-3 right-3">
-                <button
-                  aria-label="Save listing"
-                  class="p-1.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-xs text-on-surface hover:text-error transition-colors"
-                >
-                  <span class="material-symbols-outlined text-base" data-icon="favorite"
-                    >favorite</span
-                  >
-                </button>
-              </div>
-              <div class="absolute bottom-3 left-3">
-                <span
-                  class="bg-primary-container/90 backdrop-blur-xs text-on-primary px-2.5 py-0.5 rounded-md text-label-sm font-label-sm"
-                  >Single Family</span
-                >
-              </div>
-            </div>
-            <div class="p-5 flex-1 flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-baseline mb-1">
-                  <span class="font-headline-lg text-headline-lg text-primary">$740,000</span>
-                  <span class="text-label-sm font-label-sm text-secondary font-bold"
-                    >Direct Offer Ready</span
-                  >
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-primary">
-                  Mid-Century Desert Sanctuary
-                </h3>
-                <p
-                  class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="location_on"
-                    >location_on</span
-                  >
-                  Scottsdale, AZ · 85251
-                </p>
-              </div>
-              <div class="pt-4 mt-4 border-t border-outline-variant/30">
-                <div
-                  class="grid grid-cols-3 text-center text-on-surface-variant text-body-sm font-body-sm pb-4"
-                >
-                  <div><strong class="text-primary block font-numeric-data">3</strong> Beds</div>
-                  <div class="border-x border-outline-variant/30">
-                    <strong class="text-primary block font-numeric-data">3</strong> Baths
-                  </div>
-                  <div>
-                    <strong class="text-primary block font-numeric-data">2,800</strong> sq ft
-                  </div>
-                </div>
-                <button
-                  class="w-full py-2.5 rounded-lg bg-surface-container-low border border-outline-variant text-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary transition-colors"
-                  @click="$router.push('/auth/register')"
-                >
-                  View Details &amp; Offer
+                  <span>View Details &amp; Offer</span>
+                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
                 </button>
               </div>
             </div>
@@ -2556,15 +2428,98 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import TopNavBar from '@/components/layout/TopNavBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { searchServicePackagesByZip, type ServicePackage } from '@/services/servicePackageService'
 import { useAuthStore } from '@/stores/auth'
+import { usePublicListingStore } from '@/stores/publicListing'
+import type { PublicListing } from '@/services/publicListingService'
 
 const router = useRouter();
 const authStore = useAuthStore();
+const publicListingStore = usePublicListingStore();
+
+// --- Dynamic Featured Properties Feed State ---
+const searchLocation = ref('');
+const searchPropertyType = ref('all');
+const searchPriceRange = ref('all');
+const activeTypeFilter = ref('all');
+const savedListingIds = ref<number[]>([]);
+
+const formatPrice = (val: any) => {
+  if (!val) return '$0';
+  const num = typeof val === 'number' ? val : Number(String(val).replace(/[^0-9.]/g, ''));
+  return isNaN(num) ? String(val) : '$' + num.toLocaleString('en-US');
+};
+
+const formatNumber = (val: any) => {
+  if (!val) return '-';
+  const num = Number(val);
+  return isNaN(num) ? String(val) : num.toLocaleString('en-US');
+};
+
+const formatPropertyType = (val: any) => {
+  if (!val) return 'Single Family';
+  const map: Record<string, string> = {
+    single_family: 'Single Family',
+    condo: 'Condominium',
+    townhouse: 'Townhouse',
+    multi_family: 'Multi-Family',
+    commercial: 'Commercial',
+  };
+  return map[String(val).toLowerCase()] || String(val);
+};
+
+const getListingImage = (listing: PublicListing) => {
+  const first = listing.images?.[0];
+  if (first && first.url) {
+    return first.url;
+  }
+  return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80';
+};
+
+const toggleFavorite = (id: number) => {
+  if (savedListingIds.value.includes(id)) {
+    savedListingIds.value = savedListingIds.value.filter(item => item !== id);
+  } else {
+    savedListingIds.value.push(id);
+  }
+};
+
+const loadFeaturedListings = (params?: Record<string, any>) => {
+  publicListingStore.fetchListings(1, { per_page: 8, ...params });
+};
+
+const handleListingSearch = () => {
+  const params: Record<string, any> = {};
+  if (searchLocation.value.trim()) {
+    params.location = searchLocation.value.trim();
+  }
+  if (searchPropertyType.value && searchPropertyType.value !== 'all') {
+    params.property_type = searchPropertyType.value;
+  }
+  loadFeaturedListings(params);
+  document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
+};
+
+const filterByType = (type: string) => {
+  activeTypeFilter.value = type;
+  searchPropertyType.value = type;
+  const params: Record<string, any> = {};
+  if (searchLocation.value.trim()) {
+    params.location = searchLocation.value.trim();
+  }
+  if (type !== 'all') {
+    params.property_type = type;
+  }
+  loadFeaturedListings(params);
+};
+
+onMounted(() => {
+  loadFeaturedListings();
+});
 
 // --- ZIP Code Matching Engine Logic ---
 const zipSearchInput = ref('');

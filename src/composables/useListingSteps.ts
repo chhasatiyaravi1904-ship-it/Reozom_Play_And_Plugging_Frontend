@@ -19,8 +19,15 @@ export function useListingSteps(listingId: number) {
     ...(workflowStore.workflow?.steps.map((s) => ({ id: s.id, label: s.name })) ?? []),
   ])
 
+  const milestoneSteps = [
+    { id: 'disclosures', label: 'Disclosures' },
+    { id: 'documents', label: 'Documents' },
+    { id: 'review', label: 'Review & Submit' },
+  ]
+
   const stepIds = computed(() => [
     ...dynamicSteps.value,
+    ...milestoneSteps,
   ])
 
   const currentStepId = computed(() => {

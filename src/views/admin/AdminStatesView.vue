@@ -40,9 +40,9 @@ const isDeleteModalOpen = ref(false)
 const stateToDelete = ref<StateItem | null>(null)
 
 // Actions dropdown
-const openDropdownId = ref<number | null>(null)
+const openDropdownId = ref<string | number | null>(null)
 
-function toggleDropdown(id: number, event: Event) {
+function toggleDropdown(id: string | number, event: Event) {
   event.stopPropagation()
   openDropdownId.value = openDropdownId.value === id ? null : id
 }

@@ -3,7 +3,7 @@
     <RouterLink :to="`/properties/${listing.id}`" class="block flex-1 flex flex-col">
       <!-- Image Section -->
       <div class="bg-neutral-100 aspect-[4/3] flex items-center justify-center border-b border-neutral-200 overflow-hidden relative">
-        <img v-if="listing.images?.length" :src="listing.images[0].url" :alt="listing.images[0].alt" class="w-full h-full object-cover" loading="lazy" />
+        <img v-if="listing.images?.length" :src="listing.images[0]?.url" :alt="listing.images[0]?.alt || 'Property Image'" class="w-full h-full object-cover" loading="lazy" />
         <IconImage v-else class="w-10 h-10 text-neutral-300" />
       </div>
 

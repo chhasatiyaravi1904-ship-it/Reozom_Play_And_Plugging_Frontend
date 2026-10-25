@@ -28,24 +28,30 @@ export const useDocumentStore = defineStore('document', () => {
     }
   }
 
-  async function upload(listingId: number, documentId: string, file: File) {
+  async function upload(listingId: number, documentId: string, file: File, customName?: string) {
     const doc = documents.value.find((d) => d.id === documentId)
     try {
-      await documentService.uploadDocument(listingId, documentId, file)
-      if (doc) {
-        doc.status = 'uploaded'
-        doc.fileName = file.name
-        doc.uploadedAt = new Date().toISOString()
-      }
+      await documentService.uploadDocument(listingId, documentId, file, customName)
+      await fetchDocuments(listingId)
       return true
     } catch (err) {
       if (import.meta.env.DEV && isNetworkError(err) && doc) {
         doc.status = 'uploaded'
-        doc.fileName = file.name
+        doc.fileName = customName || file.name
         doc.uploadedAt = new Date().toISOString()
         return true
       }
       if (doc) doc.status = 'failed'
+      return false
+    }
+  }
+
+  async function sign(listingId: number, documentId: string, signerName?: string) {
+    try {
+      await documentService.signDocument(listingId, documentId, signerName)
+      await fetchDocuments(listingId)
+      return true
+    } catch {
       return false
     }
   }
@@ -84,5 +90,5 @@ export const useDocumentStore = defineStore('document', () => {
     }
   }
 
-  return { documents, status, error, fetchDocuments, upload, remove, download }
+  return { documents, status, error, fetchDocuments, upload, sign, remove, download }
 })

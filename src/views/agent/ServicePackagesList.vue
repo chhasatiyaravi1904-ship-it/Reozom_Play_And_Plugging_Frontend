@@ -251,11 +251,11 @@ const isSearchingZips = ref(false) // Left for template compatibility, though lo
 
 const zipSearchResults = computed(() => {
   const query = zipSearchInput.value.trim().toLowerCase()
-  const selectedIds = form.value.selectedZips.map(z => z.id)
+  const selectedIds = new Set(form.value.selectedZips.map(z => String(z.id)))
   
   return zipCodeStore.zipCodes.filter(z => {
     if (!z.code) return false
-    return z.code.toLowerCase().includes(query) && !selectedIds.includes(z.id)
+    return z.code.toLowerCase().includes(query) && !selectedIds.has(String(z.id))
   })
 })
 

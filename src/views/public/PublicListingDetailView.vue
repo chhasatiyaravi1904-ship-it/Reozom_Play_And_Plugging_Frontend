@@ -74,6 +74,12 @@
           <div class="text-3xl md:text-4xl font-bold text-primary">
             {{ formatField(priceField) }}
           </div>
+          <button
+            @click="isOfferModalOpen = true"
+            class="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition"
+          >
+            Make an Offer
+          </button>
         </div>
       </div>
 
@@ -98,6 +104,15 @@
         </div>
       </div>
 
+      <!-- Submit Offer Modal -->
+      <SubmitOfferModal
+        :is-open="isOfferModalOpen"
+        :listing-id="listingId"
+        :listing-address="listing?.address?.city ? `${listing.address.city}, ${listing.address.state}` : 'Property'"
+        @close="isOfferModalOpen = false"
+        @submitted="handleOfferSubmitted"
+      />
+
     </div>
   </div>
 </template>
@@ -109,6 +124,7 @@ import { usePublicListingStore } from '@/stores/publicListing'
 import { ArrowLeft as IconArrowLeft, Image as IconImage, MapPin as IconMapPin, AlertCircle as IconAlertCircle } from 'lucide-vue-next'
 import { formatPublicField } from '@/utils/fieldFormatters'
 import type { PublicFieldConfig } from '@/services/publicListingService'
+import SubmitOfferModal from '@/components/offers/SubmitOfferModal.vue'
 
 const route = useRoute()
 const store = usePublicListingStore()
@@ -116,6 +132,11 @@ const store = usePublicListingStore()
 const listing = computed(() => store.activeListing)
 const listingId = computed(() => Number(route.params.id))
 const activeImage = ref<any>(null)
+const isOfferModalOpen = ref(false)
+
+const handleOfferSubmitted = () => {
+  alert('Your offer has been submitted to the seller!')
+}
 
 watch(() => listing.value, (newVal) => {
   if (newVal?.images?.length) {

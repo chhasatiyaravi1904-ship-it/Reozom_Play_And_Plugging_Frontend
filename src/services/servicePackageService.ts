@@ -39,5 +39,6 @@ export const searchZipCodes = (query: string) => {
 }
 
 export const searchServicePackagesByZip = (zipcode: string) => {
-  return api.get<any[]>(`/public/service-packages/search`, { params: { zipcode } })
+  return api.get<any>(`/public/service-packages/search`, { params: { zipcode } })
 }
+

@@ -1,9 +1,10 @@
 {
   "extends": "./tsconfig.app.json",
+  "include": ["src/**/*", "env.d.ts"],
   "exclude": [],
   "compilerOptions": {
     "composite": true,
-    "lib": [],
-    "types": ["node", "jsdom"]
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"]
   }
 }

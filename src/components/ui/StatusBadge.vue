@@ -20,7 +20,15 @@ const listingConfig: Record<ListingStatus, { label: string; dotClass: string; te
   draft: { label: 'Draft', dotClass: 'bg-fg-muted', textClass: 'text-fg-muted' },
   in_progress: { label: 'In Progress', dotClass: 'bg-warning', textClass: 'text-warning' },
   under_review: { label: 'Under Review', dotClass: 'bg-info', textClass: 'text-info' },
-  submitted: { label: 'Submitted', dotClass: 'bg-success', textClass: 'text-success' },
+  submitted: { label: 'Submitted', dotClass: 'bg-info', textClass: 'text-info' },
+  published: { label: 'Published', dotClass: 'bg-success', textClass: 'text-success' },
+  under_contract: { label: 'Under Contract', dotClass: 'bg-primary', textClass: 'text-primary' },
+  sold: { label: 'Sold', dotClass: 'bg-success', textClass: 'text-success' },
+  rejected: { label: 'Rejected', dotClass: 'bg-danger', textClass: 'text-danger' },
+  withdrawn: { label: 'Withdrawn', dotClass: 'bg-fg-muted', textClass: 'text-fg-muted' },
+  canceled: { label: 'Canceled', dotClass: 'bg-danger', textClass: 'text-danger' },
+  suspended: { label: 'Suspended', dotClass: 'bg-warning', textClass: 'text-warning' },
+  expired: { label: 'Expired', dotClass: 'bg-fg-muted', textClass: 'text-fg-muted' },
 }
 
 const userConfig: Record<UserStatus, { label: string; dotClass: string; textClass: string; ringClass: string }> = {

@@ -8,6 +8,7 @@ export interface ListingProcess {
   agent_id: number | null;
   assigned_zips: string[] | null;
   config: any[] | null;
+  service_package_id?: number | null;
   created_at?: string;
   updated_at?: string;
 }

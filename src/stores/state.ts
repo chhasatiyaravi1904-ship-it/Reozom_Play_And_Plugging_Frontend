@@ -183,8 +183,8 @@ export const useStateStore = defineStore('state', () => {
       const rawList = extractItems(rawPayload)
       states.value = rawList.map(normalizeStateItem)
 
-      if (rawPayload && typeof rawPayload === 'object' && rawPayload.meta) {
-        meta.value = rawPayload.meta
+      if (rawPayload && typeof rawPayload === 'object' && 'meta' in rawPayload && (rawPayload as any).meta) {
+        meta.value = (rawPayload as any).meta
       }
     } catch (err) {
       if (import.meta.env.DEV && isNetworkError(err)) {
@@ -237,14 +237,6 @@ export const useStateStore = defineStore('state', () => {
     } finally {
       if (detailStatus.value !== 'error') detailStatus.value = 'idle'
     }
-  }
-
-  function slugify(text: string): string {
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
   }
 
   /**
@@ -321,16 +313,18 @@ export const useStateStore = defineStore('state', () => {
     } catch (err: any) {
       if (import.meta.env.DEV && isNetworkError(err)) {
         const idx = states.value.findIndex((s) => String(s.id) === String(id))
-        if (idx !== -1) {
-          states.value[idx] = normalizeStateItem({
-            ...states.value[idx],
+        const existing = idx !== -1 ? states.value[idx] : undefined
+        if (existing) {
+          const updated = normalizeStateItem({
+            ...existing,
             ...payload,
-            code: (payload.code || states.value[idx].code).toUpperCase(),
+            code: (payload.code || existing.code).toUpperCase(),
           })
+          states.value[idx] = updated
           if (activeState.value && String(activeState.value.id) === String(id)) {
-            activeState.value = { ...activeState.value, ...states.value[idx] }
+            activeState.value = { ...activeState.value, ...updated }
           }
-          return states.value[idx]
+          return updated
         }
       }
       status.value = 'error'

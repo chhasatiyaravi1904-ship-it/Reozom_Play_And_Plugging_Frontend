@@ -109,6 +109,11 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminListingsView.vue'),
         },
         {
+          path: 'offers',
+          name: 'admin-offers',
+          component: () => import('@/views/admin/AdminOffersView.vue'),
+        },
+        {
           path: 'listing-processes',
           name: 'admin-listing-processes',
           component: () => import('@/views/admin/ListingProcessesList.vue'),
@@ -257,6 +262,11 @@ const router = createRouter({
           path: 'my-listings',
           name: 'my-listings',
           component: () => import('@/views/listings/MyListingsView.vue'),
+        },
+        {
+          path: 'my-offers',
+          name: 'my-offers',
+          component: () => import('@/views/dashboard/MyOffersView.vue'),
         },
         {
           path: 'listings/create',

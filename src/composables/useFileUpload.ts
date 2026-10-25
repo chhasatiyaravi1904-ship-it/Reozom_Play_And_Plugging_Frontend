@@ -31,7 +31,7 @@ export function useFileUpload(listingId: number) {
     progress.value = 0
 
     try {
-      await documentService.uploadDocument(listingId, documentId, file, (percent) => {
+      await documentService.uploadDocument(listingId, documentId, file, (percent: number) => {
         progress.value = percent
       })
       return true

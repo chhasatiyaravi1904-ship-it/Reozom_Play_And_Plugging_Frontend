@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRight } from 'lucide-vue-next'
+import { ArrowRight, CheckCircle2, AlertCircle, FileText, PenTool } from 'lucide-vue-next'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseBadge from '@/components/ui/BaseBadge.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import Alert from '@/components/ui/Alert.vue'
 import Stepper from '@/components/listing/Stepper.vue'
 import { useListingStore } from '@/stores/listing'
 import { useWorkflowStore } from '@/stores/workflow'
+import { useDocumentStore } from '@/stores/document'
 import { useListingSteps } from '@/composables/useListingSteps'
 import { useToastStore } from '@/stores/toast'
 
@@ -20,17 +22,26 @@ const listingId = computed(() => Number(route.params.listingId))
 
 const listingStore = useListingStore()
 const workflowStore = useWorkflowStore()
+const documentStore = useDocumentStore()
 const { steps, routeFor } = useListingSteps(listingId.value)
 
 const isSubmitting = ref(false)
+
+const statutoryDocuments = computed(() =>
+  documentStore.documents.filter((d) => d.category === 'statutory' || d.isSignable),
+)
+
+const allStatutorySigned = computed(() =>
+  statutoryDocuments.value.length > 0 && statutoryDocuments.value.every((d) => d.status === 'signed'),
+)
 
 const reviewSections = computed(() => [
   ...(workflowStore.workflow?.steps.map((step) => ({
     label: step.name,
     route: routeFor(step.id),
   })) ?? []),
-  { label: 'Disclosures', route: routeFor('disclosures') },
-  { label: 'Documents', route: routeFor('documents') },
+  { label: 'Property Disclosures', route: routeFor('disclosures') },
+  { label: 'Documents & Agreements', route: routeFor('documents') },
 ])
 
 const lastWorkflowStep = computed(() => {
@@ -39,10 +50,7 @@ const lastWorkflowStep = computed(() => {
 })
 
 const backRoute = computed(() => {
-  if (lastWorkflowStep.value) {
-    return routeFor(lastWorkflowStep.value.id)
-  }
-  return route.path.startsWith('/agent') ? '/agent/listings' : '/listings'
+  return routeFor('documents')
 })
 
 const isSubmittedRoute = computed(
@@ -55,6 +63,7 @@ const isSubmittedRoute = computed(
 onMounted(() => {
   if (!workflowStore.workflow) workflowStore.fetchWorkflow(listingId.value)
   if (!listingStore.activeListing) listingStore.fetchListing(listingId.value)
+  documentStore.fetchDocuments(listingId.value)
 })
 
 async function handleSubmit() {
@@ -112,35 +121,94 @@ async function handleSubmit() {
       </div>
     </BaseCard>
 
-    <BaseCard v-else>
-      <h1 class="text-xl font-semibold text-fg">Review & Summary</h1>
-      <p class="mt-1 mb-6 text-sm text-fg-muted">
-        Confirm everything looks right before you submit your listing.
-      </p>
+    <BaseCard v-else class="space-y-6">
+      <div>
+        <h1 class="text-xl font-semibold text-fg">Review & Final Submission</h1>
+        <p class="mt-1 text-sm text-fg-muted">
+          Confirm your listing details, disclosures questionnaire, and signed statutory agreements before submitting.
+        </p>
+      </div>
 
-      <ul class="divide-y divide-border border-y border-border">
-        <li
-          v-for="section in reviewSections"
-          :key="section.label"
-          class="flex items-center justify-between py-3"
-        >
-          <span class="text-sm font-medium text-fg">{{ section.label }}</span>
-          <RouterLink :to="section.route" class="text-sm font-medium text-primary hover:underline">
-            Edit
-          </RouterLink>
-        </li>
-      </ul>
+      <!-- Listing Steps Overview -->
+      <div class="rounded-xl border border-border bg-bg-muted/10 p-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-primary mb-3">Listing Workflow Sections</h2>
+        <ul class="divide-y divide-border">
+          <li
+            v-for="section in reviewSections"
+            :key="section.label"
+            class="flex items-center justify-between py-2.5"
+          >
+            <div class="flex items-center gap-2">
+              <CheckCircle2 class="h-4 w-4 text-success" />
+              <span class="text-sm font-medium text-fg">{{ section.label }}</span>
+            </div>
+            <RouterLink :to="section.route" class="text-xs font-semibold text-primary hover:underline">
+              Review / Edit
+            </RouterLink>
+          </li>
+        </ul>
+      </div>
 
-      <Alert variant="success" class="mt-6">
-        <p>All required information completed</p>
-        <p>Required documents uploaded</p>
-        <p>Disclosure questions completed</p>
+      <!-- Statutory Agreements & Disclosures Status (Reozom Standard) -->
+      <div class="rounded-xl border border-border bg-bg-muted/10 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-primary">Statutory Documents & Signatures</h2>
+          <BaseBadge :variant="allStatutorySigned ? 'success' : 'warning'">
+            {{ allStatutorySigned ? 'All Documents Signed' : 'Signatures Outstanding' }}
+          </BaseBadge>
+        </div>
+
+        <div v-if="statutoryDocuments.length > 0" class="divide-y divide-border">
+          <div
+            v-for="doc in statutoryDocuments"
+            :key="doc.id"
+            class="flex items-center justify-between py-2.5"
+          >
+            <div class="flex items-center gap-2.5">
+              <FileText class="h-4 w-4 text-primary" />
+              <div>
+                <div class="text-xs font-semibold text-fg">{{ doc.label }}</div>
+                <div v-if="doc.signedAt" class="text-[11px] text-success">
+                  Signed by {{ doc.signedBy }} on {{ new Date(doc.signedAt).toLocaleDateString() }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <BaseBadge :variant="doc.status === 'signed' ? 'success' : 'warning'">
+                {{ doc.status === 'signed' ? 'Signed' : 'Signature Required' }}
+              </BaseBadge>
+              <RouterLink
+                v-if="doc.status !== 'signed'"
+                :to="routeFor('documents')"
+                class="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
+              >
+                <PenTool class="h-3 w-3" />
+                Sign Now
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-xs text-fg-muted py-2">
+          Statutory documents will be generated upon saving disclosures in the Disclosures step.
+        </div>
+      </div>
+
+      <Alert v-if="!allStatutorySigned" variant="warning">
+        <p class="font-medium text-xs">
+          Notice: State and federal law require statutory listing agreements and disclosures to be electronically signed prior to MLS syndication.
+        </p>
+      </Alert>
+      <Alert v-else variant="success">
+        <p class="font-medium text-xs">
+          All required listing specifications, statutory property condition disclosures, and listing agreements are verified and signed.
+        </p>
       </Alert>
 
       <template #footer>
         <div class="flex items-center justify-between">
           <RouterLink :to="backRoute">
-            <BaseButton variant="secondary">Back</BaseButton>
+            <BaseButton variant="secondary">Back to Documents</BaseButton>
           </RouterLink>
           <BaseButton :loading="isSubmitting" @click="handleSubmit">
             Submit Listing
