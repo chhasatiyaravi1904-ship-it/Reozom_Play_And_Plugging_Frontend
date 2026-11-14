@@ -12,6 +12,9 @@ export interface DocumentRequirement {
   adminNotes?: string | null
   signedAt?: string | null
   signedBy?: string | null
+  signatureImage?: string | null
+  signatureType?: 'drawn' | 'typed' | null
+  verificationCode?: string | null
   isSignable?: boolean
   isPreviewable?: boolean
   fileName?: string | null

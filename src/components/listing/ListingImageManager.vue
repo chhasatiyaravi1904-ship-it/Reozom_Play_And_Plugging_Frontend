@@ -48,7 +48,12 @@
       >
         <!-- Image display -->
         <div class="relative aspect-[4/3] bg-neutral-100 group">
-          <img :src="img.url" :alt="img.alt_text" class="w-full h-full object-cover" />
+          <img
+            :src="getImageUrl(img.url)"
+            :alt="img.alt_text || 'Property image'"
+            class="w-full h-full object-cover"
+            @error="(e) => handleImageError(e, img)"
+          />
           <div v-if="img.is_primary" class="absolute top-2 left-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded shadow">
             PRIMARY
           </div>
@@ -137,6 +142,33 @@ const isLoading = ref(true)
 const isUploading = ref(false)
 const error = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+
+function getImageUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (url.startsWith('/storage')) {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+    const backendHost = apiBase.replace(/\/api\/?$/, '')
+    return `${backendHost}${url}`
+  }
+  if (window.location.hostname === '127.0.0.1' && url.includes('//localhost:8000')) {
+    return url.replace('//localhost:8000', '//127.0.0.1:8000')
+  }
+  if (window.location.hostname === 'localhost' && url.includes('//127.0.0.1:8000')) {
+    return url.replace('//127.0.0.1:8000', '//localhost:8000')
+  }
+  return url
+}
+
+function handleImageError(e: Event, img: ListingImage) {
+  const el = e.target as HTMLImageElement
+  if (!el || el.dataset.retried) return
+  el.dataset.retried = 'true'
+  if (el.src.includes('localhost:8000')) {
+    el.src = el.src.replace('localhost:8000', '127.0.0.1:8000')
+  } else if (el.src.includes('127.0.0.1:8000')) {
+    el.src = el.src.replace('127.0.0.1:8000', 'localhost:8000')
+  }
+}
 
 const loadImages = async () => {
   isLoading.value = true

@@ -21,8 +21,28 @@ export const submitListing = (listingId: number) => {
   return api.post(`/listings/${listingId}/submit`)
 }
 
+export const publishListing = (listingId: number) => {
+  return api.post(`/listings/${listingId}/publish`)
+}
+
 export const resolveWorkflow = (address: PropertyAddress) => {
   return api.post<ListingRouting>('/listings/resolve-workflow', address)
+}
+
+export interface AvailableDisclosure {
+  code: string
+  title: string
+  description?: string
+  category?: string
+  state_code?: string | null
+  property_type?: string | null
+  order?: number
+  is_required?: boolean
+  is_mandatory?: boolean
+  is_selected?: boolean
+  sections_count?: number
+  questions_count?: number
+  sections?: any[]
 }
 
 export const fetchDisclosures = (listingId: number) => {
@@ -30,6 +50,8 @@ export const fetchDisclosures = (listingId: number) => {
     success: boolean
     data: {
       listingId: number
+      availableDisclosures: AvailableDisclosure[]
+      selectedDisclosures: string[]
       steps: Array<{
         id: string
         name: string
@@ -53,7 +75,15 @@ export const fetchDisclosures = (listingId: number) => {
   }>(`/listings/${listingId}/disclosures`)
 }
 
-export const saveDisclosures = (listingId: number, answers: Record<string, Record<string, any>>) => {
-  return api.post(`/listings/${listingId}/disclosures`, { answers })
+export const saveDisclosures = (
+  listingId: number, 
+  answers: Record<string, Record<string, any>>,
+  selectedDisclosures?: string[]
+) => {
+  return api.post(`/listings/${listingId}/disclosures`, { answers, selectedDisclosures })
+}
+
+export const selectDisclosures = (listingId: number, selectedDisclosures: string[]) => {
+  return api.post(`/listings/${listingId}/disclosures/select`, { selectedDisclosures })
 }
 

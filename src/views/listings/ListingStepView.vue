@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, Check } from 'lucide-vue-next'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -24,6 +24,8 @@ const listingStore = useListingStore()
 const { steps, routeFor, dynamicSteps } = useListingSteps(listingId.value)
 
 const errors = reactive<Record<string, string>>({})
+const formError = ref<string>('')
+const isSaving = ref<boolean>(false)
 
 const currentStep = computed(() => workflowStore.workflow?.steps.find((s) => s.id === stepId.value))
 
@@ -43,25 +45,65 @@ const isLastDynamicStep = computed(() => {
 
 watch(stepId, () => {
   Object.keys(errors).forEach((key) => delete errors[key])
+  formError.value = ''
 })
 
 function handleFieldUpdate(fieldId: string, value: FieldValue) {
   workflowStore.setValue(fieldId, value)
   delete errors[fieldId]
+  if (Object.keys(errors).length === 0) {
+    formError.value = ''
+  }
   schedule()
+}
+
+function isFieldVisible(field: any, section: any): boolean {
+  if (section?.showIf) {
+    const parentVal = String(workflowStore.values[section.showIf.field] ?? '')
+    if (parentVal !== String(section.showIf.equals)) return false
+  }
+  if (field?.showIf) {
+    const parentVal = String(workflowStore.values[field.showIf.field] ?? '')
+    if (parentVal !== String(field.showIf.equals)) return false
+  }
+  return true
 }
 
 function validate(): boolean {
   Object.keys(errors).forEach((key) => delete errors[key])
+  formError.value = ''
   if (!currentStep.value) return false
+
   for (const section of currentStep.value.sections) {
     for (const field of section.fields) {
-      if (field.required && !workflowStore.values[field.id]) {
+      if (!isFieldVisible(field, section)) continue
+
+      const val = workflowStore.values[field.id]
+      const isEmpty = val === undefined || val === null || (typeof val === 'string' && val.trim() === '')
+      if (field.required && isEmpty) {
         errors[field.id] = `${field.label} is required.`
       }
     }
   }
-  return Object.keys(errors).length === 0
+
+  const hasErrors = Object.keys(errors).length > 0
+  if (hasErrors) {
+    const count = Object.keys(errors).length
+    const firstKey = Object.keys(errors)[0]
+    formError.value = `Please complete all required fields (${count} remaining) before continuing.`
+
+    setTimeout(() => {
+      const el = document.getElementById(firstKey) || 
+                 document.querySelector(`[name="${firstKey}"]`) ||
+                 document.querySelector(`label[for="${firstKey}"]`) ||
+                 document.querySelector('.border-error')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 80)
+  }
+
+  return !hasErrors
 }
 
 async function handleBack() {
@@ -72,14 +114,29 @@ async function handleBack() {
 
 async function handleContinue() {
   if (!validate()) return
-  await workflowStore.saveStep(listingId.value, stepId.value)
-  const index = dynamicSteps.value.findIndex((s) => s.id === stepId.value)
-  const next = dynamicSteps.value[index + 1]
-  if (next) {
-    router.push(routeFor(next.id))
-  } else {
-    // All dynamic steps done — proceed to disclosures milestone
-    router.push(routeFor('disclosures'))
+
+  isSaving.value = true
+  formError.value = ''
+
+  try {
+    const saved = await workflowStore.saveStep(listingId.value, stepId.value)
+    if (!saved) {
+      formError.value = workflowStore.error || 'Unable to save step. Please check your connection and try again.'
+      return
+    }
+
+    const index = dynamicSteps.value.findIndex((s) => s.id === stepId.value)
+    const next = dynamicSteps.value[index + 1]
+    if (next) {
+      router.push(routeFor(next.id))
+    } else {
+      // All dynamic steps done — proceed to disclosures milestone
+      router.push(routeFor('disclosures'))
+    }
+  } catch (err: any) {
+    formError.value = err?.response?.data?.message || err?.message || 'Failed to save step.'
+  } finally {
+    isSaving.value = false
   }
 }
 </script>
@@ -134,6 +191,15 @@ async function handleContinue() {
         </span>
       </div>
 
+      <!-- Form Validation or Save Error Banner -->
+      <div v-if="formError" class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 flex items-start gap-3">
+        <span class="material-symbols-outlined text-red-600 shrink-0 mt-0.5">error</span>
+        <div class="text-sm">
+          <div class="font-bold">Required Fields Incomplete</div>
+          <div>{{ formError }}</div>
+        </div>
+      </div>
+
       <DynamicWorkflow
         :step="currentStep"
         :values="workflowStore.values"
@@ -151,10 +217,12 @@ async function handleContinue() {
         </button>
         <button 
           @click="handleContinue" 
-          class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm"
+          :disabled="isSaving"
+          class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {{ isLastDynamicStep ? 'Continue to Disclosures' : 'Save & Continue' }}
-          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+          <span v-if="isSaving" class="inline-block animate-spin mr-1">⌛</span>
+          {{ isSaving ? 'Saving...' : (isLastDynamicStep ? 'Continue to Disclosures' : 'Save & Continue') }}
+          <span v-if="!isSaving" class="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>
     </div>

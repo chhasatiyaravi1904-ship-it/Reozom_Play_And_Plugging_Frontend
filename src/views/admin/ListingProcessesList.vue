@@ -37,6 +37,7 @@
           <thead class="bg-neutral-50/50 border-b border-neutral-200">
             <tr>
               <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Process Name</th>
+              <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Required Disclosures</th>
               <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
               <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Last Modified</th>
               <th class="px-6 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider text-right">Actions</th>
@@ -51,6 +52,21 @@
                   <span v-else-if="process.isDefault" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">Default</span>
                 </div>
                 <div class="text-xs text-neutral-500 mt-1">{{ process.type }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex flex-wrap items-center gap-1.5 max-w-xs">
+                  <template v-if="process.required_disclosures && process.required_disclosures.length > 0">
+                    <span 
+                      v-for="code in process.required_disclosures" 
+                      :key="code"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      :title="getDisclosureTitle(code)"
+                    >
+                      {{ formatDisclosureCode(code) }}
+                    </span>
+                  </template>
+                  <span v-else class="text-xs text-neutral-400 italic">None selected</span>
+                </div>
               </td>
               <td class="px-6 py-4">
                 <button
@@ -71,6 +87,14 @@
               </td>
               <td class="px-6 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
+                  <button 
+                    v-if="!isAgent || process.agent_id !== null"
+                    @click="openEditSettingsModal(process)" 
+                    class="p-2 text-neutral-400 hover:text-amber-600 hover:bg-amber-50 rounded transition" 
+                    title="Configure Required Disclosures"
+                  >
+                    <IconFileText :size="18" />
+                  </button>
                   <button @click="previewProcess(process.id)" class="p-2 text-neutral-400 hover:text-green-600 hover:bg-green-50 rounded transition" title="Preview Form">
                     <IconEye :size="18" />
                   </button>
@@ -152,6 +176,40 @@
               <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
             </div>
           </template>
+
+          <!-- Required Disclosures Selection -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-neutral-700">Required Disclosures</label>
+              <span class="text-xs text-neutral-400">{{ newProcessForm.required_disclosures.length }} selected</span>
+            </div>
+            <p class="text-xs text-neutral-500 mb-2">
+              Select which disclosure documents sellers must complete in the Disclosures step for listings under this process.
+            </p>
+            <div class="space-y-1.5 max-h-44 overflow-y-auto p-2 border border-neutral-200 rounded-lg bg-neutral-50">
+              <label 
+                v-for="d in availableDisclosures" 
+                :key="d.code" 
+                class="flex items-start gap-2.5 p-2 bg-white rounded border transition-colors cursor-pointer"
+                :class="newProcessForm.required_disclosures.includes(d.code) ? 'border-emerald-300 bg-emerald-50/30' : 'border-neutral-200 hover:border-neutral-300'"
+              >
+                <input 
+                  type="checkbox" 
+                  :value="d.code" 
+                  v-model="newProcessForm.required_disclosures" 
+                  class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <div class="flex-1 min-w-0 text-xs">
+                  <div class="font-medium text-neutral-900 truncate">{{ d.title }}</div>
+                  <div class="text-[11px] text-neutral-500 line-clamp-1">{{ d.description }}</div>
+                  <div class="mt-1 flex items-center gap-1.5">
+                    <span v-if="d.state_code" class="px-1.5 py-0.2 rounded text-[10px] bg-blue-50 text-blue-700 font-semibold">{{ d.state_code }}</span>
+                    <span v-if="d.is_required" class="px-1.5 py-0.2 rounded text-[10px] bg-amber-50 text-amber-700 font-medium">Statutory</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
         <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
           <button @click="showCreateModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition" :disabled="isSubmitting">Cancel</button>
@@ -192,6 +250,93 @@
       </div>
     </div>
 
+    <!-- Edit Process Settings / Disclosures Modal -->
+    <div v-if="showEditSettingsModal && editingProcess" class="fixed inset-0 bg-neutral-900/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-neutral-900">Process Disclosures & Settings</h3>
+            <p class="text-xs text-neutral-500 mt-0.5">{{ editingProcess.name }}</p>
+          </div>
+          <button @click="showEditSettingsModal = false" class="text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 p-1.5 rounded-lg transition">
+            <IconX :size="20" />
+          </button>
+        </div>
+        <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Process Name</label>
+            <input 
+              v-model="editProcessForm.name" 
+              type="text" 
+              class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
+            />
+          </div>
+
+          <template v-if="isAgent">
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-1">Service Package (Optional)</label>
+              <select v-model="editProcessForm.service_package_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9] bg-white">
+                <option :value="null">-- None --</option>
+                <option v-for="pkg in servicePackages" :key="pkg.id" :value="pkg.id">{{ pkg.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-1">Assigned Zip Codes (Optional)</label>
+              <input 
+                v-model="editProcessForm.assigned_zips" 
+                type="text" 
+                class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
+                placeholder="e.g. 48103, 48104"
+              />
+              <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
+            </div>
+          </template>
+
+          <!-- Required Disclosures Checklist -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-neutral-700">Required Disclosures for this Process</label>
+              <span class="text-xs text-emerald-700 font-semibold">{{ editProcessForm.required_disclosures.length }} selected</span>
+            </div>
+            <p class="text-xs text-neutral-500 mb-2">
+              Sellers who create listings under this process will have these disclosures pre-selected and rendered in the <strong>Disclosures Step</strong>.
+            </p>
+            <div class="space-y-2 max-h-56 overflow-y-auto p-2 border border-neutral-200 rounded-lg bg-neutral-50">
+              <label 
+                v-for="d in availableDisclosures" 
+                :key="d.code" 
+                class="flex items-start gap-2.5 p-2.5 bg-white rounded-lg border transition-colors cursor-pointer"
+                :class="editProcessForm.required_disclosures.includes(d.code) ? 'border-emerald-400 bg-emerald-50/40 shadow-xs' : 'border-neutral-200 hover:border-neutral-300'"
+              >
+                <input 
+                  type="checkbox" 
+                  :value="d.code" 
+                  v-model="editProcessForm.required_disclosures" 
+                  class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <div class="flex-1 min-w-0 text-xs">
+                  <div class="font-semibold text-neutral-900">{{ d.title }}</div>
+                  <div class="text-[11px] text-neutral-500 mt-0.5">{{ d.description }}</div>
+                  <div class="mt-1.5 flex items-center gap-1.5">
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-neutral-100 text-neutral-600 font-mono">{{ d.code }}</span>
+                    <span v-if="d.state_code" class="px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 font-semibold">{{ d.state_code }}</span>
+                    <span v-if="d.is_required" class="px-1.5 py-0.5 rounded text-[10px] bg-amber-50 text-amber-700 font-medium">Statutory</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
+          <button @click="showEditSettingsModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition" :disabled="isSubmitting">Cancel</button>
+          <button @click="handleSaveSettings" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition" :disabled="!editProcessForm.name || isSubmitting">
+            <span v-if="isSubmitting">Saving...</span>
+            <span v-else>Save Settings & Disclosures</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -200,8 +345,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProcessStore } from '@/stores/processStore'
 import { useAuthStore } from '@/stores/auth'
-import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye } from '@tabler/icons-vue'
+import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye, IconFileText } from '@tabler/icons-vue'
 import { fetchServicePackages } from '@/services/servicePackageService'
+import { fetchAvailableDisclosures } from '@/services/listingProcessService'
 
 const router = useRouter()
 const processStore = useProcessStore()
@@ -215,17 +361,36 @@ const isSubmitting = ref(false)
 const showDeleteModal = ref(false)
 const processToDelete = ref(null)
 const servicePackages = ref([])
+const availableDisclosures = ref([])
+
+const showEditSettingsModal = ref(false)
+const editingProcess = ref(null)
+const editProcessForm = ref({
+  name: '',
+  service_package_id: null,
+  assigned_zips: '',
+  required_disclosures: []
+})
 
 const newProcessForm = ref({
   name: '',
   type: '',
   isDefault: false,
   service_package_id: '',
-  assigned_zips: ''
+  assigned_zips: '',
+  required_disclosures: ['mi_residential_appliances', 'mi_residential_conditions', 'lead_paint_disclosure']
 })
 
 onMounted(async () => {
   processStore.loadProcesses()
+  
+  try {
+    const discRes = await fetchAvailableDisclosures()
+    availableDisclosures.value = discRes.data || []
+  } catch (e) {
+    console.error('Failed to load available disclosures', e)
+  }
+
   if (authStore.user?.role === 'agent') {
     try {
       const res = await fetchServicePackages()
@@ -235,6 +400,53 @@ onMounted(async () => {
     }
   }
 })
+
+const openEditSettingsModal = (process) => {
+  editingProcess.value = process
+  editProcessForm.value = {
+    name: process.name,
+    service_package_id: process.service_package_id || null,
+    assigned_zips: Array.isArray(process.assigned_zips) ? process.assigned_zips.join(', ') : (process.assigned_zips || ''),
+    required_disclosures: Array.isArray(process.required_disclosures) ? [...process.required_disclosures] : []
+  }
+  showEditSettingsModal.value = true
+}
+
+const handleSaveSettings = async () => {
+  if (!editingProcess.value || !editProcessForm.value.name || isSubmitting.value) return
+  isSubmitting.value = true
+  try {
+    const payload = {
+      name: editProcessForm.value.name,
+      required_disclosures: editProcessForm.value.required_disclosures,
+      service_package_id: editProcessForm.value.service_package_id || null,
+      assigned_zips: editProcessForm.value.assigned_zips 
+        ? editProcessForm.value.assigned_zips.split(',').map(z => z.trim()).filter(Boolean)
+        : []
+    }
+    await processStore.updateProcess(editingProcess.value.id, payload)
+    showEditSettingsModal.value = false
+    editingProcess.value = null
+  } catch (e) {
+    console.error('Failed to update process settings', e)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const getDisclosureTitle = (code) => {
+  const d = availableDisclosures.value.find(item => item.code === code)
+  return d ? d.title : code
+}
+
+const formatDisclosureCode = (code) => {
+  if (code.includes('appliances')) return 'Appliances'
+  if (code.includes('conditions')) return 'Conditions'
+  if (code.includes('lead')) return 'Lead Paint'
+  if (code.includes('vacant')) return 'Vacant Land'
+  if (code.includes('condo') || code.includes('hoa')) return 'HOA / Condo'
+  return code
+}
 
 const filteredProcesses = computed(() => {
   if (!searchQuery.value) return processStore.processes
@@ -282,12 +494,23 @@ const handleCreate = async () => {
     if (newProcessForm.value.assigned_zips) {
       payload.assigned_zips = newProcessForm.value.assigned_zips.split(',').map(z => z.trim()).filter(z => z)
     }
+
+    if (newProcessForm.value.required_disclosures && newProcessForm.value.required_disclosures.length > 0) {
+      payload.required_disclosures = newProcessForm.value.required_disclosures
+    }
     
     const newProc = await processStore.addProcess(payload)
     
     showCreateModal.value = false
     const createdName = newProcessForm.value.name
-    newProcessForm.value = { name: '', type: '', isDefault: false, service_package_id: '', assigned_zips: '' }
+    newProcessForm.value = { 
+      name: '', 
+      type: '', 
+      isDefault: false, 
+      service_package_id: '', 
+      assigned_zips: '',
+      required_disclosures: ['mi_residential_appliances', 'mi_residential_conditions', 'lead_paint_disclosure']
+    }
     
     let targetId = newProc?.id
     if (!targetId) {

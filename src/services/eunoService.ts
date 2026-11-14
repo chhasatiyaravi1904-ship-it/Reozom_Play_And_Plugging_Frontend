@@ -57,12 +57,16 @@ export async function getOfferSigningStatus(offerId: number): Promise<EunoAgreem
   return (res.data as any)?.data ?? res.data
 }
 
+import { TOKEN_STORAGE_KEY } from './api'
+
 /**
  * Get direct download link for executed signed PDF.
  */
 export function getSignedDocUrl(agreementId: number): string {
   const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-  return `${base}/euno-agreements/${agreementId}/signed-doc`
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+  const query = token ? `?token=${encodeURIComponent(token)}` : ''
+  return `${base}/euno-agreements/${agreementId}/signed-doc${query}`
 }
 
 /**
@@ -70,5 +74,7 @@ export function getSignedDocUrl(agreementId: number): string {
  */
 export function getAuditReportUrl(agreementId: number): string {
   const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-  return `${base}/euno-agreements/${agreementId}/audit`
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+  const query = token ? `?token=${encodeURIComponent(token)}` : ''
+  return `${base}/euno-agreements/${agreementId}/audit${query}`
 }

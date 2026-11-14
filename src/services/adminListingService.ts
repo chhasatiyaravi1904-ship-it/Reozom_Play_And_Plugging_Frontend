@@ -25,6 +25,20 @@ export interface AdminListingDetail {
   moderated_by?: number
   moderated_at?: string
   rejection_reason?: string
+  status_changed_date?: string
+  sold_details?: {
+    id: number
+    listing_id: number
+    anticipated_closed_date?: string
+    closed_date?: string
+    sales_price?: number
+    sellers_concessions?: number
+    amount?: number
+    finance_type?: string
+    agent?: number
+    agent_name?: string
+    company?: string
+  }
   user?: {
     id: number
     name: string
@@ -101,4 +115,21 @@ export const unpublishListing = (id: number) => {
 
 export const rejectListing = (id: number, rejection_reason: string) => {
   return api.post<{ data: AdminListingDetail }>(`/admin/listings/${id}/reject`, { rejection_reason })
+}
+
+export interface ChangeAdminListingStatusPayload {
+  status: string | number
+  comment: string
+  anticipated_closed_date?: string
+  agent?: 1 | 2
+  agent_name?: string
+  closed_date?: string
+  sales_price?: number
+  sellers_concessions?: 1 | 2
+  amount?: number
+  finance_type?: string
+}
+
+export const changeAdminListingStatus = (id: number, data: ChangeAdminListingStatusPayload) => {
+  return api.post<{ data: AdminListingDetail; message: string }>(`/admin/listings/${id}/change-status`, data)
 }

@@ -11,6 +11,7 @@ import {
   Download,
   Eye,
   User,
+  Users,
   Building,
   Calendar,
   ShieldCheck,
@@ -75,6 +76,7 @@ const statusTabs = [
 const selectedOffer = ref<ListingOffer | null>(null)
 const isDetailModalOpen = ref(false)
 const isDownloadingDoc = ref<string | null>(null)
+const isDownloadingContract = ref(false)
 
 async function loadOffers() {
   isLoading.value = true
@@ -103,11 +105,16 @@ async function loadOffers() {
       metrics.value = payload.metrics
     }
   } catch (err: any) {
-    console.error('Error loading admin offers:', err)
-    errorMessage.value = err.response?.data?.message || 'Failed to load offers from server.'
+    errorMessage.value = err?.response?.data?.message || 'Failed to load offers overview.'
   } finally {
     isLoading.value = false
   }
+}
+
+function handleTabChange(val: string) {
+  queryParams.status = val
+  queryParams.page = 1
+  loadOffers()
 }
 
 function handleSearch(val: string) {
@@ -116,70 +123,82 @@ function handleSearch(val: string) {
   loadOffers()
 }
 
-function handleStatusTab(val: string) {
-  queryParams.status = val
-  queryParams.page = 1
+function handlePageChange(page: number) {
+  queryParams.page = page
   loadOffers()
 }
 
-function handlePageChange(newPage: number) {
-  queryParams.page = newPage
-  loadOffers()
-}
-
-function openDetailModal(offer: ListingOffer) {
+async function openDetailModal(offer: ListingOffer) {
   selectedOffer.value = offer
   isDetailModalOpen.value = true
+  try {
+    const res = await offerApi.getAdminOffer(offer.id)
+    if (res.data) {
+      selectedOffer.value = res.data
+    }
+  } catch {
+    // Keep list view copy if detailed fetch fails
+  }
 }
 
-async function handleDownloadDoc(docId: string, filename: string) {
+async function handleDownloadDoc(docId: string, fileName: string) {
   if (!selectedOffer.value) return
   isDownloadingDoc.value = docId
   try {
-    const response = await offerApi.downloadOfferDocument(selectedOffer.value.id, docId)
-    const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename || 'document.pdf'
-    document.body.appendChild(a)
-    a.click()
+    const res = await offerApi.downloadOfferDocument(selectedOffer.value.id, docId)
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
     window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-  } catch (err) {
-    toast.error('Failed to download document attachment.')
+  } catch {
+    toast.error('Failed to download document.')
   } finally {
     isDownloadingDoc.value = null
   }
 }
 
-function formatCurrency(val: string | number | undefined | null): string {
-  if (val === undefined || val === null || val === '') return '$0'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(Number(val))
+async function handleDownloadContract() {
+  if (!selectedOffer.value) return
+  isDownloadingContract.value = true
+  try {
+    const res = await offerApi.downloadOfferContract(selectedOffer.value.id)
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Purchase_Agreement_${selectedOffer.value.reference_code}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+    toast.success('Purchase agreement contract downloaded.')
+  } catch {
+    toast.error('Failed to download contract.')
+  } finally {
+    isDownloadingContract.value = false
+  }
 }
 
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return 'N/A'
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+function formatCurrency(val?: number | string | null) {
+  if (val === undefined || val === null) return '$0'
+  return `$${Number(val).toLocaleString()}`
 }
 
-function formatDateTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return 'N/A'
-  return new Date(dateStr).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+function formatDate(iso?: string | null) {
+  if (!iso) return 'N/A'
+  return new Date(iso).toLocaleDateString()
+}
+
+function formatDateTime(iso?: string | null) {
+  if (!iso) return 'N/A'
+  return new Date(iso).toLocaleString()
+}
+
+function formatStatus(status: string) {
+  return status.replace(/_/g, ' ')
 }
 
 function getStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger' | 'info' | 'secondary' {
@@ -187,20 +206,18 @@ function getStatusBadgeVariant(status: string): 'success' | 'warning' | 'danger'
     case 'accepted':
       return 'success'
     case 'submitted':
-      return 'info'
+      return 'warning'
     case 'countered_by_seller':
     case 'countered_by_buyer':
-      return 'warning'
+      return 'info'
     case 'rejected':
     case 'rejected_under_contract':
       return 'danger'
+    case 'withdrawn':
+    case 'expired':
     default:
       return 'secondary'
   }
-}
-
-function formatStatus(status: string): string {
-  return status.replace(/_/g, ' ')
 }
 
 onMounted(() => {
@@ -210,140 +227,113 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
     <PageHeader
       title="Offer Management"
-      description="Monitor, inspect, and track buyer purchase offers and negotiations across all listings."
+      description="Supervise property purchase offers, negotiation timelines, bottom-line calculations, and closing contracts across all active listings."
     >
       <template #actions>
-        <BaseButton
-          variant="secondary"
-          size="sm"
-          :disabled="isLoading"
-          @click="loadOffers"
-        >
+        <BaseButton variant="secondary" :disabled="isLoading" @click="loadOffers">
           <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isLoading }" />
           Refresh
         </BaseButton>
       </template>
     </PageHeader>
 
-    <!-- Metrics Stat Cards -->
+    <!-- Key Metrics Cards -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <BaseCard class="p-5">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total Offers</p>
-            <p class="mt-2 text-2xl font-bold tracking-tight text-fg">{{ metrics.total_offers }}</p>
-          </div>
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Handshake class="h-6 w-6" />
-          </div>
+      <!-- Total Offers -->
+      <BaseCard class="p-5 flex items-center gap-4">
+        <div class="rounded-xl bg-indigo-50 dark:bg-indigo-950/50 p-3 text-indigo-600 dark:text-indigo-400">
+          <Handshake class="h-6 w-6" />
         </div>
-        <p class="mt-3 text-xs text-fg-muted">All purchase proposals submitted on platform</p>
+        <div>
+          <div class="text-xs uppercase tracking-wider font-semibold text-fg-muted">Total Offers</div>
+          <div class="text-2xl font-black text-fg mt-0.5">{{ metrics.total_offers }}</div>
+        </div>
       </BaseCard>
 
-      <BaseCard class="p-5">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">In Active Negotiation</p>
-            <p class="mt-2 text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
-              {{ metrics.active_offers }}
-            </p>
-          </div>
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Clock class="h-6 w-6" />
-          </div>
+      <!-- Active In Negotiation -->
+      <BaseCard class="p-5 flex items-center gap-4">
+        <div class="rounded-xl bg-amber-50 dark:bg-amber-950/50 p-3 text-amber-600 dark:text-amber-400">
+          <Clock class="h-6 w-6" />
         </div>
-        <p class="mt-3 text-xs text-fg-muted">Pending review or active seller/buyer counteroffers</p>
+        <div>
+          <div class="text-xs uppercase tracking-wider font-semibold text-fg-muted">Active Negotiations</div>
+          <div class="text-2xl font-black text-fg mt-0.5">{{ metrics.active_offers }}</div>
+        </div>
       </BaseCard>
 
-      <BaseCard class="p-5">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">Accepted / Under Contract</p>
-            <p class="mt-2 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              {{ metrics.accepted_offers }}
-            </p>
-          </div>
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 class="h-6 w-6" />
-          </div>
+      <!-- Accepted Volume -->
+      <BaseCard class="p-5 flex items-center gap-4">
+        <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 p-3 text-emerald-600 dark:text-emerald-400">
+          <TrendingUp class="h-6 w-6" />
         </div>
-        <p class="mt-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-          {{ formatCurrency(metrics.accepted_volume) }} volume
-        </p>
+        <div>
+          <div class="text-xs uppercase tracking-wider font-semibold text-fg-muted">Accepted Volume</div>
+          <div class="text-2xl font-black text-fg mt-0.5">{{ formatCurrency(metrics.accepted_volume) }}</div>
+        </div>
       </BaseCard>
 
-      <BaseCard class="p-5">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">Declined / Withdrawn</p>
-            <p class="mt-2 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-              {{ metrics.rejected_offers }}
-            </p>
-          </div>
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
-            <XCircle class="h-6 w-6" />
-          </div>
+      <!-- Accepted Count -->
+      <BaseCard class="p-5 flex items-center gap-4">
+        <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 p-3 text-emerald-600 dark:text-emerald-400">
+          <CheckCircle2 class="h-6 w-6" />
         </div>
-        <p class="mt-3 text-xs text-fg-muted">Rejected, withdrawn, or expired offers</p>
+        <div>
+          <div class="text-xs uppercase tracking-wider font-semibold text-fg-muted">Closed / Accepted</div>
+          <div class="text-2xl font-black text-fg mt-0.5">{{ metrics.accepted_offers }}</div>
+        </div>
       </BaseCard>
     </div>
 
-    <!-- Filters & Search -->
-    <BaseCard class="p-4 sm:p-5">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <!-- Filter Bar & Search -->
+    <BaseCard class="p-4">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Tabs
-          :model-value="queryParams.status"
           :tabs="statusTabs"
-          class="w-full lg:w-auto"
-          @update:model-value="handleStatusTab"
+          :model-value="queryParams.status"
+          @update:model-value="handleTabChange"
         />
 
-        <div class="flex w-full items-center gap-3 lg:w-72">
+        <div class="w-full md:w-72">
           <SearchInput
             :model-value="queryParams.search"
-            placeholder="Search address, buyer, ref..."
-            class="w-full"
+            placeholder="Search ref, buyer, address..."
             @update:model-value="handleSearch"
           />
         </div>
       </div>
     </BaseCard>
 
-    <!-- Data Table / List -->
-    <BaseCard>
-      <div v-if="isLoading" class="p-6">
-        <LoadingState :rows="6" label="Loading offers..." />
+    <!-- Offers Table Card -->
+    <BaseCard class="overflow-hidden">
+      <div v-if="isLoading" class="p-8">
+        <LoadingState label="Loading offer transactions..." />
       </div>
 
-      <div v-else-if="errorMessage" class="p-6">
-        <ErrorState :title="errorMessage">
-          <template #action>
-            <BaseButton size="sm" @click="loadOffers">Try Again</BaseButton>
-          </template>
-        </ErrorState>
+      <div v-else-if="errorMessage" class="p-8">
+        <ErrorState :description="errorMessage" @retry="loadOffers" />
       </div>
 
-      <div v-else-if="offers.length === 0" class="p-6">
+      <div v-else-if="!offers || offers.length === 0" class="p-8">
         <EmptyState
+          :icon="Handshake"
           title="No offers found"
-          description="No buyer purchase offers match your search criteria."
+          description="There are no buyer offers matching your current filter criteria."
         />
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left text-sm text-fg">
-          <thead class="border-b border-border bg-surface-raised/40 text-xs font-semibold uppercase text-fg-muted">
+          <thead class="border-b border-border bg-surface-raised/50 text-xs uppercase font-semibold text-fg-muted">
             <tr>
-              <th scope="col" class="px-5 py-3.5">Ref / Date</th>
-              <th scope="col" class="px-5 py-3.5">Listing Property</th>
-              <th scope="col" class="px-5 py-3.5">Buyer</th>
-              <th scope="col" class="px-5 py-3.5">Offer Amount</th>
-              <th scope="col" class="px-5 py-3.5">Terms</th>
-              <th scope="col" class="px-5 py-3.5">Status</th>
-              <th scope="col" class="px-5 py-3.5 text-right">Actions</th>
+              <th class="px-5 py-3.5">Ref / Date</th>
+              <th class="px-5 py-3.5">Listing Property</th>
+              <th class="px-5 py-3.5">Buyer</th>
+              <th class="px-5 py-3.5">Offer Amount</th>
+              <th class="px-5 py-3.5">Terms</th>
+              <th class="px-5 py-3.5">Status</th>
+              <th class="px-5 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
@@ -522,11 +512,40 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Financial Breakdown -->
+        <!-- Legal Purchasers Section -->
+        <div v-if="selectedOffer.purchasers && selectedOffer.purchasers.length > 0" class="rounded-xl border border-border p-4 bg-surface">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
+            <Users class="h-4 w-4 text-primary" />
+            Legal Offer Purchasers ({{ selectedOffer.purchasers.length }})
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              v-for="(purchaser, idx) in selectedOffer.purchasers"
+              :key="idx"
+              class="p-3 rounded-lg border border-border bg-surface-raised text-xs space-y-1"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-fg">{{ purchaser.first_name }} {{ purchaser.last_name }}</span>
+                <span v-if="purchaser.is_main" class="bg-indigo-50 dark:bg-indigo-950 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
+                  Primary Purchaser
+                </span>
+              </div>
+              <div class="text-fg-muted">{{ purchaser.email }}</div>
+              <div v-if="purchaser.street_address" class="text-fg-muted">
+                {{ purchaser.street_address }}{{ purchaser.unit_number ? `, Unit ${purchaser.unit_number}` : '' }}, {{ purchaser.city }}, {{ purchaser.zip }}
+              </div>
+              <div v-if="purchaser.non_us_citizen" class="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
+                ⚠ Non-US Citizen Purchaser
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Breakdown & Reozom Net Calculation -->
         <div class="rounded-xl border border-border p-4 bg-surface">
           <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-4 flex items-center gap-1.5">
             <DollarSign class="h-4 w-4 text-primary" />
-            Financial Terms & Breakdown
+            Financial Terms & Bottom Line Net Calculation
           </h4>
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
@@ -556,12 +575,37 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Net Calculation -->
-          <div class="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-            <span class="text-fg-muted">Estimated Net to Seller (excluding commission/closing fees):</span>
-            <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-              {{ formatCurrency(Number(selectedOffer.offer_amount) - Number(selectedOffer.seller_concessions || 0)) }}
-            </span>
+          <!-- Reozom Live Net Calculation Breakdown -->
+          <div class="mt-4 pt-3 border-t border-border space-y-1.5 text-xs">
+            <div class="flex items-center justify-between text-fg-muted">
+              <span>Gross Purchase Price:</span>
+              <span class="font-medium text-fg">{{ formatCurrency(selectedOffer.offer_amount) }}</span>
+            </div>
+            <div v-if="Number(selectedOffer.seller_concessions) > 0" class="flex items-center justify-between text-amber-600 dark:text-amber-400">
+              <span>Less Seller Concessions:</span>
+              <span>-{{ formatCurrency(selectedOffer.seller_concessions) }}</span>
+            </div>
+            <div v-if="Number(selectedOffer.commission) > 0" class="flex items-center justify-between text-fg-muted">
+              <span>Less Buyer Agent Commission ({{ selectedOffer.commission }}{{ selectedOffer.commission_type === 1 ? '%' : '$' }}):</span>
+              <span>
+                -{{ formatCurrency(selectedOffer.commission_type === 1 ? (Number(selectedOffer.offer_amount) * Number(selectedOffer.commission) / 100) : Number(selectedOffer.commission)) }}
+              </span>
+            </div>
+            <div v-if="selectedOffer.home_warranty_included" class="flex items-center justify-between text-fg-muted">
+              <span>Less Home Warranty:</span>
+              <span>-{{ formatCurrency(selectedOffer.home_warranty_price || 499) }}</span>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-border font-bold">
+              <span class="text-fg">Reozom Bottom Line Net to Seller:</span>
+              <div class="text-right">
+                <span class="text-base text-emerald-600 dark:text-emerald-400">
+                  {{ formatCurrency(selectedOffer.bottom_line_offer ?? (Number(selectedOffer.offer_amount) - Number(selectedOffer.seller_concessions || 0))) }}
+                </span>
+                <span class="text-xs text-primary font-semibold ml-1.5">
+                  ({{ selectedOffer.percentage ?? 100 }}%)
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -581,7 +625,7 @@ onMounted(() => {
               <span class="text-fg-muted block">Occupancy</span>
               <span class="font-semibold text-fg capitalize">
                 {{ selectedOffer.occupancy_type ? selectedOffer.occupancy_type.replace(/_/g, ' ') : 'At Closing' }}
-                <span v-if="selectedOffer.occupancy_days">({{ selectedOffer.occupancy_days }} days)</span>
+                <span v-if="selectedOffer.occupancy_days">({{ selectedOffer.occupancy_days }} days<span v-if="selectedOffer.fee_per_day"> @ ${{ selectedOffer.fee_per_day }}/day</span>)</span>
               </span>
             </div>
             <div>
@@ -613,6 +657,26 @@ onMounted(() => {
               {{ selectedOffer.additional_terms }}
             </p>
           </div>
+        </div>
+
+        <!-- Official Purchase Agreement Contract (PDF) -->
+        <div class="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <FileText class="h-5 w-5 text-primary" />
+            <div>
+              <div class="text-xs font-bold text-fg">Reozom Purchase Agreement & Offer Contract</div>
+              <div class="text-[11px] text-fg-muted">Official electronic legal contract with pricing, terms, contingencies and signatures</div>
+            </div>
+          </div>
+          <BaseButton
+            variant="primary"
+            size="sm"
+            :disabled="isDownloadingContract"
+            @click="handleDownloadContract"
+          >
+            <Download class="mr-1.5 h-3.5 w-3.5" :class="{ 'animate-bounce': isDownloadingContract }" />
+            {{ isDownloadingContract ? 'Generating...' : 'Download Contract (PDF)' }}
+          </BaseButton>
         </div>
 
         <!-- Attached Documents -->
@@ -689,6 +753,12 @@ onMounted(() => {
                 <p v-if="act.comment" class="mt-2 text-fg bg-surface p-2 rounded border border-border/50 text-xs italic">
                   "{{ act.comment }}"
                 </p>
+                <div v-if="act.terms_snapshot" class="mt-2 p-2 bg-surface rounded border border-border/50 text-[11px] text-fg-muted">
+                  <span class="font-semibold text-fg">Terms Snapshot:</span>
+                  <span v-if="act.terms_snapshot.offer_amount"> Price: {{ formatCurrency(act.terms_snapshot.offer_amount) }}</span>
+                  <span v-if="act.terms_snapshot.closing_date"> • Close: {{ act.terms_snapshot.closing_date }}</span>
+                  <span v-if="act.terms_snapshot.seller_concessions"> • Concessions: {{ formatCurrency(act.terms_snapshot.seller_concessions) }}</span>
+                </div>
               </div>
             </div>
           </div>

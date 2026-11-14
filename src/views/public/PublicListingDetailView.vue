@@ -37,7 +37,7 @@
       <!-- Image Hero / Gallery -->
       <div class="flex flex-col gap-2">
         <div class="w-full bg-neutral-100 rounded-2xl border border-neutral-200 aspect-video md:aspect-[21/9] flex items-center justify-center shadow-inner overflow-hidden relative">
-          <img v-if="activeImage" :src="activeImage.url" :alt="activeImage.alt" class="w-full h-full object-cover" />
+          <img v-if="activeImage" :src="formatPhotoUrl(activeImage.url)" :alt="activeImage.alt" class="w-full h-full object-cover" />
           <IconImage v-else class="w-16 h-16 text-neutral-300" />
         </div>
         
@@ -51,7 +51,7 @@
             :class="activeImage?.id === img.id ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'"
             :aria-label="'View ' + img.alt"
           >
-            <img :src="img.thumbnail_url || img.url" :alt="img.alt" class="w-full h-full object-cover" loading="lazy" />
+            <img :src="formatPhotoUrl(img.thumbnail_url || img.url)" :alt="img.alt" class="w-full h-full object-cover" loading="lazy" />
           </button>
         </div>
       </div>
@@ -74,12 +74,15 @@
           <div class="text-3xl md:text-4xl font-bold text-primary">
             {{ formatField(priceField) }}
           </div>
-          <button
-            @click="isOfferModalOpen = true"
-            class="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition"
+          <router-link
+            :to="`/properties/${listingId}/send-offer`"
+            class="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5"
           >
-            Make an Offer
-          </button>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Submit an Official Offer
+          </router-link>
         </div>
       </div>
 
@@ -133,6 +136,22 @@ const listing = computed(() => store.activeListing)
 const listingId = computed(() => Number(route.params.id))
 const activeImage = ref<any>(null)
 const isOfferModalOpen = ref(false)
+
+function formatPhotoUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (url.startsWith('/storage')) {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+    const backendHost = apiBase.replace(/\/api\/?$/, '')
+    return `${backendHost}${url}`
+  }
+  if (window.location.hostname === '127.0.0.1' && url.includes('//localhost:8000')) {
+    return url.replace('//localhost:8000', '//127.0.0.1:8000')
+  }
+  if (window.location.hostname === 'localhost' && url.includes('//127.0.0.1:8000')) {
+    return url.replace('//127.0.0.1:8000', '//localhost:8000')
+  }
+  return url
+}
 
 const handleOfferSubmitted = () => {
   alert('Your offer has been submitted to the seller!')

@@ -23,6 +23,16 @@ const router = createRouter({
       component: () => import('@/views/public/PublicListingDetailView.vue'),
     },
     {
+      path: '/properties/:id/send-offer',
+      name: 'send-offer',
+      component: () => import('@/views/offers/SendOfferView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/listings/:id/send-offer',
+      redirect: to => `/properties/${to.params.id}/send-offer`,
+    },
+    {
       path: '/auth',
       component: () => import('@/layouts/AuthLayout.vue'),
       meta: { guestOnly: true },

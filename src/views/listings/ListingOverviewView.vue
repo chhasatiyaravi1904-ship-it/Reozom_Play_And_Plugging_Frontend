@@ -57,7 +57,14 @@ function continueListing() {
         </p>
       </div>
       <div
-        v-if="isSubmitted"
+        v-if="listingStore.activeListing?.status === 'published'"
+        class="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 border border-emerald-200"
+      >
+        <CheckCircle class="h-4 w-4" />
+        Active & Published
+      </div>
+      <div
+        v-else-if="isSubmitted"
         class="flex items-center gap-2 rounded-full bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700"
       >
         <CheckCircle class="h-4 w-4" />
@@ -96,8 +103,11 @@ function continueListing() {
         class="flex items-center justify-between rounded-xl border border-border bg-surface p-4"
       >
         <p class="text-sm text-fg-muted">
-          <template v-if="isSubmitted">
-            Listing submitted — awaiting review
+          <template v-if="listingStore.activeListing?.status === 'published'">
+            Listing is active & published on the marketplace
+          </template>
+          <template v-else-if="isSubmitted">
+            Listing submitted
           </template>
           <template v-else>
             {{ listingStore.activeListing?.stepsCompleted || 0 }} of {{ steps.length }} steps
@@ -108,7 +118,7 @@ function continueListing() {
           :variant="isSubmitted ? 'secondary' : 'primary'"
           @click="continueListing"
         >
-          {{ isSubmitted ? 'Review Submission' : 'Continue Your Listing' }}
+          {{ listingStore.activeListing?.status === 'published' ? 'Review & Manage' : isSubmitted ? 'Review Submission' : 'Continue Your Listing' }}
           <ArrowRight class="ml-1.5 h-4 w-4" />
         </BaseButton>
       </div>

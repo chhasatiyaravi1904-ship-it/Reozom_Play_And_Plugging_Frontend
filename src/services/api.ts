@@ -43,14 +43,17 @@ apiClient.interceptors.response.use(
   },
   (err) => {
     if (axios.isAxiosError(err) && err.response?.status === 401) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY)
-      // Admin and seller sessions expire into different login pages —
-      // redirecting an admin's expired session to the seller login is a dead end.
-      const path = window.location.pathname
-      const isAdminArea = path.startsWith('/admin')
-      const alreadyOnGuestPage = isAdminArea ? path === '/admin/login' : path.startsWith('/auth/')
-      if (!alreadyOnGuestPage) {
-        window.location.assign(isAdminArea ? '/admin/login' : '/auth/login')
+      const url = err.config?.url || ''
+      if (!url.includes('/download') && !url.includes('/signed-doc') && !url.includes('/audit')) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY)
+        // Admin and seller sessions expire into different login pages —
+        // redirecting an admin's expired session to the seller login is a dead end.
+        const path = window.location.pathname
+        const isAdminArea = path.startsWith('/admin')
+        const alreadyOnGuestPage = isAdminArea ? path === '/admin/login' : path.startsWith('/auth/')
+        if (!alreadyOnGuestPage) {
+          window.location.assign(isAdminArea ? '/admin/login' : '/auth/login')
+        }
       }
     }
     return Promise.reject(err)

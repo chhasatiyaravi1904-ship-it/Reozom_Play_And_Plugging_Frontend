@@ -29,6 +29,24 @@ export interface OfferDocument {
   created_at: string
 }
 
+export interface ListingOfferPurchaser {
+  id?: number
+  listing_offer_id?: number
+  first_name: string
+  last_name: string
+  email: string
+  street_address?: string
+  city?: string
+  unit_designator?: string
+  unit_number?: string
+  state_id?: number
+  zip?: string
+  same_address?: boolean
+  non_us_citizen?: boolean
+  is_main?: boolean
+  full_name?: string
+}
+
 export interface ListingOffer {
   id: number
   listing_id: number
@@ -51,6 +69,15 @@ export interface ListingOffer {
   occupancy_type: 'at_closing' | 'days_after_closing'
   occupancy_days: number
   seller_concessions: string | number
+  closing_amount_type?: 1 | 2
+  fee_per_day?: number
+  commission?: number
+  commission_type?: 1 | 2
+  home_warranty_included?: boolean
+  home_warranty_price?: number
+  buyers_home_address_under_contract?: string
+  mortgage_application_provided_by?: number
+  loan_approval_provided_by?: number
   contingencies?: Record<string, boolean>
   deadline?: string | null
   additional_terms?: string | null
@@ -66,6 +93,11 @@ export interface ListingOffer {
   updated_at: string
   actions?: OfferAction[]
   documents?: OfferDocument[]
+  purchasers?: ListingOfferPurchaser[]
+  bottom_line_offer?: number
+  percentage?: number
+  full_bottom_line_offer?: number
+  full_percentage?: number
   listing?: {
     id: number
     reference_code: string
@@ -83,10 +115,54 @@ export interface ListingOffer {
   }
 }
 
+export interface SendOfferConfig {
+  listing: {
+    id: number
+    reference_code: string
+    address: string
+    city: string
+    state: string
+    zip: string
+    full_address: string
+    price: number
+    year_built: number
+    has_well: boolean
+    has_septic: boolean
+    user_id: number
+  }
+  buyer: {
+    id: number
+    name: string
+    first_name: string
+    last_name: string
+    email: string
+    phone?: string
+    role: string
+    is_agent: boolean
+  }
+  is_listing_owner: boolean
+  has_open_offer: boolean
+  fee_per_day: number
+  home_warranty_price: number
+  appliances: Array<{ id: string; name: string }>
+  payment_methods: Array<{ id: string; name: string; requires_financing_dates: boolean }>
+  deadlines: Array<{ hours: number; label: string }>
+  states: Array<{ code: string; name: string }>
+}
+
+export const getSendOfferConfig = (listingId: number) => {
+  return api.get<SendOfferConfig>(`/listings/${listingId}/send-offer`)
+}
+
+export const getExamplePurchaseAgreementUrl = (listingId: number) => {
+  const base = api.defaults.baseURL || '/api'
+  return `${base}/listings/${listingId}/example-purchase-agreement`
+}
+
 export const submitOffer = (
   listingId: number,
-  data: Partial<ListingOffer> & { comment?: string },
-  files?: File[],
+  data: Record<string, any>,
+  files?: { file: File; type: string }[] | File[],
 ) => {
   const formData = new FormData()
 
@@ -101,9 +177,11 @@ export const submitOffer = (
   })
 
   if (files && files.length > 0) {
-    files.forEach((file, index) => {
+    files.forEach((fileItem: any, index: number) => {
+      const file = fileItem.file instanceof File ? fileItem.file : fileItem
+      const type = fileItem.type || (index === 0 ? 'pre_approval_letter' : 'other')
       formData.append(`documents[${index}][file]`, file)
-      formData.append(`documents[${index}][type]`, 'pre_approval_letter')
+      formData.append(`documents[${index}][type]`, type)
     })
   }
 
@@ -141,8 +219,17 @@ export const counterOffer = (
   data: {
     offer_amount: number
     earnest_money_deposit?: number
+    down_payment_amount?: number
     closing_date?: string
     seller_concessions?: number
+    closing_amount_type?: 1 | 2
+    fee_per_day?: number
+    commission?: number
+    commission_type?: 1 | 2
+    home_warranty_included?: boolean
+    home_warranty_price?: number
+    occupancy_type?: 'at_closing' | 'days_after_closing'
+    occupancy_days?: number
     deadline?: string
     additional_terms?: string
     comment?: string
@@ -171,6 +258,12 @@ export const withdrawOffer = (offerId: number, reason?: string) => {
 
 export const downloadOfferDocument = (offerId: number, documentId: string) => {
   return api.get(`/offers/${offerId}/documents/${documentId}/download`, {
+    responseType: 'blob',
+  })
+}
+
+export const downloadOfferContract = (offerId: number) => {
+  return api.get(`/offers/${offerId}/contract/download`, {
     responseType: 'blob',
   })
 }
@@ -205,4 +298,3 @@ export const getAdminOffers = (params?: {
 export const getAdminOffer = (offerId: number) => {
   return api.get<ListingOffer>(`/admin/offers/${offerId}`)
 }
-

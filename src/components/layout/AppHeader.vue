@@ -12,10 +12,10 @@ const isMobileMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
 
 const navLinks = [
-  { label: 'My Listing', to: '/dashboard' },
-  { label: 'Progress', to: '/listings' },
-  { label: 'Documents', to: '/listings' },
-  { label: 'Help Center', to: '/help' },
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Listings', to: '/listings' },
+  { label: 'My Offers', to: '/my-offers' },
+  { label: 'Browse Properties', to: '/properties' },
 ]
 
 async function handleLogout() {
@@ -39,6 +39,7 @@ async function handleLogout() {
           :key="link.label"
           :to="link.to"
           class="rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-raised hover:text-fg"
+          active-class="bg-primary/10 text-primary font-semibold"
         >
           {{ link.label }}
         </RouterLink>
@@ -105,6 +106,7 @@ async function handleLogout() {
           :key="link.label"
           :to="link.to"
           class="rounded-lg px-3 py-2 text-sm font-medium text-fg hover:bg-surface-raised"
+          active-class="bg-primary/10 text-primary font-semibold"
           @click="isMobileMenuOpen = false"
         >
           {{ link.label }}

@@ -5,12 +5,15 @@ export type ListingStatus =
   | 'under_review'
   | 'published'
   | 'under_contract'
+  | 'ccs'
+  | 'contingent_continue_to_show'
   | 'sold'
   | 'rejected'
   | 'withdrawn'
   | 'canceled'
   | 'suspended'
   | 'expired'
+  | 'unpublished'
 
 export interface PropertyAddress {
   address?: string
@@ -37,4 +40,14 @@ export interface ListingSummary {
   stepsCompleted: number
   stepsTotal: number
   updatedAt: string
+  primaryPhotoUrl?: string | null
+  offersCount?: number
+  packageName?: string | null
+  statusChangedDate?: string | null
+  price?: number | null
+  bedrooms?: number | null
+  bathrooms?: number | null
+  squareFeet?: number | null
+  propertyType?: string | null
+  listingTitle?: string | null
 }

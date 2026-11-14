@@ -30,7 +30,8 @@ const fileName = computed(() =>
 
 <template>
   <BaseInput
-    v-if="(field.fieldType || field.type) === 'text'"
+    v-if="['text', 'email', 'tel', 'phone', 'url', 'password'].includes(field.fieldType || field.type)"
+    :type="((field.fieldType || field.type) === 'phone') ? 'tel' : ((field.fieldType || field.type) || 'text')"
     :label="field.label"
     :placeholder="field.placeholder"
     :required="field.required"
@@ -116,6 +117,16 @@ const fileName = computed(() =>
     :file-name="fileName"
     @select="update"
     @remove="update(null)"
+  />
+
+  <BaseInput
+    v-else
+    :label="field.label"
+    :placeholder="field.placeholder"
+    :required="field.required"
+    :error="error"
+    :model-value="(modelValue as string) || ''"
+    @update:modelValue="update"
   />
 
   <p v-if="field.helpText" class="mt-1 text-xs text-fg-muted">{{ field.helpText }}</p>

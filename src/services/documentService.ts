@@ -32,10 +32,29 @@ export const uploadDocument = (
   })
 }
 
-export const signDocument = (listingId: number, documentId: string, signerName?: string) => {
-  return api.post(`/listings/${listingId}/documents/${documentId}/sign`, {
-    signer_name: signerName,
-  })
+export interface SignPayload {
+  signer_name: string
+  signature_image?: string
+  signature_type?: 'drawn' | 'typed'
+  initials_image?: string
+  legal_consent?: boolean
+}
+
+export const signDocument = (
+  listingId: number,
+  documentId: string,
+  payloadOrName?: string | SignPayload,
+) => {
+  const payload =
+    typeof payloadOrName === 'string'
+      ? { signer_name: payloadOrName }
+      : payloadOrName || {}
+
+  return api.post(`/listings/${listingId}/documents/${documentId}/sign`, payload)
+}
+
+export const signAllDocuments = (listingId: number, payload: SignPayload) => {
+  return api.post(`/listings/${listingId}/documents/sign-all`, payload)
 }
 
 export const previewDocument = (listingId: number, documentId: string) => {
@@ -57,10 +76,23 @@ export const deleteDocument = (listingId: number, documentId: string) => {
   return api.delete(`/listings/${listingId}/documents/${documentId}`)
 }
 
-export const downloadDocument = (listingId: number, documentId: string) => {
-  return api.get(`/listings/${listingId}/documents/${documentId}/download`, {
+export const downloadDocument = (listingId: number, documentId: string, inline = false) => {
+  return api.get(`/listings/${listingId}/documents/${documentId}/download${inline ? '?inline=1' : ''}`, {
     responseType: 'blob'
   })
+}
+
+export const viewDocument = (listingId: number, documentId: string) => {
+  return api.get(`/listings/${listingId}/documents/${documentId}/view`, {
+    responseType: 'blob'
+  })
+}
+
+export const getDocumentViewUrl = (listingId: number, documentId: string) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+  const token = localStorage.getItem('reozom_seller_token')
+  const url = `${baseUrl}/listings/${listingId}/documents/${documentId}/view`
+  return token ? `${url}?token=${encodeURIComponent(token)}` : url
 }
 
 export const reviewDocument = (
@@ -78,6 +110,28 @@ export const reviewDocument = (
 export const downloadAllDocuments = (listingId: number) => {
   return api.get(`/listings/${listingId}/documents-download-all`, {
     responseType: 'blob'
+  })
+}
+
+export const sendDocumentEmail = (
+  listingId: number,
+  documentId: string,
+  emails: string[],
+  note?: string,
+) => {
+  return api.post(`/listings/${listingId}/documents/${documentId}/send-email`, {
+    emails,
+    note,
+  })
+}
+
+export const renameDocument = (
+  listingId: number,
+  documentId: string,
+  name: string,
+) => {
+  return api.put(`/listings/${listingId}/documents/${documentId}/rename`, {
+    name,
   })
 }
 

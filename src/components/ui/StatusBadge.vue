@@ -23,12 +23,15 @@ const listingConfig: Record<ListingStatus, { label: string; dotClass: string; te
   submitted: { label: 'Submitted', dotClass: 'bg-info', textClass: 'text-info' },
   published: { label: 'Published', dotClass: 'bg-success', textClass: 'text-success' },
   under_contract: { label: 'Under Contract', dotClass: 'bg-primary', textClass: 'text-primary' },
+  ccs: { label: 'Contingent (CCS)', dotClass: 'bg-warning', textClass: 'text-warning' },
+  contingent_continue_to_show: { label: 'Contingent (CCS)', dotClass: 'bg-warning', textClass: 'text-warning' },
   sold: { label: 'Sold', dotClass: 'bg-success', textClass: 'text-success' },
   rejected: { label: 'Rejected', dotClass: 'bg-danger', textClass: 'text-danger' },
   withdrawn: { label: 'Withdrawn', dotClass: 'bg-fg-muted', textClass: 'text-fg-muted' },
   canceled: { label: 'Canceled', dotClass: 'bg-danger', textClass: 'text-danger' },
   suspended: { label: 'Suspended', dotClass: 'bg-warning', textClass: 'text-warning' },
   expired: { label: 'Expired', dotClass: 'bg-fg-muted', textClass: 'text-fg-muted' },
+  unpublished: { label: 'Unpublished', dotClass: 'bg-fg-muted', textClass: 'text-fg-muted' },
 }
 
 const userConfig: Record<UserStatus, { label: string; dotClass: string; textClass: string; ringClass: string }> = {

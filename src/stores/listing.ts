@@ -83,10 +83,23 @@ export const useListingStore = defineStore('listing', () => {
   async function submitListing(listingId: number) {
     try {
       await listingService.submitListing(listingId)
+      await fetchListing(listingId)
       return true
     } catch (err) {
       if (import.meta.env.DEV && isNetworkError(err)) return true
-      error.value = 'Unable to submit your listing. Please try again.'
+      error.value = 'Unable to publish your listing. Please try again.'
+      return false
+    }
+  }
+
+  async function publishListing(listingId: number) {
+    try {
+      await listingService.publishListing(listingId)
+      await fetchListing(listingId)
+      return true
+    } catch (err) {
+      if (import.meta.env.DEV && isNetworkError(err)) return true
+      error.value = 'Unable to publish your listing. Please try again.'
       return false
     }
   }
@@ -100,5 +113,6 @@ export const useListingStore = defineStore('listing', () => {
     fetchListing,
     startListing,
     submitListing,
+    publishListing,
   }
 })
