@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   FileText,
   Plus,
@@ -25,20 +26,18 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useToastStore } from '@/stores/toast'
+import { fetchPublicStates, type PublicState } from '@/services/publicGeographyService'
 import { fetchDocumentTemplates, type DocumentTemplateOption } from '@/services/listingProcessService'
 import {
   fetchAdminDisclosures,
-  createAdminDisclosure,
-  updateAdminDisclosure,
   deleteAdminDisclosure,
   toggleAdminDisclosure,
   duplicateAdminDisclosure,
   type PropertyDisclosure,
-  type DisclosureSection,
-  type DisclosureField,
 } from '@/services/adminDisclosureService'
 
 const toast = useToastStore()
+const router = useRouter()
 
 // State
 const disclosures = ref<PropertyDisclosure[]>([])
@@ -49,65 +48,11 @@ const selectedPropertyType = ref('all')
 const selectedStatus = ref('all')
 
 // Modals
-const isFormModalOpen = ref(false)
 const isPreviewModalOpen = ref(false)
 const isDeleteModalOpen = ref(false)
-const isSaving = ref(false)
-const activeTab = ref<'info' | 'questions'>('info')
 
-const editingDisclosure = ref<PropertyDisclosure | null>(null)
 const previewingDisclosure = ref<PropertyDisclosure | null>(null)
 const deletingDisclosure = ref<PropertyDisclosure | null>(null)
-
-// Form state
-interface FormState {
-  title: string
-  code: string
-  state_code: string
-  property_type: string
-  category: string
-  description: string
-  order: number
-  is_required: boolean
-  is_active: boolean
-  sections: DisclosureSection[]
-}
-
-const defaultForm = (): FormState => ({
-  title: '',
-  code: '',
-  state_code: 'ALL',
-  property_type: 'all',
-  category: 'statutory',
-  description: '',
-  order: 1,
-  is_required: true,
-  is_active: true,
-  sections: [
-    {
-      id: 'general_section_1',
-      name: 'General Conditions',
-      order: 1,
-      fields: [
-        {
-          id: 'question_1',
-          name: 'question_1',
-          label: 'Are you aware of any material defects on the property?',
-          type: 'select',
-          required: true,
-          placeholder: '',
-          options: [
-            { label: 'No', value: 'no' },
-            { label: 'Yes (Explain below)', value: 'yes' },
-            { label: 'Unknown', value: 'unknown' },
-          ],
-        },
-      ],
-    },
-  ],
-})
-
-const form = ref<FormState>(defaultForm())
 
 // Load disclosures
 async function loadDisclosures() {
@@ -129,8 +74,18 @@ function documentsFor(code: string) {
   return documentTemplates.value.filter((t) => (t.disclosure_codes || []).includes(code))
 }
 
+const states = ref<PublicState[]>([])
+
 onMounted(async () => {
   loadDisclosures()
+  fetchPublicStates()
+    .then((res: any) => {
+      const data = res?.data
+      states.value = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []
+    })
+    .catch(() => {
+      states.value = []
+    })
   try {
     documentTemplates.value = (await fetchDocumentTemplates()).data || []
   } catch {
@@ -194,73 +149,13 @@ const filteredDisclosures = computed(() => {
   })
 })
 
-// Open Create Modal
-function openCreateModal() {
-  editingDisclosure.value = null
-  form.value = defaultForm()
-  form.value.order = disclosures.value.length + 1
-  activeTab.value = 'info'
-  isFormModalOpen.value = true
+// Navigate to the full-page builder
+function openCreatePage() {
+  router.push({ name: 'admin-disclosure-create' })
 }
 
-// Open Edit Modal
-function openEditModal(d: PropertyDisclosure) {
-  editingDisclosure.value = d
-  form.value = {
-    title: d.title,
-    code: d.code,
-    state_code: d.state_code || 'ALL',
-    property_type: d.property_type || 'all',
-    category: d.category || 'statutory',
-    description: d.description || '',
-    order: d.order || 1,
-    is_required: d.is_required,
-    is_active: d.is_active,
-    sections: JSON.parse(JSON.stringify(d.schema?.sections || [])),
-  }
-  activeTab.value = 'info'
-  isFormModalOpen.value = true
-}
-
-// Save (Create or Update)
-async function handleSave() {
-  if (!form.value.title.trim()) {
-    toast.error('Disclosure title is required.')
-    return
-  }
-
-  isSaving.value = true
-  try {
-    const payload = {
-      title: form.value.title.trim(),
-      code: form.value.code.trim() || undefined,
-      state_code: form.value.state_code === 'ALL' ? null : form.value.state_code,
-      property_type: form.value.property_type === 'all' ? null : form.value.property_type,
-      category: form.value.category,
-      description: form.value.description,
-      order: form.value.order,
-      is_required: form.value.is_required,
-      is_active: form.value.is_active,
-      schema: {
-        sections: form.value.sections,
-      },
-    }
-
-    if (editingDisclosure.value) {
-      await updateAdminDisclosure(editingDisclosure.value.id, payload)
-      toast.success('Disclosure updated successfully.')
-    } else {
-      await createAdminDisclosure(payload)
-      toast.success('New dynamic disclosure created successfully.')
-    }
-
-    isFormModalOpen.value = false
-    await loadDisclosures()
-  } catch (err: any) {
-    toast.error(err?.response?.data?.message || 'Failed to save disclosure.')
-  } finally {
-    isSaving.value = false
-  }
+function openEditPage(d: PropertyDisclosure) {
+  router.push({ name: 'admin-disclosure-edit', params: { id: d.id } })
 }
 
 // Toggle status
@@ -310,72 +205,6 @@ function openPreview(d: PropertyDisclosure) {
   isPreviewModalOpen.value = true
 }
 
-// Section & Field Builder Helpers
-function addSection() {
-  const nextNum = form.value.sections.length + 1
-  form.value.sections.push({
-    id: `section_${nextNum}`,
-    name: `New Section ${nextNum}`,
-    order: nextNum,
-    fields: [
-      {
-        id: `field_${Date.now()}`,
-        label: 'New Disclosure Question',
-        type: 'select',
-        required: true,
-        placeholder: '',
-        options: [
-          { label: 'No', value: 'no' },
-          { label: 'Yes', value: 'yes' },
-          { label: 'Unknown', value: 'unknown' },
-        ],
-      },
-    ],
-  })
-}
-
-function removeSection(index: number) {
-  if (form.value.sections.length === 1) {
-    toast.error('A disclosure must contain at least one section.')
-    return
-  }
-  form.value.sections.splice(index, 1)
-}
-
-function addField(section: DisclosureSection) {
-  const nextNum = section.fields.length + 1
-  section.fields.push({
-    id: `question_${Date.now()}_${nextNum}`,
-    label: `Question ${nextNum}`,
-    type: 'select',
-    required: true,
-    placeholder: '',
-    options: [
-      { label: 'No', value: 'no' },
-      { label: 'Yes', value: 'yes' },
-      { label: 'Unknown', value: 'unknown' },
-    ],
-  })
-}
-
-function removeField(section: DisclosureSection, index: number) {
-  if (section.fields.length === 1) {
-    toast.error('A section must have at least one question.')
-    return
-  }
-  section.fields.splice(index, 1)
-}
-
-function addOption(field: DisclosureField) {
-  if (!field.options) field.options = []
-  field.options.push({ label: 'New Option', value: `option_${field.options.length + 1}` })
-}
-
-function removeOption(field: DisclosureField, index: number) {
-  if (field.options && field.options.length > 1) {
-    field.options.splice(index, 1)
-  }
-}
 </script>
 
 <template>
@@ -397,7 +226,7 @@ function removeOption(field: DisclosureField, index: number) {
       </div>
 
       <div class="flex items-center gap-3">
-        <BaseButton variant="primary" @click="openCreateModal">
+        <BaseButton variant="primary" @click="openCreatePage">
           <Plus class="h-4 w-4 mr-1.5" />
           New Disclosure
         </BaseButton>
@@ -454,10 +283,7 @@ function removeOption(field: DisclosureField, index: number) {
             class="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-fg font-medium focus:border-primary focus:outline-none"
           >
             <option value="ALL">All States</option>
-            <option value="MI">MI - Michigan</option>
-            <option value="FL">FL - Florida</option>
-            <option value="CA">CA - California</option>
-            <option value="TX">TX - Texas</option>
+            <option v-for="s in states" :key="s.code" :value="s.code">{{ s.code }} - {{ s.name }}</option>
           </select>
 
           <!-- Property Type -->
@@ -494,7 +320,7 @@ function removeOption(field: DisclosureField, index: number) {
           description="Try adjusting your search criteria or create a new statutory disclosure."
         >
           <template #action>
-            <BaseButton size="sm" @click="openCreateModal">Create Disclosure</BaseButton>
+            <BaseButton size="sm" @click="openCreatePage">Create Disclosure</BaseButton>
           </template>
         </EmptyState>
       </BaseCard>
@@ -516,11 +342,6 @@ function removeOption(field: DisclosureField, index: number) {
               </span>
 
               <h3 class="text-base font-bold text-fg">{{ d.title }}</h3>
-
-              <!-- Category Badge -->
-              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize bg-surface-raised border border-border text-fg-muted">
-                {{ d.category }}
-              </span>
 
               <!-- State Badge -->
               <span
@@ -572,11 +393,6 @@ function removeOption(field: DisclosureField, index: number) {
                   {{ (d.schema?.sections || []).reduce((acc, s) => acc + (s.fields?.length || 0), 0) }}
                 </strong> Questions
               </span>
-              <span>&bull;</span>
-              <span>Order: <strong>#{{ d.order }}</strong></span>
-              <span v-if="d.is_required" class="text-rose-600 dark:text-rose-400 font-semibold">
-                &bull; Mandatory for Publishing
-              </span>
             </div>
           </div>
 
@@ -613,7 +429,7 @@ function removeOption(field: DisclosureField, index: number) {
             <!-- Edit -->
             <button
               class="p-1.5 rounded-lg border border-border text-indigo-600 hover:bg-indigo-50 transition"
-              @click="openEditModal(d)"
+              @click="openEditPage(d)"
               title="Edit Configuration & Questions"
             >
               <Edit2 class="h-4 w-4" />
@@ -631,305 +447,6 @@ function removeOption(field: DisclosureField, index: number) {
         </div>
       </BaseCard>
     </div>
-
-    <!-- CREATE / EDIT FULL BUILDER MODAL -->
-    <Teleport to="body">
-      <div v-if="isFormModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity" @click="isFormModalOpen = false"></div>
-
-        <div class="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden">
-          <!-- Modal Header -->
-          <div class="flex items-center justify-between p-6 border-b border-border bg-surface-raised/40">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
-                  {{ editingDisclosure ? 'Edit Dynamic Disclosure' : 'New Dynamic Disclosure' }}
-                </span>
-                <span class="text-xs text-fg-muted font-medium">Admin Controlled</span>
-              </div>
-              <h2 class="text-xl font-bold text-fg mt-1">
-                {{ form.title || 'Untitled Property Disclosure' }}
-              </h2>
-            </div>
-            <button class="p-1.5 rounded-lg hover:bg-surface-raised text-fg-muted hover:text-fg transition" @click="isFormModalOpen = false">
-              <X class="h-5 w-5" />
-            </button>
-          </div>
-
-          <!-- Tabs Navigation -->
-          <div class="flex border-b border-border px-6 bg-surface">
-            <button
-              class="py-3 px-4 text-sm font-semibold border-b-2 transition"
-              :class="activeTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
-              @click="activeTab = 'info'"
-            >
-              1. General & Scope Configuration
-            </button>
-            <button
-              class="py-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2"
-              :class="activeTab === 'questions' ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg'"
-              @click="activeTab = 'questions'"
-            >
-              <span>2. Sections & Questions Builder</span>
-              <span class="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">
-                {{ form.sections.reduce((acc, s) => acc + s.fields.length, 0) }}
-              </span>
-            </button>
-          </div>
-
-          <!-- Modal Scrollable Body -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-6">
-            <!-- TAB 1: General Info & Scope -->
-            <div v-if="activeTab === 'info'" class="space-y-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-fg mb-1">Disclosure Title <span class="text-rose-500">*</span></label>
-                  <input
-                    v-model="form.title"
-                    type="text"
-                    placeholder="e.g. Property Condition & Foundation Disclosures"
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-fg mb-1">Unique Identifier Code</label>
-                  <input
-                    v-model="form.code"
-                    type="text"
-                    placeholder="e.g. mi_property_conditions"
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg font-mono focus:border-primary focus:outline-none"
-                  />
-                  <p class="text-[11px] text-fg-muted mt-1">Leave blank to auto-generate from title.</p>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-fg mb-1">State Scope</label>
-                  <select
-                    v-model="form.state_code"
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
-                  >
-                    <option value="ALL">All States (Universal)</option>
-                    <option value="MI">Michigan (MI)</option>
-                    <option value="FL">Florida (FL)</option>
-                    <option value="CA">California (CA)</option>
-                    <option value="TX">Texas (TX)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-fg mb-1">Property Type Scope</label>
-                  <select
-                    v-model="form.property_type"
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
-                  >
-                    <option value="all">All Property Types</option>
-                    <option value="residential">Residential Only</option>
-                    <option value="vacant_land">Vacant Land Only</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-fg mb-1">Category</label>
-                  <select
-                    v-model="form.category"
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
-                  >
-                    <option value="statutory">Statutory Condition</option>
-                    <option value="lead_paint">Lead-Based Paint</option>
-                    <option value="environmental">Environmental / Soils</option>
-                    <option value="hoa">HOA & Common Areas</option>
-                    <option value="custom">Custom Questionnaire</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-fg mb-1">Description / Legal Note</label>
-                <textarea
-                  v-model="form.description"
-                  rows="3"
-                  placeholder="Explain legal purpose, statutory code citation, or seller instructions..."
-                  class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
-                ></textarea>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-border">
-                <div>
-                  <label class="block text-xs font-semibold text-fg mb-1">Step Order Position</label>
-                  <input
-                    v-model.number="form.order"
-                    type="number"
-                    min="1"
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div class="flex items-center gap-3 pt-5">
-                  <input
-                    id="is_required_chk"
-                    v-model="form.is_required"
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <label for="is_required_chk" class="text-xs font-semibold text-fg">
-                    Mandatory for Publishing
-                  </label>
-                </div>
-
-                <div class="flex items-center gap-3 pt-5">
-                  <input
-                    id="is_active_chk"
-                    v-model="form.is_active"
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <label for="is_active_chk" class="text-xs font-semibold text-fg">
-                    Active (Visible to Sellers)
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 2: Sections & Questions Builder -->
-            <div v-else class="space-y-6">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h4 class="text-sm font-bold text-fg">Sections & Question Form Groups</h4>
-                  <p class="text-xs text-fg-muted">Structure the questions sellers will fill out during listing creation.</p>
-                </div>
-                <BaseButton size="sm" variant="secondary" @click="addSection">
-                  <Plus class="h-3.5 w-3.5 mr-1" />
-                  Add Section
-                </BaseButton>
-              </div>
-
-              <!-- Sections Accordions -->
-              <div v-for="(section, sIndex) in form.sections" :key="section.id" class="rounded-xl border border-border bg-surface-raised/30 p-5 space-y-4">
-                <div class="flex items-center justify-between gap-4 border-b border-border pb-3">
-                  <div class="flex items-center gap-3 flex-1">
-                    <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                      Section {{ sIndex + 1 }}
-                    </span>
-                    <input
-                      v-model="section.name"
-                      type="text"
-                      placeholder="Section Title (e.g. Roof & Structural)"
-                      class="flex-1 rounded-md border border-border bg-surface px-2.5 py-1 text-sm font-semibold text-fg focus:border-primary focus:outline-none"
-                    />
-                  </div>
-
-                  <button
-                    class="text-xs text-rose-600 hover:text-rose-700 font-medium px-2 py-1 rounded hover:bg-rose-50"
-                    @click="removeSection(sIndex)"
-                  >
-                    Delete Section
-                  </button>
-                </div>
-
-                <!-- Questions inside Section -->
-                <div class="space-y-3 pl-2">
-                  <div
-                    v-for="(field, fIndex) in section.fields"
-                    :key="field.id"
-                    class="rounded-lg border border-border bg-surface p-4 space-y-3 shadow-xs"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="flex items-center gap-2 flex-1">
-                        <span class="text-xs font-mono font-bold text-fg-muted">Q{{ fIndex + 1 }}.</span>
-                        <input
-                          v-model="field.label"
-                          type="text"
-                          placeholder="Enter disclosure question or statement..."
-                          class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-fg focus:border-primary focus:outline-none"
-                        />
-                      </div>
-
-                      <div class="flex items-center gap-2">
-                        <!-- Input Type -->
-                        <select
-                          v-model="field.type"
-                          class="rounded border border-border bg-surface px-2 py-1 text-xs text-fg focus:border-primary focus:outline-none"
-                        >
-                          <option value="select">Select (Dropdown)</option>
-                          <option value="radio">Radio Buttons</option>
-                          <option value="text">Short Text</option>
-                          <option value="textarea">Long Explanation</option>
-                          <option value="checkbox">Single Checkbox</option>
-                        </select>
-
-                        <!-- Required Toggle -->
-                        <label class="flex items-center gap-1 text-[11px] font-medium text-fg cursor-pointer">
-                          <input v-model="field.required" type="checkbox" class="h-3.5 w-3.5 rounded text-primary" />
-                          Req
-                        </label>
-
-                        <button
-                          class="text-fg-muted hover:text-rose-600 p-1 rounded"
-                          @click="removeField(section, fIndex)"
-                          title="Remove Question"
-                        >
-                          <X class="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Options Editor for Select & Radio -->
-                    <div v-if="['select', 'radio'].includes(field.type)" class="bg-surface-raised/40 p-3 rounded-md space-y-2">
-                      <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-semibold text-fg-muted uppercase tracking-wider">Answer Choices</span>
-                        <button class="text-[11px] font-bold text-primary hover:underline" @click="addOption(field)">
-                          + Add Option
-                        </button>
-                      </div>
-
-                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div
-                          v-for="(opt, optIdx) in field.options"
-                          :key="optIdx"
-                          class="flex items-center gap-1 bg-surface border border-border rounded px-2 py-1"
-                        >
-                          <input
-                            v-model="opt.label"
-                            type="text"
-                            placeholder="Choice Label"
-                            class="flex-1 text-xs bg-transparent focus:outline-none"
-                          />
-                          <button class="text-fg-muted hover:text-rose-600" @click="removeOption(field, optIdx)">
-                            &times;
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <BaseButton size="sm" variant="ghost" class="text-xs" @click="addField(section)">
-                    <Plus class="h-3 w-3 mr-1" />
-                    Add Question to {{ section.name }}
-                  </BaseButton>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Modal Footer -->
-          <div class="flex items-center justify-between p-4 border-t border-border bg-surface">
-            <span class="text-xs text-fg-muted">
-              {{ form.sections.reduce((acc, s) => acc + s.fields.length, 0) }} total questions configured
-            </span>
-
-            <div class="flex items-center gap-3">
-              <BaseButton variant="ghost" @click="isFormModalOpen = false">Cancel</BaseButton>
-              <BaseButton variant="primary" :disabled="isSaving" @click="handleSave">
-                {{ isSaving ? 'Saving...' : editingDisclosure ? 'Update Disclosure' : 'Create Disclosure' }}
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
     <!-- PREVIEW MODAL -->
     <Teleport to="body">

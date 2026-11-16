@@ -7,8 +7,8 @@
         <h1 class="text-2xl font-bold text-neutral-900 tracking-tight">Listing Processes</h1>
         <p class="text-sm text-neutral-500 mt-1">Manage all listing process templates and forms.</p>
       </div>
-      <button 
-        @click="showCreateModal = true"
+      <button
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @click="openCreateModal"
         class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#0f6b5c] px-3.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-[#0b564a] focus:outline-none focus:ring-2 focus:ring-[#0f6b5c]/40 focus:ring-offset-1 active:scale-[0.98]"
       >
         <IconPlus class="h-4 w-4" />
@@ -134,17 +134,63 @@
             <IconX :size="20" />
           </button>
         </div>
-        <div class="p-6 space-y-4">
+        <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-1">Process Name</label>
-            <input 
-              v-model="newProcessForm.name" 
-              type="text" 
+            <input
+              v-model="newProcessForm.name"
+              type="text"
               @keyup.enter="handleCreate"
-              class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
+              class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]"
               placeholder="e.g. Michigan Residential"
             />
           </div>
+
+          <!-- Start from a System Default -->
+          <div v-if="systemDefaults.length > 1">
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Start from</label>
+            <p class="text-xs text-neutral-500 mb-2">The new process copies the steps of the System Default you choose. You can edit them afterwards.</p>
+            <div class="max-h-56 overflow-y-auto rounded-lg border border-neutral-200 divide-y divide-neutral-100">
+              <label
+                v-for="base in systemDefaults"
+                :key="base.id"
+                class="flex items-center gap-3 px-3 py-2.5 text-sm cursor-pointer transition-colors hover:bg-neutral-50"
+                :class="newProcessForm.base_process_id === base.id ? 'bg-blue-50/60' : ''"
+              >
+                <input
+                  type="radio"
+                  name="base_process"
+                  :value="base.id"
+                  :checked="newProcessForm.base_process_id === base.id"
+                  class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]"
+                  @change="selectBaseProcess(base.id)"
+                >
+                <span class="min-w-0 flex-1">
+                  <span class="block font-medium text-neutral-900">{{ base.name }}</span>
+                  <span class="block text-xs text-neutral-500">{{ stepCount(base) }} steps · {{ (base.required_disclosures || []).length }} disclosure(s)</span>
+                </span>
+              </label>
+              <label
+                class="flex items-center gap-3 px-3 py-2.5 text-sm cursor-pointer transition-colors hover:bg-neutral-50"
+                :class="newProcessForm.base_process_id === null ? 'bg-blue-50/60' : ''"
+              >
+                <input
+                  type="radio"
+                  name="base_process"
+                  :checked="newProcessForm.base_process_id === null"
+                  class="w-4 h-4 text-[#1641d9] focus:ring-[#1641d9]"
+                  @change="selectBaseProcess(null)"
+                >
+                <span class="min-w-0 flex-1">
+                  <span class="block font-medium text-neutral-900">Blank process</span>
+                  <span class="block text-xs text-neutral-500">Only the required steps; build the rest yourself.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <p v-else-if="systemDefaults.length === 1" class="text-xs text-neutral-500">
+            Based on: <span class="font-medium text-neutral-800">{{ systemDefaults[0].name }}</span>
+          </p>
           <template v-if="authStore.user?.role === 'agent'">
             <div>
               <label class="block text-sm font-medium text-neutral-700 mb-2">Process Type</label>
@@ -166,23 +212,10 @@
                 </label>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1">Service Package (Optional)</label>
-              <select v-model="newProcessForm.service_package_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9] bg-white">
-                <option value="">-- None --</option>
-                <option v-for="pkg in servicePackages" :key="pkg.id" :value="pkg.id">{{ pkg.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1">Assigned Zip Codes (Optional)</label>
-              <input 
-                v-model="newProcessForm.assigned_zips" 
-                type="text" 
-                class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
-                placeholder="e.g. 48103, 48104"
-              />
-              <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
-            </div>
+            <PackageByZipPicker
+              v-model="newProcessForm.service_package_ids"
+              :packages="servicePackages"
+            />
           </template>
 
           <!-- Required Disclosures Selection -->
@@ -281,23 +314,11 @@
           </div>
 
           <template v-if="isAgent">
-            <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1">Service Package (Optional)</label>
-              <select v-model="editProcessForm.service_package_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9] bg-white">
-                <option :value="null">-- None --</option>
-                <option v-for="pkg in servicePackages" :key="pkg.id" :value="pkg.id">{{ pkg.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1">Assigned Zip Codes (Optional)</label>
-              <input 
-                v-model="editProcessForm.assigned_zips" 
-                type="text" 
-                class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1641d9]/20 focus:border-[#1641d9]" 
-                placeholder="e.g. 48103, 48104"
-              />
-              <span class="block text-xs text-neutral-500 mt-1">Comma-separated list of zip codes.</span>
-            </div>
+            <PackageByZipPicker
+              v-model="editProcessForm.service_package_ids"
+              :packages="servicePackages"
+              :current-process-id="editingProcess?.id"
+            />
           </template>
 
           <!-- Required Disclosures Checklist -->
@@ -389,6 +410,7 @@ import { useProcessStore } from '@/stores/processStore'
 import { useAuthStore } from '@/stores/auth'
 import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye, IconFileText, IconCopy } from '@tabler/icons-vue'
 import { fetchServicePackages } from '@/services/servicePackageService'
+import PackageByZipPicker from '@/components/form/PackageByZipPicker.vue'
 import { fetchAvailableDisclosures, fetchDocumentTemplates } from '@/services/listingProcessService'
 import { useToastStore } from '@/stores/toast'
 
@@ -411,8 +433,7 @@ const showEditSettingsModal = ref(false)
 const editingProcess = ref(null)
 const editProcessForm = ref({
   name: '',
-  service_package_id: null,
-  assigned_zips: '',
+  service_package_ids: [],
   required_disclosures: [],
   documents: []
 })
@@ -443,14 +464,41 @@ const templateGroups = computed(() => {
   return Object.values(groups)
 })
 
-const newProcessForm = ref({
+// Disclosures pre-ticked for a blank process (the previous fixed default)
+const BLANK_PROCESS_DISCLOSURES = ['mi_residential_appliances', 'mi_residential_conditions', 'lead_paint_disclosure']
+
+const emptyCreateForm = () => ({
   name: '',
   type: '',
   isDefault: false,
-  service_package_id: '',
-  assigned_zips: '',
-  required_disclosures: ['mi_residential_appliances', 'mi_residential_conditions', 'lead_paint_disclosure']
+  service_package_ids: [],
+  base_process_id: null,
+  required_disclosures: [...BLANK_PROCESS_DISCLOSURES]
 })
+
+const newProcessForm = ref(emptyCreateForm())
+
+// Active System Default processes a new process can start from
+const systemDefaults = computed(() =>
+  processStore.processes.filter(p => p.agent_id === null && p.isDefault && p.status === 'Active')
+)
+
+const stepCount = (process) => (Array.isArray(process.config) ? process.config.length : 0)
+
+// Picking a base pre-ticks that base's disclosures; they can still be changed below.
+const selectBaseProcess = (id) => {
+  newProcessForm.value.base_process_id = id
+  const base = systemDefaults.value.find(p => p.id === id)
+  newProcessForm.value.required_disclosures = base
+    ? [...(base.required_disclosures || [])]
+    : [...BLANK_PROCESS_DISCLOSURES]
+}
+
+const openCreateModal = () => {
+  newProcessForm.value = emptyCreateForm()
+  if (systemDefaults.value.length > 0) selectBaseProcess(systemDefaults.value[0].id)
+  showCreateModal.value = true
+}
 
 onMounted(async () => {
   processStore.loadProcesses()
@@ -483,8 +531,7 @@ const openEditSettingsModal = (process) => {
   editingProcess.value = process
   editProcessForm.value = {
     name: process.name,
-    service_package_id: process.service_package_id || null,
-    assigned_zips: Array.isArray(process.assigned_zips) ? process.assigned_zips.join(', ') : (process.assigned_zips || ''),
+    service_package_ids: [...(process.service_package_ids || [])],
     required_disclosures: Array.isArray(process.required_disclosures) ? [...process.required_disclosures] : [],
     // null on the server means "every document that applies"
     documents: Array.isArray(process.documents) ? [...process.documents] : documentTemplates.value.map(t => t.code)
@@ -503,10 +550,10 @@ const handleSaveSettings = async () => {
       documents: editProcessForm.value.documents.length === documentTemplates.value.length
         ? null
         : editProcessForm.value.documents,
-      service_package_id: editProcessForm.value.service_package_id || null,
-      assigned_zips: editProcessForm.value.assigned_zips 
-        ? editProcessForm.value.assigned_zips.split(',').map(z => z.trim()).filter(Boolean)
-        : []
+    }
+    // Only agents see the package picker; leaving the list out keeps the linked packages unchanged
+    if (isAgent.value) {
+      payload.service_package_ids = editProcessForm.value.service_package_ids || []
     }
     await processStore.updateProcess(editingProcess.value.id, payload)
     // The server adds/removes disclosure steps, so reload to get the synced config
@@ -598,15 +645,16 @@ const handleCreate = async () => {
       isDefault: isAdmin || newProcessForm.value.isDefault,
     }
     
-    if (newProcessForm.value.service_package_id) {
-      payload.service_package_id = newProcessForm.value.service_package_id
-    }
-    
-    if (newProcessForm.value.assigned_zips) {
-      payload.assigned_zips = newProcessForm.value.assigned_zips.split(',').map(z => z.trim()).filter(z => z)
+    if (newProcessForm.value.service_package_ids?.length) {
+      payload.service_package_ids = newProcessForm.value.service_package_ids
     }
 
-    if (newProcessForm.value.required_disclosures && newProcessForm.value.required_disclosures.length > 0) {
+    if (newProcessForm.value.base_process_id) {
+      payload.base_process_id = newProcessForm.value.base_process_id
+    }
+
+    // With a base, always send the ticked list (even empty) so unticking a base disclosure is kept
+    if (newProcessForm.value.base_process_id || newProcessForm.value.required_disclosures?.length > 0) {
       payload.required_disclosures = newProcessForm.value.required_disclosures
     }
     
@@ -614,14 +662,7 @@ const handleCreate = async () => {
     
     showCreateModal.value = false
     const createdName = newProcessForm.value.name
-    newProcessForm.value = { 
-      name: '', 
-      type: '', 
-      isDefault: false, 
-      service_package_id: '', 
-      assigned_zips: '',
-      required_disclosures: ['mi_residential_appliances', 'mi_residential_conditions', 'lead_paint_disclosure']
-    }
+    newProcessForm.value = emptyCreateForm()
     
     let targetId = newProc?.id
     if (!targetId) {

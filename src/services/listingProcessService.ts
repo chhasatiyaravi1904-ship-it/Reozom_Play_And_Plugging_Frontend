@@ -10,7 +10,8 @@ export interface ListingProcess {
   required_disclosures?: string[] | null;
   documents?: string[] | null;
   config: any[] | null;
-  service_package_id?: number | null;
+  /** Packages whose sellers use this process (each package has one process). */
+  service_package_ids?: number[];
   created_at?: string;
   updated_at?: string;
 }

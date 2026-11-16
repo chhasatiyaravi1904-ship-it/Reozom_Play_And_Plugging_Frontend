@@ -31,9 +31,7 @@ import Modal from '@/components/ui/Modal.vue'
 import EunoSignModal from '@/components/document/EunoSignModal.vue'
 import SendToEmailModal from '@/components/document/SendToEmailModal.vue'
 import RenameDocumentModal from '@/components/document/RenameDocumentModal.vue'
-import SignatureStudioModal from '@/components/document/SignatureStudioModal.vue'
 import { useDocumentStore } from '@/stores/document'
-import { useAuthStore } from '@/stores/auth'
 import { useListingSteps } from '@/composables/useListingSteps'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useToastStore } from '@/stores/toast'
@@ -45,7 +43,6 @@ import type { DocumentRequirement } from '@/types/document'
 const route = useRoute()
 const router = useRouter()
 const toast = useToastStore()
-const authStore = useAuthStore()
 const listingId = computed(() => Number(route.params.listingId || route.params.id))
 
 const documentStore = useDocumentStore()
@@ -76,13 +73,6 @@ const isSendEmailModalOpen = ref(false)
 const targetEmailDoc = ref<DocumentRequirement | null>(null)
 const isRenameModalOpen = ref(false)
 const targetRenameDoc = ref<DocumentRequirement | null>(null)
-
-// In-Platform Studio Fallback
-const isSignStudioOpen = ref(false)
-const isPacketSignMode = ref(false)
-const documentToSign = ref<DocumentRequirement | null>(null)
-const signerFullName = ref('')
-const isSigning = ref(false)
 
 // Supplementary Document Categories
 const reozomDocumentTypes = [
@@ -301,44 +291,6 @@ async function handleRemove(doc: DocumentRequirement) {
   }
 }
 
-// In-Platform Studio Fallback Trigger
-function handleOpenStudioSign(doc: DocumentRequirement) {
-  documentToSign.value = doc
-  signerFullName.value = doc.signedBy || authStore.user?.fullName || authStore.user?.name || ''
-  isPacketSignMode.value = false
-  isSignStudioOpen.value = true
-}
-
-async function handleConfirmStudioSign(payload: {
-  signer_name: string
-  signature_image: string
-  signature_type: 'drawn' | 'typed'
-  initials_image?: string
-  apply_all: boolean
-  legal_consent: boolean
-}) {
-  isSigning.value = true
-  try {
-    if (documentToSign.value) {
-      const docKey = documentToSign.value.documentId || documentToSign.value.id
-      const ok = await documentStore.sign(listingId.value, docKey, {
-        signer_name: payload.signer_name,
-        signature_image: payload.signature_image,
-        signature_type: payload.signature_type,
-        initials_image: payload.initials_image,
-        legal_consent: payload.legal_consent,
-      })
-      if (ok) {
-        toast.success(`${documentToSign.value.label} successfully signed!`)
-      }
-    }
-  } finally {
-    isSigning.value = false
-    documentToSign.value = null
-    isSignStudioOpen.value = false
-  }
-}
-
 onMounted(() => {
   if (listingId.value) {
     documentStore.fetchDocuments(listingId.value)
@@ -427,6 +379,10 @@ function handleContinue() {
             </p>
             <p>Documents have NOT been sent out for signature.</p>
             <p class="text-fg-muted">You can send them clicking on Sign Documents (below).</p>
+            <p v-if="eunoAgreement?.signers?.length" class="pt-1">
+              <span class="font-semibold">Signers:</span>
+              {{ eunoAgreement.signers.map((s) => `${s.name} (${s.email})`).join(', ') }}
+            </p>
           </div>
 
           <BaseButton
@@ -454,6 +410,10 @@ function handleContinue() {
             </p>
             <p>Documents have been sent out for signature.</p>
             <p class="text-fg-muted">You can check status of documents by clicking on Audit Report (below).</p>
+            <p v-if="eunoAgreement?.signers?.length" class="pt-1">
+              <span class="font-semibold">Signers:</span>
+              {{ eunoAgreement.signers.map((s) => `${s.name} (${s.email})`).join(', ') }}
+            </p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -530,17 +490,6 @@ function handleContinue() {
             >
               <Download class="mr-1.5 h-3.5 w-3.5" />
               Signed Packet PDF
-            </BaseButton>
-
-            <BaseButton
-              variant="secondary"
-              size="sm"
-              :loading="isInitiatingEuno"
-              title="Re-execute signing packet if needed"
-              @click="handleStartSigning()"
-            >
-              <PenTool class="mr-1.5 h-3.5 w-3.5" />
-              Re-Sign Documents
             </BaseButton>
           </div>
         </div>

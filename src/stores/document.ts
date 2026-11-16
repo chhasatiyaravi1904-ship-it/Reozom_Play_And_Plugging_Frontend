@@ -46,29 +46,7 @@ export const useDocumentStore = defineStore('document', () => {
     }
   }
 
-  async function sign(
-    listingId: number,
-    documentId: string,
-    payloadOrName?: string | documentService.SignPayload,
-  ) {
-    try {
-      await documentService.signDocument(listingId, documentId, payloadOrName)
-      await fetchDocuments(listingId)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  async function signAll(listingId: number, payload: documentService.SignPayload) {
-    try {
-      await documentService.signAllDocuments(listingId, payload)
-      await fetchDocuments(listingId)
-      return true
-    } catch {
-      return false
-    }
-  }
+  // Signing happens only through EunoDoc (see services/eunoService.ts).
 
   async function remove(listingId: number, documentId: string) {
     const doc = documents.value.find((d) => d.id === documentId || d.documentId === documentId)
@@ -178,5 +156,5 @@ export const useDocumentStore = defineStore('document', () => {
     }
   }
 
-  return { documents, status, error, fetchDocuments, upload, sign, signAll, remove, download, view }
+  return { documents, status, error, fetchDocuments, upload, remove, download, view }
 })

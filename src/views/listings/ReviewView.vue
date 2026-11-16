@@ -23,20 +23,17 @@ import Alert from '@/components/ui/Alert.vue'
 import Stepper from '@/components/listing/Stepper.vue'
 import EunoSignModal from '@/components/document/EunoSignModal.vue'
 import SendToEmailModal from '@/components/document/SendToEmailModal.vue'
-import SignatureStudioModal from '@/components/document/SignatureStudioModal.vue'
 import { useListingStore } from '@/stores/listing'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useDocumentStore } from '@/stores/document'
 import { useListingSteps } from '@/composables/useListingSteps'
 import { useToastStore } from '@/stores/toast'
-import { useAuthStore } from '@/stores/auth'
 import * as eunoService from '@/services/eunoService'
 import type { EunoAgreementStatus } from '@/services/eunoService'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToastStore()
-const authStore = useAuthStore()
 const listingId = computed(() => Number(route.params.listingId || route.params.id))
 
 const listingStore = useListingStore()
@@ -56,15 +53,6 @@ const eunoAgreement = ref<EunoAgreementStatus | null>(null)
 // Email Modal
 const isSendEmailModalOpen = ref(false)
 const targetEmailDoc = ref<any>(null)
-
-// Fallback in-platform modal state
-const isSignStudioOpen = ref(false)
-const documentToSign = ref<any>(null)
-const isPacketSignMode = ref(false)
-
-const signerFullName = computed(() => {
-  return authStore.user?.name || authStore.user?.email || 'Authorized Signer'
-})
 
 const statutoryDocuments = computed(() =>
   documentStore.documents.filter((d) => d.category === 'statutory' || d.isSignable),
@@ -134,7 +122,7 @@ async function checkEunoStatus(silent = false) {
   }
 }
 
-async function handleStartSigning(doc?: any) {
+async function handleStartSigning() {
   if (!listingId.value) return
   isInitiatingEuno.value = true
   try {
@@ -199,50 +187,6 @@ async function handleDownload(doc: any) {
   }
 }
 
-function handleOpenStudioSign(doc: any) {
-  documentToSign.value = doc
-  isPacketSignMode.value = false
-  isSignStudioOpen.value = true
-}
-
-function handleOpenStudioSignAll() {
-  documentToSign.value = null
-  isPacketSignMode.value = true
-  isSignStudioOpen.value = true
-}
-
-async function handleSignatureSigned(payload: {
-  signerName: string
-  signatureImage: string | null
-  signatureType: 'drawn' | 'typed'
-  initialsImage: string | null
-  isPacket: boolean
-}) {
-  if (payload.isPacket) {
-    const success = await documentStore.signAll(listingId.value, {
-      signer_name: payload.signerName,
-      signature_image: payload.signatureImage,
-      signature_type: payload.signatureType,
-      initials_image: payload.initialsImage,
-    })
-    if (success) {
-      toast.success('Successfully executed statutory listing documents packet.')
-      await documentStore.fetchDocuments(listingId.value)
-    }
-  } else if (documentToSign.value) {
-    const docKey = documentToSign.value.documentId || documentToSign.value.id
-    const success = await documentStore.sign(listingId.value, docKey, {
-      signer_name: payload.signerName,
-      signature_image: payload.signatureImage,
-      signature_type: payload.signatureType,
-      initials_image: payload.initialsImage,
-    })
-    if (success) {
-      toast.success(`Successfully signed ${documentToSign.value.label}`)
-      await documentStore.fetchDocuments(listingId.value)
-    }
-  }
-}
 </script>
 
 <template>
@@ -405,14 +349,15 @@ async function handleSignatureSigned(payload: {
               {{ allStatutorySigned ? 'All Documents Signed' : `${unsignedStatutoryCount} Signature(s) Required` }}
             </BaseBadge>
             <BaseButton
+              v-if="!allStatutorySigned"
               size="sm"
               variant="primary"
-              title="Sign all statutory documents"
+              title="Sign all unsigned documents with EunoDoc"
               :loading="isInitiatingEuno"
               @click="handleStartSigning()"
             >
               <PenTool class="mr-1.5 h-3.5 w-3.5" />
-              {{ allStatutorySigned ? 'Re-Sign All Documents' : `Sign Documents (${unsignedStatutoryCount})` }}
+              {{ `Sign Documents (${unsignedStatutoryCount})` }}
             </BaseButton>
           </div>
         </div>
@@ -469,17 +414,18 @@ async function handleSignatureSigned(payload: {
                 View
               </BaseButton>
 
-              <!-- Sign Button -->
+              <!-- Sign Button: like Reozom, all unsigned documents are signed together in EunoDoc -->
               <BaseButton
+                v-if="doc.status !== 'signed'"
                 size="sm"
-                :variant="doc.status === 'signed' ? 'secondary' : 'primary'"
-                :title="doc.status === 'signed' ? 'Re-sign this document' : 'Sign this document'"
+                variant="primary"
+                title="Sign with EunoDoc"
                 class="inline-flex items-center gap-1 text-xs font-semibold"
                 :loading="isInitiatingEuno"
-                @click="handleStartSigning(doc)"
+                @click="handleStartSigning()"
               >
                 <PenTool class="h-3 w-3" />
-                {{ doc.status === 'signed' ? 'Re-Sign' : 'Sign' }}
+                Sign
               </BaseButton>
             </div>
           </div>
@@ -528,16 +474,6 @@ async function handleSignatureSigned(payload: {
       :listing-id="listingId"
       :document-id="targetEmailDoc?.documentId || targetEmailDoc?.id || ''"
       :document-name="targetEmailDoc?.fileName || targetEmailDoc?.label || 'Document'"
-    />
-
-    <!-- Fallback In-Platform Studio Modal -->
-    <SignatureStudioModal
-      v-model="isSignStudioOpen"
-      :document-label="documentToSign?.label"
-      :default-signer-name="signerFullName"
-      :unsigned-count="unsignedStatutoryCount"
-      :is-packet-sign="isPacketSignMode"
-      @signed="handleSignatureSigned"
     />
   </div>
 </template>

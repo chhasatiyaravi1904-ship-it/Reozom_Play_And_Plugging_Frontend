@@ -32,31 +32,6 @@ export const uploadDocument = (
   })
 }
 
-export interface SignPayload {
-  signer_name: string
-  signature_image?: string
-  signature_type?: 'drawn' | 'typed'
-  initials_image?: string
-  legal_consent?: boolean
-}
-
-export const signDocument = (
-  listingId: number,
-  documentId: string,
-  payloadOrName?: string | SignPayload,
-) => {
-  const payload =
-    typeof payloadOrName === 'string'
-      ? { signer_name: payloadOrName }
-      : payloadOrName || {}
-
-  return api.post(`/listings/${listingId}/documents/${documentId}/sign`, payload)
-}
-
-export const signAllDocuments = (listingId: number, payload: SignPayload) => {
-  return api.post(`/listings/${listingId}/documents/sign-all`, payload)
-}
-
 export const previewDocument = (listingId: number, documentId: string) => {
   return api.get<{
     success: boolean

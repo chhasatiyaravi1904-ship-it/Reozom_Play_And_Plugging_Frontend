@@ -144,6 +144,16 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminDisclosuresView.vue'),
         },
         {
+          path: 'disclosures/new',
+          name: 'admin-disclosure-create',
+          component: () => import('@/views/admin/AdminDisclosureFormView.vue'),
+        },
+        {
+          path: 'disclosures/:id/edit',
+          name: 'admin-disclosure-edit',
+          component: () => import('@/views/admin/AdminDisclosureFormView.vue'),
+        },
+        {
           path: 'documents',
           name: 'admin-documents',
           component: () => import('@/views/documents/ManageDocumentsView.vue'),
