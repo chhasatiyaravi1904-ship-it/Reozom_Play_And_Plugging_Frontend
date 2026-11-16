@@ -16,6 +16,7 @@ import {
   RefreshCw,
   BadgeCheck,
   CircleAlert,
+  LogIn,
 } from 'lucide-vue-next'
 import type { AdminUserItem, AdminUserRole } from '@/services/adminUsersData'
 import * as userService from '@/services/userService'
@@ -40,9 +41,11 @@ import ErrorState from '@/components/ui/ErrorState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { useToastStore } from '@/stores/toast'
 import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
 const toast = useToastStore()
 const authStore = useAuthStore()
+const router = useRouter()
 
 function isSelf(user: AdminUserItem): boolean {
   return authStore.user?.id === user.id
@@ -69,12 +72,16 @@ function timeAgo(iso?: string | null): string {
 /** Normalize a raw API user record into the shape the table/modals expect. */
 function normalizeUser(raw: any): AdminUserItem {
   const isActive = raw.isActive !== undefined ? Boolean(raw.isActive) : true
+  let role = raw.role
+  if (role === 'seller' || role === 'buyer' || role === 'client') {
+    role = 'seller_buyer'
+  }
   return {
     id: raw.id,
     fullName: raw.fullName || raw.name || '',
     email: raw.email || '',
     phone: raw.phone || '',
-    role: raw.role,
+    role,
     isActive,
     status: isActive ? 'active' : 'inactive',
     joinedDate: (raw.createdAt || raw.created_at || '').slice(0, 10),
@@ -135,15 +142,14 @@ async function fetchUsers() {
 }
 
 // Tabs
-type RoleFilterTab = 'all' | AdminUserRole
+type RoleFilterTab = 'all' | 'admin' | 'agent' | 'seller_buyer'
 const activeTab = ref<RoleFilterTab>('all')
 
 const roleTabs: { label: string; value: RoleFilterTab }[] = [
   { label: 'All Users', value: 'all' },
   { label: 'Admins', value: 'admin' },
   { label: 'Agents', value: 'agent' },
-  { label: 'Sellers', value: 'seller' },
-  { label: 'Buyers', value: 'buyer' },
+  { label: 'Sellers / Buyers', value: 'seller_buyer' },
 ]
 
 // Tab counts (computed dynamically from all users)
@@ -152,13 +158,12 @@ const tabCounts = computed(() => {
     all: users.value.length,
     admin: 0,
     agent: 0,
-    seller: 0,
-    buyer: 0,
+    seller_buyer: 0,
   }
   for (const u of users.value) {
-    if (u.role in counts) {
-      counts[u.role]++
-    }
+    if (u.role === 'admin') counts.admin++
+    else if (u.role === 'agent') counts.agent++
+    else counts.seller_buyer++
   }
   return counts
 })
@@ -181,8 +186,7 @@ const roleFilterOptions = [
   { label: 'All Roles', value: 'all' },
   { label: 'Admin', value: 'admin' },
   { label: 'Agent', value: 'agent' },
-  { label: 'Seller', value: 'seller' },
-  { label: 'Buyer', value: 'buyer' },
+  { label: 'Seller / Buyer', value: 'seller_buyer' },
 ]
 const statusFilterOptions = [
   { label: 'All Status', value: 'all' },
@@ -211,7 +215,7 @@ watch(activeTab, (newTab) => {
 })
 
 watch(selectedRole, (newRole) => {
-  if (['all', 'admin', 'agent', 'seller', 'buyer'].includes(newRole)) {
+  if (['all', 'admin', 'agent', 'seller_buyer'].includes(newRole)) {
     activeTab.value = newRole as RoleFilterTab
   }
 })
@@ -220,7 +224,8 @@ watch(selectedRole, (newRole) => {
 const activeChips = computed(() => {
   const chips: { key: string; label: string }[] = []
   if (selectedRole.value !== 'all') {
-    chips.push({ key: 'role', label: `Role: ${selectedRole.value.charAt(0).toUpperCase()}${selectedRole.value.slice(1)}` })
+    const roleLabel = selectedRole.value === 'seller_buyer' ? 'Seller / Buyer' : (selectedRole.value.charAt(0).toUpperCase() + selectedRole.value.slice(1))
+    chips.push({ key: 'role', label: `Role: ${roleLabel}` })
   }
   if (selectedStatus.value !== 'all') {
     chips.push({ key: 'status', label: `Status: ${selectedStatus.value.charAt(0).toUpperCase()}${selectedStatus.value.slice(1)}` })
@@ -438,6 +443,12 @@ function getActionMenuItems(user: AdminUserItem) {
     { label: 'Delete User', icon: Trash2, value: 'delete', destructive: true },
   ]
 
+  // "Login as user" (like the original Reozom): sellers/buyers and agents only, never admins,
+  // and only active accounts (the backend enforces the same rules)
+  if (user.role !== 'admin' && user.status === 'active') {
+    items.splice(1, 0, { label: 'Log in as User', icon: LogIn, value: 'impersonate' })
+  }
+
   // You can't deactivate or delete the account you're currently signed in
   // with — same guard the backend already enforces for delete.
   if (isSelf(user)) {
@@ -445,6 +456,33 @@ function getActionMenuItems(user: AdminUserItem) {
   }
 
   return items
+}
+
+// --- Log in as user ---
+const isImpersonateConfirmOpen = ref(false)
+const userToImpersonate = ref<AdminUserItem | null>(null)
+const impersonateLoading = ref(false)
+
+function requestImpersonation(user: AdminUserItem) {
+  userToImpersonate.value = user
+  isImpersonateConfirmOpen.value = true
+}
+
+async function confirmImpersonation() {
+  const target = userToImpersonate.value
+  if (!target) return
+  impersonateLoading.value = true
+  try {
+    const user = await authStore.startImpersonation(target.id)
+    isImpersonateConfirmOpen.value = false
+    toast.success(`You are now logged in as ${user.fullName || user.email}.`)
+    // Open the portal the user normally sees
+    router.push(user.role === 'agent' ? '/agent/dashboard' : '/dashboard')
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Could not log in as this user.')
+  } finally {
+    impersonateLoading.value = false
+  }
 }
 
 function handleActionSelect(value: string, user: AdminUserItem) {
@@ -463,6 +501,9 @@ function handleActionSelect(value: string, user: AdminUserItem) {
       break
     case 'delete':
       openDeleteUserModal(user)
+      break
+    case 'impersonate':
+      requestImpersonation(user)
       break
   }
 }
@@ -493,15 +534,25 @@ async function reloadUsers() {
 
 // Filtered & Sorted list
 const filteredUsers = computed(() => {
+  const isSellerBuyer = (r?: string) => r === 'seller_buyer' || r === 'client' || r === 'seller' || r === 'buyer'
+
   return users.value.filter((user) => {
     // Tab filter
-    if (activeTab.value !== 'all' && user.role !== activeTab.value) {
-      return false
+    if (activeTab.value !== 'all') {
+      if (activeTab.value === 'seller_buyer') {
+        if (!isSellerBuyer(user.role)) return false
+      } else if (user.role !== activeTab.value) {
+        return false
+      }
     }
 
     // Role select filter
-    if (selectedRole.value !== 'all' && user.role !== selectedRole.value) {
-      return false
+    if (selectedRole.value !== 'all') {
+      if (selectedRole.value === 'seller_buyer') {
+        if (!isSellerBuyer(user.role)) return false
+      } else if (user.role !== selectedRole.value) {
+        return false
+      }
     }
 
     // Status filter
@@ -981,6 +1032,20 @@ watch(totalUsers, (total) => {
       <span class="font-semibold text-fg">{{ userPendingVerification.fullName }}</span>'s email as
       verified? This skips them clicking the verification link themselves and lets them sign in
       immediately (once approved and active).
+    </ConfirmDialog>
+
+    <ConfirmDialog
+      v-if="userToImpersonate"
+      v-model="isImpersonateConfirmOpen"
+      title="Log in as User"
+      confirm-label="Log in as User"
+      :loading="impersonateLoading"
+      @confirm="confirmImpersonation"
+    >
+      You will see the site exactly as
+      <span class="font-semibold text-fg">{{ userToImpersonate.fullName }}</span> does, for up to 2 hours.
+      Their password is not changed, and this action is recorded in the admin activity log.
+      Use <span class="font-semibold text-fg">Return to admin</span> in the yellow bar to come back.
     </ConfirmDialog>
   </div>
 </template>

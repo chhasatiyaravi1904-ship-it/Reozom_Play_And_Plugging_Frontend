@@ -54,11 +54,15 @@ async function refreshListings() {
   }
 }
 
+const isAgent = computed(() => authStore.user?.role === 'agent')
+
 // Metrics computation
 const metrics = computed(() => {
   const all = listingStore.listings
   return {
     total: all.length,
+    market: all.filter((l) => !l.isOwner && (l.canMakeOffer || ['published', 'under_contract', 'ccs'].includes(l.status))).length,
+    myListings: all.filter((l) => l.isOwner).length,
     published: all.filter((l) => l.status === 'published').length,
     inContract: all.filter((l) =>
       ['under_contract', 'ccs', 'contingent_continue_to_show'].includes(l.status),
@@ -70,19 +74,34 @@ const metrics = computed(() => {
   }
 })
 
-const statusTabs = computed(() => [
-  { value: 'all', label: 'All Properties', count: metrics.value.total },
-  { value: 'published', label: 'Published & MLS', count: metrics.value.published },
-  { value: 'contract', label: 'In Contract / Escrow', count: metrics.value.inContract },
-  { value: 'in_progress', label: 'In Setup & Draft', count: metrics.value.inProgress },
-  { value: 'sold', label: 'Sold & Closed', count: metrics.value.sold },
-])
+const statusTabs = computed(() => {
+  const base = [
+    { value: 'all', label: 'All Properties', count: metrics.value.total },
+  ]
+  if (!isAgent.value) {
+    base.push(
+      { value: 'market', label: 'Available to Offer', count: metrics.value.market },
+      { value: 'my_listings', label: 'My Listed Properties', count: metrics.value.myListings },
+    )
+  }
+  base.push(
+    { value: 'published', label: 'Published & MLS', count: metrics.value.published },
+    { value: 'contract', label: 'In Contract / Escrow', count: metrics.value.inContract },
+    { value: 'in_progress', label: 'In Setup & Draft', count: metrics.value.inProgress },
+    { value: 'sold', label: 'Sold & Closed', count: metrics.value.sold },
+  )
+  return base
+})
 
 const filteredListings = computed(() => {
   let items = listingStore.listings
 
   // Filter by status tab
-  if (selectedStatus.value === 'published') {
+  if (selectedStatus.value === 'market') {
+    items = items.filter((l) => !l.isOwner && (l.canMakeOffer || ['published', 'under_contract', 'ccs'].includes(l.status)))
+  } else if (selectedStatus.value === 'my_listings') {
+    items = items.filter((l) => l.isOwner)
+  } else if (selectedStatus.value === 'published') {
     items = items.filter((l) => l.status === 'published')
   } else if (selectedStatus.value === 'contract') {
     items = items.filter((l) =>
@@ -151,15 +170,17 @@ function clearAllFilters() {
         <div class="flex items-center gap-2">
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary uppercase tracking-wider">
             <Building2 class="h-3.5 w-3.5" />
-            Agent MLS Control Center
+            {{ isAgent ? 'Agent MLS Control Center' : 'Properties & Offer Hub' }}
           </span>
-          <span class="text-xs text-fg-muted">Real-time Portfolio</span>
+          <span class="text-xs text-fg-muted">Live Marketplace Inventory</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight mt-1.5">
-          My Properties & Listings
+          {{ isAgent ? 'Agent Properties & Listings' : 'Properties & Real Estate Listings' }}
         </h1>
         <p class="text-sm text-fg-muted mt-1 max-w-2xl">
-          Track MLS syndication status, review statutory disclosures, complete compliance workflows, and manage incoming buyer purchase offers.
+          {{ isAgent
+            ? 'Track MLS syndication status, review statutory disclosures, complete compliance workflows, and manage incoming buyer purchase offers.'
+            : 'Browse active MLS listings to submit official purchase offers, track property statuses, or start a new seller listing.' }}
         </p>
       </div>
 

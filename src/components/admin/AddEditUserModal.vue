@@ -40,7 +40,7 @@ watch(
           email: props.userToEdit.email,
           phone: props.userToEdit.phone,
           password: '',
-          role: props.userToEdit.role,
+          role: (props.userToEdit.role === 'seller' || props.userToEdit.role === 'buyer' || props.userToEdit.role === 'client') ? 'seller_buyer' : props.userToEdit.role,
           status: props.userToEdit.status,
           location: props.userToEdit.location || '',
         }
@@ -192,8 +192,7 @@ function handleSubmit() {
           >
             <option value="admin">Admin (Full Access)</option>
             <option value="agent">Agent (MLS & Workflow)</option>
-            <option value="seller">Seller (Listing Management)</option>
-            <option value="buyer">Buyer (Purchase Portal)</option>
+            <option value="seller_buyer">Seller / Buyer (Listings & Offers)</option>
           </select>
         </div>
 

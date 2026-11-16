@@ -184,11 +184,21 @@
             <label class="block text-sm font-medium text-neutral-700 mb-1">Listing Process</label>
             <select v-model="form.listing_process_id" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
               <option :value="null">Default Process</option>
-              <option v-for="process in listingProcesses" :key="process.id" :value="process.id">
-                {{ process.name }}
-              </option>
+              <optgroup v-if="myProcesses.length" label="My Processes">
+                <option v-for="process in myProcesses" :key="process.id" :value="process.id">
+                  {{ process.name }}
+                </option>
+              </optgroup>
+              <optgroup v-if="defaultProcesses.length" label="System Defaults (copied to My Processes)">
+                <option v-for="process in defaultProcesses" :key="process.id" :value="process.id">
+                  {{ process.name }}
+                </option>
+              </optgroup>
             </select>
-            <p class="text-xs text-neutral-500 mt-1">Select the form workflow sellers will complete when choosing this package.</p>
+            <p v-if="selectedIsDefault" class="text-xs text-amber-700 mt-1">
+              A copy of this system process will be added to My Processes and linked to this package. You can customize its steps and disclosure questions there.
+            </p>
+            <p v-else class="text-xs text-neutral-500 mt-1">Select the form workflow sellers will complete when choosing this package.</p>
           </div>
 
           <!-- Invisible overlay to close dropdown when clicking outside -->
@@ -215,9 +225,11 @@ import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconFileText, IconLoa
 import { fetchServicePackages, createServicePackage, updateServicePackage, deleteServicePackage, searchZipCodes, type ServicePackage } from '@/services/servicePackageService'
 import { useZipCodeStore } from '@/stores/zipCode'
 import { useProcessStore } from '@/stores/processStore'
+import { useToastStore } from '@/stores/toast'
 
 const zipCodeStore = useZipCodeStore()
 const processStore = useProcessStore()
+const toast = useToastStore()
 const packages = ref<ServicePackage[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
@@ -226,8 +238,17 @@ const showModal = ref(false)
 const isDropdownOpen = ref(false)
 const zipInputRef = ref<HTMLInputElement | null>(null)
 
-const listingProcesses = computed(() => {
+const myProcesses = computed(() => {
   return processStore.processes.filter(p => p.agent_id !== null)
+})
+
+// System defaults are shared, so a package can't own them directly; picking one copies it into My Processes on save.
+const defaultProcesses = computed(() => {
+  return processStore.processes.filter(p => p.agent_id === null && p.isDefault)
+})
+
+const selectedIsDefault = computed(() => {
+  return defaultProcesses.value.some(p => p.id === form.value.listing_process_id)
 })
 
 const openDropdown = () => {
@@ -341,6 +362,7 @@ const handleSave = async () => {
     zipCodesArray.push(pendingInput)
   }
 
+  // When a system default is picked, the server copies it into My Processes and links the copy
   const payload = {
     name: form.value.name,
     description: form.value.description,
@@ -358,8 +380,12 @@ const handleSave = async () => {
     }
     showModal.value = false
     loadPackages()
-  } catch (e) {
+    processStore.loadProcesses()
+  } catch (e: any) {
     console.error(e)
+    const errors = e?.response?.data?.errors
+    const firstError = errors ? (Object.values(errors)[0] as string[] | undefined)?.[0] : null
+    toast.error(firstError || e?.response?.data?.message || 'Failed to save the package.')
   } finally {
     isSaving.value = false
   }

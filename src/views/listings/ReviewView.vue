@@ -42,7 +42,7 @@ const listingId = computed(() => Number(route.params.listingId || route.params.i
 const listingStore = useListingStore()
 const workflowStore = useWorkflowStore()
 const documentStore = useDocumentStore()
-const { steps, routeFor } = useListingSteps(listingId.value)
+const { steps, routeFor, dynamicSteps, hasDisclosureSteps } = useListingSteps(listingId.value)
 
 const isSubmitting = ref(false)
 
@@ -89,11 +89,12 @@ const hasActiveAgreement = computed(() =>
 )
 
 const reviewSections = computed(() => [
-  ...(workflowStore.workflow?.steps.map((step) => ({
-    label: step.name,
+  ...dynamicSteps.value.map((step) => ({
+    label: step.label,
     route: routeFor(step.id),
-  })) ?? []),
-  { label: 'Property Disclosures', route: routeFor('disclosures') },
+  })),
+  // Disclosures are regular steps above when the process has disclosure steps
+  ...(hasDisclosureSteps.value ? [] : [{ label: 'Property Disclosures', route: routeFor('disclosures') }]),
   { label: 'Documents & Agreements', route: routeFor('documents') },
 ])
 

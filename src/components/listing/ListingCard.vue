@@ -21,6 +21,7 @@ import {
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import type { ListingSummary } from '@/types/listing'
+import { useAuthStore } from '@/stores/auth'
 
 const props = withDefaults(
   defineProps<{
@@ -33,9 +34,29 @@ const props = withDefaults(
 )
 
 const route = useRoute()
+const authStore = useAuthStore()
+
 const linkPath = computed(() => {
   const basePath = route.path.startsWith('/agent') ? '/agent' : ''
   return `${basePath}/listings/`
+})
+
+const isOwner = computed(() => {
+  if (props.listing.isOwner !== undefined) return Boolean(props.listing.isOwner)
+  if (props.listing.userId && authStore.user?.id) {
+    return Number(props.listing.userId) === Number(authStore.user.id)
+  }
+  return false
+})
+
+const canMakeOffer = computed(() => {
+  if (props.listing.canMakeOffer !== undefined) return Boolean(props.listing.canMakeOffer)
+  return (
+    !isOwner.value &&
+    ['published', 'under_contract', 'ccs', 'contingent_continue_to_show'].includes(
+      props.listing.status,
+    )
+  )
 })
 
 const isSubmitted = computed(() => props.listing.status === 'submitted')
@@ -186,15 +207,23 @@ function formatPhotoUrl(url: string | null | undefined): string {
       <RouterLink
         v-if="isPublished"
         :to="`/properties/${listing.id}`"
-        target="_blank"
         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-semibold text-fg hover:bg-surface-raised hover:text-primary transition"
-        title="View live listing on marketplace"
+        title="View property details"
       >
         <ExternalLink class="h-3.5 w-3.5" />
-        <span class="hidden sm:inline">Live Site</span>
+        <span class="hidden sm:inline">Details</span>
       </RouterLink>
 
-      <RouterLink :to="`${linkPath}${listing.id}`">
+      <!-- If buyer/can make offer, show prominent Make Offer button -->
+      <RouterLink v-if="canMakeOffer" :to="`/properties/${listing.id}/send-offer`">
+        <BaseButton size="sm" class="!rounded-xl !bg-emerald-600 hover:!bg-emerald-700 !text-white shadow-xs font-bold flex items-center gap-1.5">
+          <Handshake class="h-3.5 w-3.5" />
+          Make Offer
+        </BaseButton>
+      </RouterLink>
+
+      <!-- If owner, show seller manage button -->
+      <RouterLink v-else :to="`${linkPath}${listing.id}`">
         <BaseButton size="sm" :variant="isSubmitted || isPublished ? 'secondary' : 'primary'" class="!rounded-xl shadow-xs">
           {{ actionButtonLabel }}
           <ArrowRight class="ml-1.5 h-3.5 w-3.5" />
@@ -350,15 +379,26 @@ function formatPhotoUrl(url: string | null | undefined): string {
         <RouterLink
           v-if="isPublished"
           :to="`/properties/${listing.id}`"
-          target="_blank"
           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-semibold text-fg hover:bg-surface-raised hover:text-primary transition"
-          title="Open live public marketplace page"
+          title="Open property details page"
         >
           <ExternalLink class="h-3.5 w-3.5" />
-          <span>Live Site</span>
+          <span>Details</span>
         </RouterLink>
 
-        <RouterLink :to="`${linkPath}${listing.id}`" class="flex-1">
+        <!-- Make Offer Button (If buyer / canMakeOffer) -->
+        <RouterLink v-if="canMakeOffer" :to="`/properties/${listing.id}/send-offer`" class="flex-1">
+          <BaseButton
+            size="sm"
+            class="w-full justify-center !rounded-xl !bg-emerald-600 hover:!bg-emerald-700 !text-white font-bold shadow-sm flex items-center gap-1.5"
+          >
+            <Handshake class="h-4 w-4" />
+            <span>Make Offer</span>
+          </BaseButton>
+        </RouterLink>
+
+        <!-- Owner Management Button -->
+        <RouterLink v-else :to="`${linkPath}${listing.id}`" class="flex-1">
           <BaseButton
             size="sm"
             class="w-full justify-center !rounded-xl font-semibold shadow-xs"

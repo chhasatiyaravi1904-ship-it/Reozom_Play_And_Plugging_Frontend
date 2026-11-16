@@ -35,6 +35,7 @@ import SignatureStudioModal from '@/components/document/SignatureStudioModal.vue
 import { useDocumentStore } from '@/stores/document'
 import { useAuthStore } from '@/stores/auth'
 import { useListingSteps } from '@/composables/useListingSteps'
+import { useWorkflowStore } from '@/stores/workflow'
 import { useToastStore } from '@/stores/toast'
 import * as documentService from '@/services/documentService'
 import * as eunoService from '@/services/eunoService'
@@ -48,7 +49,8 @@ const authStore = useAuthStore()
 const listingId = computed(() => Number(route.params.listingId || route.params.id))
 
 const documentStore = useDocumentStore()
-const { steps, routeFor } = useListingSteps(listingId.value)
+const workflowStore = useWorkflowStore()
+const { steps, routeFor, dynamicSteps, hasDisclosureSteps } = useListingSteps(listingId.value)
 
 // Upload Form State
 const selectedDocType = ref('deed')
@@ -244,6 +246,17 @@ async function handleUploadSupplementary() {
   }
 }
 
+async function handleRegenerate(doc: DocumentRequirement) {
+  if (doc.status === 'signed' && !confirm('If your answers changed since signing, this document will need to be signed again. Continue?')) return
+  try {
+    await documentService.regenerateDocument(listingId.value, doc.documentId || doc.id)
+    toast.success(`${doc.label} updated from your current answers.`)
+    documentStore.fetchDocuments(listingId.value)
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || 'Failed to regenerate the document.')
+  }
+}
+
 // Preview Modal
 async function handleOpenPreview(doc: DocumentRequirement) {
   previewTitle.value = doc.label
@@ -329,12 +342,16 @@ async function handleConfirmStudioSign(payload: {
 onMounted(() => {
   if (listingId.value) {
     documentStore.fetchDocuments(listingId.value)
+    // Needed for the step bar and to know whether disclosures are steps of this process
+    if (!workflowStore.workflow || workflowStore.workflow.listingId !== listingId.value) workflowStore.fetchWorkflow(listingId.value)
     checkEunoStatus(true)
   }
 })
 
 function handleBack() {
-  router.push(routeFor('disclosures'))
+  // With disclosure steps there is no separate Disclosures page: go back to the last listing step
+  const lastStep = dynamicSteps.value[dynamicSteps.value.length - 1]
+  router.push(routeFor(hasDisclosureSteps.value && lastStep ? lastStep.id : 'disclosures'))
 }
 
 function handleContinue() {
@@ -666,6 +683,18 @@ function handleContinue() {
                 >
                   <FileText class="mr-1 h-3.5 w-3.5" />
                   Preview
+                </BaseButton>
+
+                <!-- Re-render a generated document from the current listing answers -->
+                <BaseButton
+                  v-if="doc.isGenerated"
+                  size="sm"
+                  variant="ghost"
+                  class="text-xs"
+                  title="Update this document from your current listing answers"
+                  @click="handleRegenerate(doc)"
+                >
+                  Regenerate
                 </BaseButton>
               </template>
             </div>

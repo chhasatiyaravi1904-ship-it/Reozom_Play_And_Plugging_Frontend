@@ -25,6 +25,38 @@ export const publishListing = (listingId: number) => {
   return api.post(`/listings/${listingId}/publish`)
 }
 
+export const updateListingPrice = (listingId: number, price: number, reason?: string) => {
+  return api.post<{ success: boolean; data: ListingSummary; message: string }>(`/listings/${listingId}/price`, {
+    price,
+    reason,
+  })
+}
+
+export const updateListingRemarks = (
+  listingId: number,
+  payload: { listing_title?: string; remarks?: string; directions?: string },
+) => {
+  return api.put<{ success: boolean; data: ListingSummary; message: string }>(
+    `/listings/${listingId}/remarks`,
+    payload,
+  )
+}
+
+export const updateListingCompensation = (
+  listingId: number,
+  payload: {
+    compensation?: number
+    compensation_type?: 1 | 2
+    direct_buyer_rebate?: number
+    seller_concessions?: number
+  },
+) => {
+  return api.put<{ success: boolean; data: ListingSummary; message: string }>(
+    `/listings/${listingId}/compensation`,
+    payload,
+  )
+}
+
 export const resolveWorkflow = (address: PropertyAddress) => {
   return api.post<ListingRouting>('/listings/resolve-workflow', address)
 }

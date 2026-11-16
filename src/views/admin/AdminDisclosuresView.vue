@@ -25,6 +25,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useToastStore } from '@/stores/toast'
+import { fetchDocumentTemplates, type DocumentTemplateOption } from '@/services/listingProcessService'
 import {
   fetchAdminDisclosures,
   createAdminDisclosure,
@@ -121,8 +122,20 @@ async function loadDisclosures() {
   }
 }
 
-onMounted(() => {
+// Document templates, to show which documents each disclosure's answers produce
+const documentTemplates = ref<DocumentTemplateOption[]>([])
+
+function documentsFor(code: string) {
+  return documentTemplates.value.filter((t) => (t.disclosure_codes || []).includes(code))
+}
+
+onMounted(async () => {
   loadDisclosures()
+  try {
+    documentTemplates.value = (await fetchDocumentTemplates()).data || []
+  } catch {
+    documentTemplates.value = []
+  }
 })
 
 // Metrics
@@ -534,6 +547,16 @@ function removeOption(field: DisclosureField, index: number) {
                 <XCircle v-else class="h-3 w-3" />
                 {{ d.is_active ? 'Active' : 'Draft' }}
               </span>
+            </div>
+
+            <!-- Documents generated from this disclosure's answers -->
+            <div v-if="documentsFor(d.code).length" class="flex items-center gap-1.5 flex-wrap text-[11px]">
+              <span class="text-fg-muted">Generates:</span>
+              <span
+                v-for="t in documentsFor(d.code)"
+                :key="t.code"
+                class="px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 font-semibold"
+              >{{ t.state_code }} · {{ t.name }}</span>
             </div>
 
             <p class="text-xs text-fg-muted max-w-3xl">

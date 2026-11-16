@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useListingStore } from '@/stores/listing'
 import type { StepperItem } from '@/components/listing/Stepper.vue'
+import { stepIsActive } from '@/utils/conditions'
 
 export function useListingSteps(listingId: number) {
   let route: ReturnType<typeof useRoute> | null = null
@@ -15,19 +16,28 @@ export function useListingSteps(listingId: number) {
   const workflowStore = useWorkflowStore()
   const listingStore = useListingStore()
 
+  // Steps that apply to this listing: e.g. only the Condo disclosure for condos, and no
+  // disclosure steps for trust-owned non-owner-occupied properties (same rules as the backend)
   const dynamicSteps = computed(() => [
-    ...(workflowStore.workflow?.steps.map((s) => ({ id: s.id, label: s.name })) ?? []),
+    ...(workflowStore.workflow?.steps
+      .filter((s) => stepIsActive(s, workflowStore.values))
+      .map((s) => ({ id: s.id, label: s.name })) ?? []),
   ])
 
-  const milestoneSteps = [
-    { id: 'disclosures', label: 'Disclosures' },
+  // Listings whose process has disclosure steps don't use the separate Disclosures page
+  const hasDisclosureSteps = computed(
+    () => workflowStore.workflow?.steps.some((s) => s.type === 'disclosure') ?? false,
+  )
+
+  const milestoneSteps = computed(() => [
+    ...(hasDisclosureSteps.value ? [] : [{ id: 'disclosures', label: 'Disclosures' }]),
     { id: 'documents', label: 'Documents' },
     { id: 'review', label: 'Review & Submit' },
-  ]
+  ])
 
   const stepIds = computed(() => [
     ...dynamicSteps.value,
-    ...milestoneSteps,
+    ...milestoneSteps.value,
   ])
 
   const currentStepId = computed(() => {
@@ -89,5 +99,5 @@ export function useListingSteps(listingId: number) {
     return `${basePath}/listings/${listingId}/step/${stepId}`
   }
 
-  return { steps, routeFor, currentStepId, dynamicSteps, stepIds }
+  return { steps, routeFor, currentStepId, dynamicSteps, stepIds, hasDisclosureSteps }
 }

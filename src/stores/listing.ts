@@ -104,6 +104,50 @@ export const useListingStore = defineStore('listing', () => {
     }
   }
 
+  async function updatePrice(listingId: number, price: number, reason?: string) {
+    status.value = 'loading'
+    try {
+      const res = await listingService.updateListingPrice(listingId, price, reason)
+      activeListing.value = res.data.data
+      return res.data.data
+    } finally {
+      status.value = 'idle'
+    }
+  }
+
+  async function updateRemarks(
+    listingId: number,
+    payload: { listing_title?: string; remarks?: string; directions?: string },
+  ) {
+    status.value = 'loading'
+    try {
+      const res = await listingService.updateListingRemarks(listingId, payload)
+      activeListing.value = res.data.data
+      return res.data.data
+    } finally {
+      status.value = 'idle'
+    }
+  }
+
+  async function updateCompensation(
+    listingId: number,
+    payload: {
+      compensation?: number
+      compensation_type?: 1 | 2
+      direct_buyer_rebate?: number
+      seller_concessions?: number
+    },
+  ) {
+    status.value = 'loading'
+    try {
+      const res = await listingService.updateListingCompensation(listingId, payload)
+      activeListing.value = res.data.data
+      return res.data.data
+    } finally {
+      status.value = 'idle'
+    }
+  }
+
   return {
     listings,
     activeListing,
@@ -114,5 +158,8 @@ export const useListingStore = defineStore('listing', () => {
     startListing,
     submitListing,
     publishListing,
+    updatePrice,
+    updateRemarks,
+    updateCompensation,
   }
 })

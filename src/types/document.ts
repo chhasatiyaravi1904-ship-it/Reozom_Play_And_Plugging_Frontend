@@ -17,6 +17,8 @@ export interface DocumentRequirement {
   verificationCode?: string | null
   isSignable?: boolean
   isPreviewable?: boolean
+  /** Generated from a document template (can be regenerated from the listing answers) */
+  isGenerated?: boolean
   fileName?: string | null
   uploadedAt?: string | null
   fileSize?: number | null

@@ -1,8 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getListingProcess, updateListingProcess } from '../services/listingProcessService'
+import {
+  getListingProcess,
+  updateListingProcess,
+  resetDisclosureStep as resetDisclosureStepApi
+} from '../services/listingProcessService'
+import { useToastStore } from './toast'
 
 export const useFormConfigStore = defineStore('formConfig', () => {
+  const toast = useToastStore()
   // State
   const stepsByProcess = ref<Record<string, any[]>>({})
   const activeProcessId = ref('')
@@ -28,41 +34,12 @@ export const useFormConfigStore = defineStore('formConfig', () => {
     activeProcessId.value = processId
     try {
       const response = await getListingProcess(processId)
+      // The server keeps the steps in the Reozom shape (locked Map, Pictures, Payment), so use them as-is
       const processData = response.data.config || []
-      
-      const hasSystemStep = processData.some((s: any) => s.id === 'system_public_info')
-      if (!hasSystemStep) {
-        const systemStep = {
-          id: 'system_public_info',
-          name: 'Public Listing Information',
-          type: 'public_listing',
-          isSystem: true,
-          order: 1,
-          visible: true,
-          sections: [
-            {
-              id: 'public_basic_information',
-              order: 1,
-              name: 'Basic Information',
-              fields: [
-                { id: 'listing_title', name: 'listing_title', label: 'Listing Title', type: 'text', required: true },
-                { id: 'listing_price', name: 'listing_price', label: 'Price', type: 'number', required: true },
-                { id: 'property_type', name: 'property_type', label: 'Property Type', type: 'select', required: true, options: [ {label: 'Single Family', value: 'single_family'}, {label: 'Condo', value: 'condo'}, {label: 'Townhouse', value: 'townhouse'} ] },
-                { id: 'bedrooms', name: 'bedrooms', label: 'Bedrooms', type: 'number', required: true },
-                { id: 'bathrooms', name: 'bathrooms', label: 'Bathrooms', type: 'number', required: true },
-                { id: 'square_feet', name: 'square_feet', label: 'Square Feet', type: 'number', required: true }
-              ]
-            }
-          ]
-        }
-        processData.unshift(systemStep)
-        processData.forEach((s: any, idx: number) => { s.order = idx + 1 })
-      }
-      
+
       stepsByProcess.value[processId] = processData
-      const processSteps = stepsByProcess.value[processId]
-      activeStepId.value = processSteps.length > 0 ? processSteps[0].id : ''
-      hasChanges.value = !hasSystemStep // Trigger autosave if we injected it
+      activeStepId.value = processData.length > 0 ? processData[0].id : ''
+      hasChanges.value = false
     } catch (e) {
       console.error('Failed to load process config', e)
       stepsByProcess.value[processId] = []
@@ -74,15 +51,17 @@ export const useFormConfigStore = defineStore('formConfig', () => {
   }
 
   const addStep = (stepData: any) => {
-    const order = steps.value.length + 1
     const newStep = {
       id: `step-${Date.now()}`,
-      order,
       visible: true,
       sections: [],
       ...stepData
     }
-    steps.value.push(newStep)
+    // New steps go before Payment, which always stays the last step
+    const payment = steps.value.findIndex((s: any) => s.locked && s.kind === 'payment')
+    const insertAt = payment === -1 ? steps.value.length : payment
+    steps.value.splice(insertAt, 0, newStep)
+    steps.value.forEach((s: any, idx: number) => { s.order = idx + 1 })
     activeStepId.value = newStep.id
     hasChanges.value = true
     autoSave()
@@ -92,6 +71,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
     const step = steps.value.find((s: any) => s.id === stepId)
     if (step) {
       Object.assign(step, updates)
+      markCustomized(step)
       hasChanges.value = true
       autoSave()
     }
@@ -99,7 +79,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
 
   const deleteStep = (stepId: string) => {
     const step = steps.value.find((s: any) => s.id === stepId)
-    if (step && step.isSystem) return // Prevent deleting system step
+    if (step && (step.isSystem || step.locked)) return // Locked steps are managed by the system
 
     steps.value = steps.value.filter((s: any) => s.id !== stepId)
     steps.value.forEach((step: any, idx: number) => {
@@ -125,6 +105,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
         fields: [],
         ...sectionData
       })
+      markCustomized(step)
       hasChanges.value = true
       autoSave()
     }
@@ -136,6 +117,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
       const section = step.sections.find((sec: any) => sec.id === sectionId)
       if (section) {
         Object.assign(section, updates)
+        markCustomized(step)
         hasChanges.value = true
         autoSave()
       }
@@ -149,6 +131,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
       step.sections.forEach((sec: any, idx: number) => {
         sec.order = idx + 1
       })
+      markCustomized(step)
       hasChanges.value = true
       autoSave()
     }
@@ -164,6 +147,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
           id: `field-${Date.now()}`,
           ...fieldData
         })
+        markCustomized(step)
         hasChanges.value = true
         autoSave()
       }
@@ -178,6 +162,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
         const field = section.fields.find((f: any) => f.id === fieldId)
         if (field) {
           Object.assign(field, updates)
+          markCustomized(step)
           hasChanges.value = true
           autoSave()
         }
@@ -191,6 +176,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
       const section = step.sections.find((sec: any) => sec.id === sectionId)
       if (section) {
         section.fields = section.fields.filter((f: any) => f.id !== fieldId)
+        markCustomized(step)
         hasChanges.value = true
         autoSave()
       }
@@ -212,6 +198,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
         hasChanges.value = false
       } catch (e) {
         console.error('Failed to save to backend', e)
+        notifySaveError(e)
         saveStatus.value = 'idle'
       } finally {
         setTimeout(() => {
@@ -219,6 +206,32 @@ export const useFormConfigStore = defineStore('formConfig', () => {
         }, 2000)
       }
     }, 1000)
+  }
+
+  // Server-side validation (e.g. reserved or duplicate field names) must be visible to the user.
+  const notifySaveError = (e: any) => {
+    const errors = e?.response?.data?.errors
+    const firstError = errors ? (Object.values(errors)[0] as string[] | undefined)?.[0] : null
+    toast.error(firstError || e?.response?.data?.message || 'Failed to save the process.')
+  }
+
+  // A disclosure step whose questions were edited is flagged so the builder can offer "Reset to master".
+  const markCustomized = (step: any) => {
+    if (step?.type === 'disclosure') step.customized = true
+  }
+
+  const resetDisclosureStep = async (disclosureCode: string) => {
+    if (!activeProcessId.value) return
+    if (saveTimeout) clearTimeout(saveTimeout)
+    try {
+      const response = await resetDisclosureStepApi(activeProcessId.value, disclosureCode)
+      stepsByProcess.value[activeProcessId.value] = response.data.config || []
+      hasChanges.value = false
+      toast.success('Disclosure questions restored from the master disclosure.')
+    } catch (e) {
+      console.error('Failed to reset disclosure step', e)
+      notifySaveError(e)
+    }
   }
 
   const saveAll = async () => {
@@ -235,6 +248,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
       hasChanges.value = false
     } catch (e) {
       console.error('Failed to save to backend', e)
+      notifySaveError(e)
       saveStatus.value = 'idle'
     } finally {
       setTimeout(() => {
@@ -277,6 +291,8 @@ export const useFormConfigStore = defineStore('formConfig', () => {
     autoSave,
     saveAll,
     discardChanges,
-    resetData
+    resetData,
+    resetDisclosureStep,
+    markCustomized
   }
 })

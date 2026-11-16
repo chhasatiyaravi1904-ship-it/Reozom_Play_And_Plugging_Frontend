@@ -43,6 +43,7 @@ const adminNavGroups = [
       { label: 'Offers', to: '/admin/offers', icon: Handshake },
       { label: 'Listing Process Management', to: '/admin/listing-processes', icon: Workflow },
       { label: 'Disclosures', to: '/admin/disclosures', icon: FileText },
+      { label: 'Manage Documents', to: '/admin/documents', icon: FileText },
     ],
   },
   {

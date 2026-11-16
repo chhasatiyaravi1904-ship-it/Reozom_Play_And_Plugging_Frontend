@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'agent' | 'seller' | 'buyer'
+export type UserRole = 'admin' | 'agent' | 'seller_buyer' | 'client' | 'seller' | 'buyer'
 
 export interface User {
   id: number
@@ -20,6 +20,8 @@ export interface User {
   permissions?: string[]
   hasActivePackage?: boolean
   currentPackage?: CurrentPackage | null
+  /** Set when an admin is logged in as this user ("Login as user") */
+  impersonatedBy?: { id: number; name: string } | null
 }
 
 export interface CurrentPackage {
@@ -36,7 +38,7 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  userType: 'agent' | 'seller' | 'buyer'
+  userType: 'agent' | 'seller_buyer' | 'seller' | 'buyer' | 'client'
   firstName: string
   lastName: string
   email: string

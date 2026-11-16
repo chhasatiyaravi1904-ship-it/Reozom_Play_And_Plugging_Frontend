@@ -44,6 +44,7 @@ const navGroups = computed(() => {
   agentItems.push({ label: 'Service Packages', to: '/agent/service-packages', icon: FileText })
   agentItems.push({ label: 'Listing Processes', to: '/agent/listing-processes', icon: Workflow })
   agentItems.push({ label: 'Listings', to: '/agent/listings', icon: Building2 })
+  agentItems.push({ label: 'Manage Documents', to: '/agent/documents', icon: FileText })
   agentItems.push({ label: 'Profile', to: '/agent/profile', icon: Users })
 
   return [

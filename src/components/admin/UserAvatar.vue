@@ -24,7 +24,9 @@ const initials = computed(() => {
 })
 
 const colorScheme = computed(() =>
-  props.role ? roleBadgeConfig[props.role].avatarClasses : 'bg-surface-raised text-fg-muted ring-border',
+  props.role
+    ? (roleBadgeConfig[props.role]?.avatarClasses || roleBadgeConfig.seller_buyer.avatarClasses)
+    : 'bg-surface-raised text-fg-muted ring-border',
 )
 
 const sizeClasses = computed(() => {

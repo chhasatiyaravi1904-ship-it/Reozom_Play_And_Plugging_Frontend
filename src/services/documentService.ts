@@ -1,4 +1,4 @@
-import api from './api'
+import api, { getAuthToken } from './api'
 import type { DocumentRequirement } from '@/types/document'
 
 export const fetchDocuments = (listingId: number) => {
@@ -90,7 +90,7 @@ export const viewDocument = (listingId: number, documentId: string) => {
 
 export const getDocumentViewUrl = (listingId: number, documentId: string) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-  const token = localStorage.getItem('reozom_seller_token')
+  const token = getAuthToken()
   const url = `${baseUrl}/listings/${listingId}/documents/${documentId}/view`
   return token ? `${url}?token=${encodeURIComponent(token)}` : url
 }
@@ -135,3 +135,42 @@ export const renameDocument = (
   })
 }
 
+
+export interface ManagedDocument {
+  id: number
+  listingId: number
+  listingReference: string | null
+  listingAddress: string
+  state: string | null
+  sellerName: string | null
+  name: string
+  fileName: string
+  type: string
+  kind: 'generated' | 'uploaded'
+  status: string
+  signedAt: string | null
+  size: number | null
+  updatedAt: string | null
+  canManage: boolean
+}
+
+export interface ManagedDocumentsPage {
+  items: ManagedDocument[]
+  meta: { currentPage: number; lastPage: number; perPage: number; total: number }
+}
+
+/** Manage Documents: all documents the user can access across listings (admin: all, agent: their listings, seller: own). */
+export const fetchManagedDocuments = (params: {
+  search?: string
+  state?: string
+  status?: string
+  kind?: string
+  page?: number
+}) => {
+  return api.get<ManagedDocumentsPage>('/documents', { params })
+}
+
+/** Re-render a generated document from the current listing answers. */
+export const regenerateDocument = (listingId: number, documentId: string | number) => {
+  return api.post(`/listings/${listingId}/documents/${documentId}/regenerate`)
+}

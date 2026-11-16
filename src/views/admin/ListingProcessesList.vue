@@ -48,7 +48,7 @@
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2">
                   <div class="font-medium text-neutral-900">{{ process.name }}</div>
-                  <span v-if="process.agent_id === null && process.type === 'default'" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">System Default</span>
+                  <span v-if="process.agent_id === null && process.isDefault" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">System Default</span>
                   <span v-else-if="process.isDefault" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1641d9]/10 text-[#1641d9] uppercase tracking-wider">Default</span>
                 </div>
                 <div class="text-xs text-neutral-500 mt-1">{{ process.type }}</div>
@@ -94,6 +94,14 @@
                     title="Configure Required Disclosures"
                   >
                     <IconFileText :size="18" />
+                  </button>
+                  <button
+                    @click="handleCopy(process)"
+                    :disabled="isCopying"
+                    class="p-2 text-neutral-400 hover:text-violet-600 hover:bg-violet-50 rounded transition disabled:opacity-50"
+                    :title="isAgent && process.agent_id === null ? 'Copy to My Processes (to customize steps & disclosure questions)' : 'Duplicate Process'"
+                  >
+                    <IconCopy :size="18" />
                   </button>
                   <button @click="previewProcess(process.id)" class="p-2 text-neutral-400 hover:text-green-600 hover:bg-green-50 rounded transition" title="Preview Form">
                     <IconEye :size="18" />
@@ -184,7 +192,7 @@
               <span class="text-xs text-neutral-400">{{ newProcessForm.required_disclosures.length }} selected</span>
             </div>
             <p class="text-xs text-neutral-500 mb-2">
-              Select which disclosure documents sellers must complete in the Disclosures step for listings under this process.
+              Each selected disclosure is added to this process as its own step (before Pictures). You can edit its questions in the builder.
             </p>
             <div class="space-y-1.5 max-h-44 overflow-y-auto p-2 border border-neutral-200 rounded-lg bg-neutral-50">
               <label 
@@ -299,8 +307,15 @@
               <span class="text-xs text-emerald-700 font-semibold">{{ editProcessForm.required_disclosures.length }} selected</span>
             </div>
             <p class="text-xs text-neutral-500 mb-2">
-              Sellers who create listings under this process will have these disclosures pre-selected and rendered in the <strong>Disclosures Step</strong>.
+              Each selected disclosure becomes a <strong>Disclosure step</strong> in this process. Open the builder to add or edit its questions.
             </p>
+            <div
+              v-if="removedDisclosureSteps.length > 0"
+              class="mb-2 p-2.5 rounded-lg border border-amber-200 bg-amber-50 text-xs text-amber-800"
+            >
+              Saving will remove these disclosure steps and any question edits made to them:
+              <strong>{{ removedDisclosureSteps.map(s => s.name).join(', ') }}</strong>
+            </div>
             <div class="space-y-2 max-h-56 overflow-y-auto p-2 border border-neutral-200 rounded-lg bg-neutral-50">
               <label 
                 v-for="d in availableDisclosures" 
@@ -326,6 +341,33 @@
               </label>
             </div>
           </div>
+          <!-- Documents generated for listings under this process -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-neutral-700">Documents</label>
+              <span class="text-xs text-emerald-700 font-semibold">{{ editProcessForm.documents.length }} enabled</span>
+            </div>
+            <p class="text-xs text-neutral-500 mb-2">
+              Documents generated for each listing. A document is only created when it applies to the listing
+              (state, property type, and rules like HOA membership or year built).
+            </p>
+            <div class="space-y-3 max-h-64 overflow-y-auto p-2 border border-neutral-200 rounded-lg bg-neutral-50">
+              <div v-for="group in templateGroups" :key="group.key">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-1">{{ group.label }}</div>
+                <label
+                  v-for="t in group.templates"
+                  :key="t.code"
+                  class="flex items-center gap-2.5 p-2 mb-1 bg-white rounded border cursor-pointer text-xs"
+                  :class="editProcessForm.documents.includes(t.code) ? 'border-emerald-300' : 'border-neutral-200'"
+                >
+                  <input type="checkbox" :value="t.code" v-model="editProcessForm.documents" class="rounded text-emerald-600 focus:ring-emerald-500" />
+                  <span class="flex-1 font-medium text-neutral-900">{{ t.name }}</span>
+                  <span v-if="t.source === 'disclosure'" class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700">From disclosure answers</span>
+                </label>
+              </div>
+              <div v-if="templateGroups.length === 0" class="text-xs text-neutral-400 italic p-2">No document templates found.</div>
+            </div>
+          </div>
         </div>
         <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
           <button @click="showEditSettingsModal = false" class="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition" :disabled="isSubmitting">Cancel</button>
@@ -345,13 +387,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProcessStore } from '@/stores/processStore'
 import { useAuthStore } from '@/stores/auth'
-import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye, IconFileText } from '@tabler/icons-vue'
+import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye, IconFileText, IconCopy } from '@tabler/icons-vue'
 import { fetchServicePackages } from '@/services/servicePackageService'
-import { fetchAvailableDisclosures } from '@/services/listingProcessService'
+import { fetchAvailableDisclosures, fetchDocumentTemplates } from '@/services/listingProcessService'
+import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
 const processStore = useProcessStore()
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 const getBasePath = () => authStore.user?.role === 'agent' ? '/agent' : '/admin'
 
@@ -369,7 +413,34 @@ const editProcessForm = ref({
   name: '',
   service_package_id: null,
   assigned_zips: '',
-  required_disclosures: []
+  required_disclosures: [],
+  documents: []
+})
+
+const documentTemplates = ref([])
+
+const TEMPLATE_TYPE_LABELS = { residential: 'Residential', vacant_land: 'Vacant Land' }
+
+// Templates grouped by state and property type. Only the states of the selected disclosures
+// are shown (all states when none are selected).
+const templateGroups = computed(() => {
+  const selectedStates = new Set(
+    availableDisclosures.value
+      .filter(d => editProcessForm.value.required_disclosures.includes(d.code) && d.state_code)
+      .map(d => d.state_code)
+  )
+  const groups = {}
+  for (const t of documentTemplates.value) {
+    if (selectedStates.size > 0 && t.state_code && !selectedStates.has(t.state_code)) continue
+    const key = `${t.state_code || 'ALL'}-${t.property_type || 'all'}`
+    groups[key] ??= {
+      key,
+      label: `${t.state_code || 'All states'} – ${TEMPLATE_TYPE_LABELS[t.property_type] || 'All types'}`,
+      templates: []
+    }
+    groups[key].templates.push(t)
+  }
+  return Object.values(groups)
 })
 
 const newProcessForm = ref({
@@ -391,6 +462,13 @@ onMounted(async () => {
     console.error('Failed to load available disclosures', e)
   }
 
+  try {
+    const tplRes = await fetchDocumentTemplates()
+    documentTemplates.value = tplRes.data || []
+  } catch (e) {
+    console.error('Failed to load document templates', e)
+  }
+
   if (authStore.user?.role === 'agent') {
     try {
       const res = await fetchServicePackages()
@@ -407,7 +485,9 @@ const openEditSettingsModal = (process) => {
     name: process.name,
     service_package_id: process.service_package_id || null,
     assigned_zips: Array.isArray(process.assigned_zips) ? process.assigned_zips.join(', ') : (process.assigned_zips || ''),
-    required_disclosures: Array.isArray(process.required_disclosures) ? [...process.required_disclosures] : []
+    required_disclosures: Array.isArray(process.required_disclosures) ? [...process.required_disclosures] : [],
+    // null on the server means "every document that applies"
+    documents: Array.isArray(process.documents) ? [...process.documents] : documentTemplates.value.map(t => t.code)
   }
   showEditSettingsModal.value = true
 }
@@ -419,12 +499,18 @@ const handleSaveSettings = async () => {
     const payload = {
       name: editProcessForm.value.name,
       required_disclosures: editProcessForm.value.required_disclosures,
+      // All enabled = null, so new templates added later are included automatically
+      documents: editProcessForm.value.documents.length === documentTemplates.value.length
+        ? null
+        : editProcessForm.value.documents,
       service_package_id: editProcessForm.value.service_package_id || null,
       assigned_zips: editProcessForm.value.assigned_zips 
         ? editProcessForm.value.assigned_zips.split(',').map(z => z.trim()).filter(Boolean)
         : []
     }
     await processStore.updateProcess(editingProcess.value.id, payload)
+    // The server adds/removes disclosure steps, so reload to get the synced config
+    await processStore.loadProcesses()
     showEditSettingsModal.value = false
     editingProcess.value = null
   } catch (e) {
@@ -434,12 +520,37 @@ const handleSaveSettings = async () => {
   }
 }
 
+// Disclosure steps currently in the process whose disclosure is being unchecked
+const removedDisclosureSteps = computed(() => {
+  const config = editingProcess.value?.config
+  if (!Array.isArray(config)) return []
+  const selected = editProcessForm.value.required_disclosures
+  return config.filter(s => s.type === 'disclosure' && !selected.includes(s.disclosure_code))
+})
+
+const isCopying = ref(false)
+
+const handleCopy = async (process) => {
+  if (isCopying.value) return
+  isCopying.value = true
+  try {
+    const copy = await processStore.copyProcess(process.id, `${process.name} (My Copy)`)
+    toast.success(`"${process.name}" copied. You can now edit its steps and disclosure questions.`)
+    if (copy?.id) router.push(`${getBasePath()}/processes/${copy.id}/builder`)
+  } catch (e) {
+    toast.error(e?.response?.data?.message || 'Failed to copy process.')
+  } finally {
+    isCopying.value = false
+  }
+}
+
 const getDisclosureTitle = (code) => {
   const d = availableDisclosures.value.find(item => item.code === code)
   return d ? d.title : code
 }
 
 const formatDisclosureCode = (code) => {
+  if (code.includes('single_family')) return 'Single Family'
   if (code.includes('appliances')) return 'Appliances'
   if (code.includes('conditions')) return 'Conditions'
   if (code.includes('lead')) return 'Lead Paint'
@@ -462,7 +573,7 @@ const displayGroups = computed(() => {
   }
   
   return [
-    { title: 'System Default', processes: filteredProcesses.value.filter(p => p.agent_id === null && p.type === 'default') },
+    { title: 'System Default', processes: filteredProcesses.value.filter(p => p.agent_id === null && p.isDefault) },
     { title: 'My Processes', processes: filteredProcesses.value.filter(p => p.agent_id !== null) }
   ]
 })

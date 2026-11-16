@@ -15,6 +15,7 @@ const navLinks = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Listings', to: '/listings' },
   { label: 'My Offers', to: '/my-offers' },
+  { label: 'My Documents', to: '/my-documents' },
   { label: 'Browse Properties', to: '/properties' },
 ]
 

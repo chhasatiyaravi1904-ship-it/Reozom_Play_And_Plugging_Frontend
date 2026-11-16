@@ -71,9 +71,9 @@ async function handleSubmit() {
             {{ form.fullName || 'User Profile' }}
             <ShieldCheck v-if="user?.role === 'agent'" class="w-5 h-5 text-secondary" title="Verified Agent" />
           </h1>
-          <p class="text-fg-muted font-medium capitalize flex items-center justify-center sm:justify-start gap-1.5 mt-1">
+          <p class="text-fg-muted font-medium flex items-center justify-center sm:justify-start gap-1.5 mt-1">
             <User class="w-4 h-4 opacity-70" />
-            {{ user?.role || 'User' }} Account
+            {{ user?.role === 'seller_buyer' ? 'Seller / Buyer' : (user?.role || 'User') }} Account
           </p>
         </div>
       </div>

@@ -82,9 +82,21 @@ export interface AdminListingDetail {
     path: string
     size: number
     created_at: string
+    status?: string
+    signed_at?: string | null
+    signed_by?: string | null
+    document_template_id?: number | null
     verification_status?: string
     review_notes?: string
   }>
+  /** Steps the listing was created with (used to show answers with their question labels) */
+  workflow_snapshot?: Array<{
+    id: string
+    name: string
+    type?: string
+    sections?: Array<{ id: string; name?: string; fields?: Array<{ id: string; name?: string; label?: string; options?: Array<{ label: string; value: string }> }> }>
+  }> | null
+  listing_process?: { id: number; name: string } | null
 }
 
 export interface AdminListingListResponse {

@@ -1,4 +1,5 @@
 import type { FieldDefinition, FieldCondition, FieldValue } from './field'
+import type { Condition } from '@/utils/conditions'
 
 export interface WorkflowSection {
   id: string
@@ -14,7 +15,14 @@ export interface WorkflowStep {
   name: string
   description?: string
   sections: WorkflowSection[]
-  showIf?: FieldCondition
+  showIf?: FieldCondition | Condition
+  /** Step does not apply when this matches (e.g. trust-owned, non-owner-occupied) */
+  skipIf?: Condition
+  disclosure_code?: string
+  type?: string
+  /** Locked steps are managed by the system: 'map' | 'media' | 'payment' */
+  kind?: string
+  locked?: boolean
 }
 
 export interface WorkflowDefinition {

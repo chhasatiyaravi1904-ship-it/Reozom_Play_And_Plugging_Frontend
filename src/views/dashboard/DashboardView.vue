@@ -58,8 +58,13 @@ onMounted(async () => {
       </div>
 
       <div class="flex items-center gap-3 shrink-0">
+        <RouterLink to="/listings">
+          <BaseButton variant="secondary" class="!rounded-xl shadow-xs font-semibold">
+            Browse & Make Offers
+          </BaseButton>
+        </RouterLink>
         <RouterLink to="/listings/create">
-          <BaseButton class="!rounded-xl shadow-sm">
+          <BaseButton class="!rounded-xl shadow-sm font-semibold">
             <Plus class="mr-1.5 h-4 w-4" />
             Start New Listing
           </BaseButton>

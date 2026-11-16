@@ -80,7 +80,9 @@ const handleDragStart = (e, step) => {
 }
 
 const handleDrop = (e, targetStep) => {
-  if (draggedStep && draggedStep.id !== targetStep.id) {
+  // Payment always stays the last step; every other step (including Map and Pictures) can move
+  const isPayment = (s) => s.locked && s.kind === 'payment'
+  if (draggedStep && draggedStep.id !== targetStep.id && !isPayment(draggedStep) && !isPayment(targetStep)) {
     emit('drag-step', { source: draggedStep, target: targetStep })
   }
   draggedStep = null

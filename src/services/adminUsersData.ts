@@ -1,4 +1,4 @@
-export type AdminUserRole = 'admin' | 'agent' | 'seller' | 'buyer'
+export type AdminUserRole = 'admin' | 'agent' | 'seller_buyer' | 'client' | 'seller' | 'buyer'
 export type AdminUserStatus = 'active' | 'inactive'
 
 export interface AdminUserItem {

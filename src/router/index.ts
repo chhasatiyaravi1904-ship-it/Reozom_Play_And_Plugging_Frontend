@@ -114,6 +114,11 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminPackagesView.vue'),
         },
         {
+          path: 'listings/:id(\\d+)',
+          name: 'admin-listing-detail',
+          component: () => import('@/views/admin/AdminListingDetailView.vue'),
+        },
+        {
           path: 'listings',
           name: 'admin-listings',
           component: () => import('@/views/admin/AdminListingsView.vue'),
@@ -137,6 +142,11 @@ const router = createRouter({
           path: 'disclosures',
           name: 'admin-disclosures',
           component: () => import('@/views/admin/AdminDisclosuresView.vue'),
+        },
+        {
+          path: 'documents',
+          name: 'admin-documents',
+          component: () => import('@/views/documents/ManageDocumentsView.vue'),
         },
         {
           path: 'mls',
@@ -212,6 +222,11 @@ const router = createRouter({
           component: () => import('@/views/listings/ListingsView.vue'),
         },
         {
+          path: 'documents',
+          name: 'agent-documents',
+          component: () => import('@/views/documents/ManageDocumentsView.vue'),
+        },
+        {
           path: 'listings/create',
           name: 'agent-listing-create',
           component: () => import('@/views/listings/CreateListingView.vue'),
@@ -256,7 +271,7 @@ const router = createRouter({
     {
       path: '/',
       component: () => import('@/layouts/SellerLayout.vue'),
-      meta: { requiresAuth: true, roles: ['seller', 'buyer'] },
+      meta: { requiresAuth: true, roles: ['seller_buyer', 'client', 'seller', 'buyer'] },
       children: [
         {
           path: 'dashboard',
@@ -277,6 +292,11 @@ const router = createRouter({
           path: 'my-offers',
           name: 'my-offers',
           component: () => import('@/views/dashboard/MyOffersView.vue'),
+        },
+        {
+          path: 'my-documents',
+          name: 'my-documents',
+          component: () => import('@/views/documents/ManageDocumentsView.vue'),
         },
         {
           path: 'listings/create',

@@ -22,13 +22,12 @@ const toast = useToastStore()
 const { register, status, error } = useAuth()
 
 const userTypeOptions = [
-  { label: 'Agent', value: 'agent' },
-  { label: 'Seller', value: 'seller' },
-  { label: 'Buyer', value: 'buyer' },
+  { label: 'Seller / Buyer', value: 'seller_buyer' },
+  { label: 'Licensed Agent', value: 'agent' },
 ]
 
 const form = reactive({
-  userType: 'seller' as RegisterPayload['userType'],
+  userType: 'seller_buyer' as RegisterPayload['userType'],
   firstName: '',
   lastName: '',
   email: '',

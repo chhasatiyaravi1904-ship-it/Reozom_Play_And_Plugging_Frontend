@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { RouterView } from 'vue-router'
 import { Menu, ShieldCheck } from 'lucide-vue-next'
 import AgentSidebar from '@/components/layout/AgentSidebar.vue'
+import ImpersonationBanner from '@/components/layout/ImpersonationBanner.vue'
 import AdminProfileMenu from '@/components/admin/AdminProfileMenu.vue'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 
@@ -14,6 +15,7 @@ const isSidebarOpen = ref(false)
     <AgentSidebar :open="isSidebarOpen" @close="isSidebarOpen = false" />
 
     <div class="flex min-w-0 flex-1 flex-col">
+      <ImpersonationBanner />
       <!-- Header: mobile menu trigger on the left, profile menu always on the right -->
       <header
         class="flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-4 sm:px-6 lg:px-8"

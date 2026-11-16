@@ -37,3 +37,15 @@ export const resend2fa = (email: string) => {
   return api.post('/auth/resend-2fa', { email })
 }
 
+
+/** Admin "Login as user": a temporary 2-hour token for the user. */
+export const impersonateUser = (userId: number) => {
+  return api.post<{ token: string; user: User; impersonatedBy: { id: number; name: string }; expiresAt: string }>(
+    `/admin/users/${userId}/impersonate`,
+  )
+}
+
+/** End the "Login as user" session (the temporary token is deleted). */
+export const stopImpersonation = () => {
+  return api.post('/auth/stop-impersonation')
+}

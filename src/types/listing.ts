@@ -43,6 +43,7 @@ export interface ListingSummary {
   primaryPhotoUrl?: string | null
   offersCount?: number
   packageName?: string | null
+  packagePrice?: number | null
   statusChangedDate?: string | null
   price?: number | null
   bedrooms?: number | null
@@ -50,4 +51,14 @@ export interface ListingSummary {
   squareFeet?: number | null
   propertyType?: string | null
   listingTitle?: string | null
+  remarks?: string | null
+  directions?: string | null
+  compensation?: number | null
+  compensationType?: 1 | 2 | null
+  directBuyerRebate?: number | null
+  sellerConcessions?: number | null
+  userId?: number
+  isOwner?: boolean
+  canMakeOffer?: boolean
+  yearBuilt?: number | null
 }

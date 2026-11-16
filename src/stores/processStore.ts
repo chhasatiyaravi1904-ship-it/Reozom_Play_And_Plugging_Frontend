@@ -6,6 +6,7 @@ import {
   createListingProcess,
   updateListingProcess as apiUpdateProcess,
   deleteListingProcess as apiDeleteProcess,
+  copyListingProcess,
   type ListingProcess
 } from '../services/listingProcessService'
 
@@ -22,15 +23,17 @@ export const useProcessStore = defineStore('processStore', () => {
       // Map API data to the frontend shape
       processes.value = response.data.map((p) => ({
         id: p.id,
+        agent_id: p.agent_id ?? null,
         name: p.name,
-        type: p.type === 'default' ? 'Default - Michigan' : (p.type || 'Custom'),
+        type: p.type === 'default' ? 'Default' : (p.type || 'Custom'),
         status: p.status === 'draft' ? 'Draft' : 'Active',
         isDefault: p.type === 'default',
         lastModified: p.updated_at ? new Date(p.updated_at).toLocaleDateString() : 'Just now',
         config: p.config,
         service_package_id: p.service_package_id,
         assigned_zips: p.assigned_zips,
-        required_disclosures: p.required_disclosures || []
+        required_disclosures: p.required_disclosures || [],
+        documents: p.documents ?? null
       }))
     } catch (e: any) {
       console.error('Failed to load processes', e)
@@ -55,15 +58,17 @@ export const useProcessStore = defineStore('processStore', () => {
       const p = response.data
       const newProcess = {
         id: p.id,
+        agent_id: p.agent_id ?? null,
         name: p.name,
-        type: p.type === 'default' ? 'Default - Michigan' : (p.type || 'Custom'),
+        type: p.type === 'default' ? 'Default' : (p.type || 'Custom'),
         status: p.status === 'draft' ? 'Draft' : 'Active',
         isDefault: p.type === 'default',
         lastModified: 'Just now',
         config: p.config,
         service_package_id: p.service_package_id,
         assigned_zips: p.assigned_zips,
-        required_disclosures: p.required_disclosures || []
+        required_disclosures: p.required_disclosures || [],
+        documents: p.documents ?? null
       }
       processes.value.push(newProcess)
       return newProcess
@@ -82,6 +87,7 @@ export const useProcessStore = defineStore('processStore', () => {
       if (updates.service_package_id !== undefined) apiUpdates.service_package_id = updates.service_package_id
       if (updates.assigned_zips !== undefined) apiUpdates.assigned_zips = updates.assigned_zips
       if (updates.required_disclosures !== undefined) apiUpdates.required_disclosures = updates.required_disclosures
+      if (updates.documents !== undefined) apiUpdates.documents = updates.documents
       
       const response = await apiUpdateProcess(id, apiUpdates)
       
@@ -113,6 +119,12 @@ export const useProcessStore = defineStore('processStore', () => {
     return processes.value.find(p => p.id == id)
   }
 
+  const copyProcess = async (id: number | string, name?: string) => {
+    const response = await copyListingProcess(id, name)
+    await loadProcesses()
+    return response.data
+  }
+
   return {
     processes,
     isLoading,
@@ -122,5 +134,6 @@ export const useProcessStore = defineStore('processStore', () => {
     updateProcess,
     deleteProcess,
     getProcessById,
+    copyProcess,
   }
 })

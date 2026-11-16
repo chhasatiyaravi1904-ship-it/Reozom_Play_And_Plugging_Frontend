@@ -21,15 +21,16 @@ const selectedRole = ref<AdminUserRole>('agent')
 const roleOptions: { id: AdminUserRole; description: string }[] = [
   { id: 'admin', description: 'Full administrative access to platform, users, MLS, and system settings.' },
   { id: 'agent', description: 'Access to manage MLS feeds, review client listings, and manage disclosures.' },
-  { id: 'seller', description: 'Access to property listing creation, documents, and seller disclosures.' },
-  { id: 'buyer', description: 'Access to viewing listings, submitting purchase offers, and saved searches.' },
+  { id: 'seller_buyer', description: 'Client access: create & manage property listings, submit & negotiate purchase offers, and sign disclosures.' },
 ]
 
 watch(
   () => props.user,
   (val) => {
     if (val) {
-      selectedRole.value = val.role
+      selectedRole.value = (val.role === 'seller' || val.role === 'buyer' || val.role === 'client')
+        ? 'seller_buyer'
+        : val.role
     }
   },
   { immediate: true },

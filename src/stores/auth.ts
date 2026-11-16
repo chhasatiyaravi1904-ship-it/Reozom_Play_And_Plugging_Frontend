@@ -1,7 +1,14 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as authService from '@/services/authService'
-import { isNetworkError, TOKEN_STORAGE_KEY } from '@/services/api'
+import {
+  isNetworkError,
+  TOKEN_STORAGE_KEY,
+  getAuthToken,
+  isImpersonatingInThisTab,
+  setImpersonationToken,
+  impersonationReturnPath,
+} from '@/services/api'
 import { sampleUser } from '@/services/sampleData'
 import type { LoginPayload, RegisterPayload, User } from '@/types/auth'
 
@@ -9,7 +16,8 @@ const TOKEN_KEY = TOKEN_STORAGE_KEY
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
+  // This tab's "login as user" token wins over the normal login (see services/api.ts)
+  const token = ref<string | null>(getAuthToken())
   const status = ref<'idle' | 'loading' | 'error'>('idle')
   const error = ref<string | null>(null)
   const requires2fa = ref(false)
@@ -25,6 +33,11 @@ export const useAuthStore = defineStore('auth', () => {
   function clearSession() {
     token.value = null
     user.value = null
+    // A failed "login as user" session must not log the admin out of their other tabs
+    if (isImpersonatingInThisTab()) {
+      setImpersonationToken(null)
+      return
+    }
     localStorage.removeItem(TOKEN_KEY)
   }
 
@@ -116,11 +129,57 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    // Logging out of a "login as user" session returns the admin to their own account
+    if (isImpersonating.value) {
+      const backTo = await stopImpersonation()
+      // Full navigation so callers' "go to login page" redirects don't apply to the restored admin
+      window.location.assign(backTo)
+      return
+    }
     try {
       if (token.value) await authService.logout()
     } finally {
       clearSession()
     }
+  }
+
+  // --- Admin "Login as user" (original Reozom: temporary login from the administration) ---
+
+  // Only true in the tab where the admin started "login as user"; other tabs keep the admin session
+  const impersonationActive = ref(isImpersonatingInThisTab())
+  const isImpersonating = computed(() => impersonationActive.value || !!user.value?.impersonatedBy)
+
+  /**
+   * Admin only: switch THIS TAB to a temporary session as the user. The token lives in
+   * sessionStorage, so the admin's login (localStorage) and other tabs are not affected.
+   */
+  async function startImpersonation(userId: number, returnTo = '/admin/users') {
+    const { data } = await authService.impersonateUser(userId)
+    setImpersonationToken(data.token, returnTo)
+    impersonationActive.value = true
+    token.value = data.token
+    user.value = { ...data.user, impersonatedBy: data.impersonatedBy }
+    return data.user
+  }
+
+  /**
+   * End the "login as user" session in this tab and go back to the admin's own session.
+   * Returns the admin page it was started from (e.g. the listing detail page).
+   */
+  async function stopImpersonation(): Promise<string> {
+    const backTo = impersonationReturnPath()
+    try {
+      await authService.stopImpersonation()
+    } catch {
+      // The temporary token may already have expired; restoring the admin session is what matters
+    }
+
+    setImpersonationToken(null)
+    impersonationActive.value = false
+    token.value = localStorage.getItem(TOKEN_KEY)
+    user.value = null
+    if (token.value) await loadCurrentUser()
+    return backTo
   }
 
   async function loadCurrentUser() {
@@ -165,5 +224,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     loadCurrentUser,
     loginWithToken,
+    isImpersonating,
+    startImpersonation,
+    stopImpersonation,
   }
 })

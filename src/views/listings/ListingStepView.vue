@@ -8,6 +8,8 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import Stepper from '@/components/listing/Stepper.vue'
 import DynamicWorkflow from '@/components/listing/DynamicWorkflow.vue'
+import MapPicker from '@/components/listing/MapPicker.vue'
+import { conditionMatches } from '@/utils/conditions'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useListingStore } from '@/stores/listing'
 import { useListingSteps } from '@/composables/useListingSteps'
@@ -21,7 +23,7 @@ const stepId = computed(() => String(route.params.stepId))
 
 const workflowStore = useWorkflowStore()
 const listingStore = useListingStore()
-const { steps, routeFor, dynamicSteps } = useListingSteps(listingId.value)
+const { steps, routeFor, dynamicSteps, hasDisclosureSteps } = useListingSteps(listingId.value)
 
 const errors = reactive<Record<string, string>>({})
 const formError = ref<string>('')
@@ -36,6 +38,26 @@ const { state: saveState, schedule } = useAutoSave(() =>
 onMounted(() => {
   if (!workflowStore.workflow) workflowStore.fetchWorkflow(listingId.value)
   if (!listingStore.activeListing) listingStore.fetchListing(listingId.value)
+})
+
+// Address typed in the "Property Type & Address" step, falling back to the listing record
+const mapAddress = computed(() => {
+  const v = workflowStore.values
+  const a = listingStore.activeListing?.address
+  return [v.street_address ?? a?.address, v.city ?? a?.city, v.state ?? a?.state, v.zip ?? a?.zip]
+    .filter((part) => part !== undefined && part !== null && String(part).trim() !== '')
+    .join(', ')
+})
+
+function handleMapUpdate(latitude: string, longitude: string) {
+  handleFieldUpdate('latitude', latitude)
+  handleFieldUpdate('longitude', longitude)
+}
+
+const packagePriceText = computed(() => {
+  const price = listingStore.activeListing?.packagePrice
+  if (price === null || price === undefined) return '—'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
 })
 
 const isLastDynamicStep = computed(() => {
@@ -58,15 +80,7 @@ function handleFieldUpdate(fieldId: string, value: FieldValue) {
 }
 
 function isFieldVisible(field: any, section: any): boolean {
-  if (section?.showIf) {
-    const parentVal = String(workflowStore.values[section.showIf.field] ?? '')
-    if (parentVal !== String(section.showIf.equals)) return false
-  }
-  if (field?.showIf) {
-    const parentVal = String(workflowStore.values[field.showIf.field] ?? '')
-    if (parentVal !== String(field.showIf.equals)) return false
-  }
-  return true
+  return conditionMatches(section?.showIf, workflowStore.values) && conditionMatches(field?.showIf, workflowStore.values)
 }
 
 function validate(): boolean {
@@ -130,8 +144,8 @@ async function handleContinue() {
     if (next) {
       router.push(routeFor(next.id))
     } else {
-      // All dynamic steps done — proceed to disclosures milestone
-      router.push(routeFor('disclosures'))
+      // All steps done: disclosures were steps of this process, so go to Documents; otherwise the old Disclosures page
+      router.push(routeFor(hasDisclosureSteps.value ? 'documents' : 'disclosures'))
     }
   } catch (err: any) {
     formError.value = err?.response?.data?.message || err?.message || 'Failed to save step.'
@@ -200,7 +214,37 @@ async function handleContinue() {
         </div>
       </div>
 
+      <!-- Payment step: package summary (online payment is not connected yet) -->
+      <div v-if="currentStep.kind === 'payment'" class="space-y-4">
+        <div class="rounded-xl border border-outline-variant/40 p-5 flex items-center justify-between gap-4">
+          <div>
+            <div class="text-label-sm font-label-sm uppercase tracking-wider text-outline-variant">Service Package</div>
+            <div class="text-headline-sm font-headline-sm text-primary mt-1">
+              {{ listingStore.activeListing?.packageName || 'Selected package' }}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-label-sm font-label-sm uppercase tracking-wider text-outline-variant">Price</div>
+            <div class="text-headline-sm font-headline-sm text-primary mt-1">{{ packagePriceText }}</div>
+          </div>
+        </div>
+        <p class="text-body-md font-body-md text-on-surface-variant">
+          Please review your package. Online payment is not available yet. Continue to confirm the package and finish your listing.
+        </p>
+      </div>
+
+      <!-- Location on the Map step: Google Map pin picker -->
+      <MapPicker
+        v-else-if="currentStep.kind === 'map'"
+        :latitude="workflowStore.values.latitude as any"
+        :longitude="workflowStore.values.longitude as any"
+        :address="mapAddress"
+        :errors="errors"
+        @update="handleMapUpdate"
+      />
+
       <DynamicWorkflow
+        v-else
         :step="currentStep"
         :values="workflowStore.values"
         :errors="errors"
@@ -221,7 +265,7 @@ async function handleContinue() {
           class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span v-if="isSaving" class="inline-block animate-spin mr-1">⌛</span>
-          {{ isSaving ? 'Saving...' : (isLastDynamicStep ? 'Continue to Disclosures' : 'Save & Continue') }}
+          {{ isSaving ? 'Saving...' : (isLastDynamicStep ? (hasDisclosureSteps ? 'Continue to Documents' : 'Continue to Disclosures') : 'Save & Continue') }}
           <span v-if="!isSaving" class="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>

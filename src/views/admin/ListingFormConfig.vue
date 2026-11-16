@@ -78,20 +78,43 @@
               <div class="flex items-center gap-3">
                 <h2 class="text-xl md:text-2xl font-bold text-neutral-900">{{ activeStep.name }}</h2>
                 <span v-if="activeStep.isSystem" class="text-xs font-bold uppercase tracking-wider text-primary bg-primary-soft px-2 py-1 rounded border border-primary/20">System Step</span>
+                <span v-if="isDisclosureStep" class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">Disclosure</span>
+                <span v-if="activeStep.locked" class="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-neutral-600 bg-neutral-100 px-2 py-1 rounded border border-neutral-300">
+                  <IconLock :size="12" /> Not editable
+                </span>
               </div>
               <p class="text-sm text-neutral-500 mt-1" v-if="activeStep.description">{{ activeStep.description }}</p>
+              <p v-if="activeStep.locked" class="text-sm text-neutral-600 bg-neutral-100 p-3 rounded-md border border-neutral-200 mt-3">
+                {{ lockedStepText }} Its questions cannot be edited and the step cannot be deleted. {{ activeStep.kind === 'payment' ? 'It is always the last step.' : 'You can drag it to a different position.' }}
+              </p>
               <p class="text-sm text-neutral-600 bg-neutral-100 p-3 rounded-md border border-neutral-200 mt-3" v-if="activeStep.isSystem">
                 This step provides information shown on the public listing.
               </p>
+              <div v-if="isDisclosureStep" class="text-sm text-emerald-900 bg-emerald-50/60 p-3 rounded-md border border-emerald-200 mt-3 space-y-1">
+                <p>
+                  Questions copied from the master disclosure <code class="text-xs font-semibold">{{ activeStep.disclosure_code }}</code>.
+                  <template v-if="!isReadOnly">Edits here apply only to this process.</template>
+                </p>
+                <p v-if="disclosureVisibilityText" class="text-xs text-emerald-800">{{ disclosureVisibilityText }}</p>
+                <p v-if="activeStep.skipIf" class="text-xs text-emerald-800">Skipped for trust-owned, non-owner-occupied properties.</p>
+              </div>
             </div>
-            
-            <button
-              v-if="!isReadOnly"
-              @click="handleAddSection"
-              class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded transition shrink-0 self-start md:self-auto"
-            >
-              <IconPlus :size="16" /> Add Section
-            </button>
+
+            <div v-if="!isStepReadOnly" class="flex items-center gap-2 shrink-0 self-start md:self-auto">
+              <button
+                v-if="isDisclosureStep && activeStep.customized"
+                @click="handleResetDisclosureStep"
+                class="px-4 py-2 text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded transition"
+              >
+                Reset to Master
+              </button>
+              <button
+                @click="handleAddSection"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded transition"
+              >
+                <IconPlus :size="16" /> Add Section
+              </button>
+            </div>
           </div>
 
           <!-- Tabs -->
@@ -111,9 +134,21 @@
             </button>
           </div>
 
+          <!-- Preview of what sellers see on the map step -->
+          <div v-if="activeStep.kind === 'map'" class="mb-6 rounded-lg border border-neutral-200 bg-white p-4">
+            <div class="mb-3 text-sm font-semibold text-neutral-700">Seller view</div>
+            <MapPicker readonly latitude="42.280800" longitude="-83.743000" />
+          </div>
+
           <!-- Empty State -->
           <div
-            v-if="!activeStep.sections || activeStep.sections.length === 0"
+            v-if="(!activeStep.sections || activeStep.sections.length === 0) && activeStep.locked"
+            class="text-center py-12 bg-white rounded-lg border border-neutral-200 border-dashed text-sm text-neutral-500"
+          >
+            This step has no questions. Sellers see it automatically.
+          </div>
+          <div
+            v-else-if="!activeStep.sections || activeStep.sections.length === 0"
             class="text-center py-12 bg-white rounded-lg border border-neutral-200 border-dashed"
           >
             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-soft text-primary mb-4">
@@ -137,10 +172,10 @@
               v-for="section in activeStep.sections" 
               :key="section.id"
               class="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden"
-              draggable="true"
-              @dragstart="handleSectionDragStart($event, section)"
+              :draggable="!isStepReadOnly"
+              @dragstart="!isStepReadOnly && handleSectionDragStart($event, section)"
               @dragover.prevent
-              @drop="handleSectionDrop($event, section)"
+              @drop="!isStepReadOnly && handleSectionDrop($event, section)"
             >
               <!-- Section Header -->
               <div class="px-6 py-4 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between cursor-grab active:cursor-grabbing">
@@ -153,7 +188,7 @@
                     <p class="text-xs text-neutral-500" v-if="section.description">{{ section.description }}</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2" v-if="!isReadOnly">
+                <div class="flex items-center gap-2" v-if="!isStepReadOnly">
                   <button
                     @click.stop="handleAddField(section.id)"
                     class="p-2 text-primary hover:bg-primary-soft rounded transition"
@@ -188,7 +223,7 @@
                       <th class="px-4 py-3">Type</th>
                       <th class="w-24 px-4 py-3 text-center">Required</th>
                       <th class="w-24 px-4 py-3 text-center">Active</th>
-                      <th class="w-24 px-4 py-3 text-right" v-if="!isReadOnly">Actions</th>
+                      <th class="w-24 px-4 py-3 text-right" v-if="!isStepReadOnly">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -196,15 +231,15 @@
                       v-for="field in getFilteredFields(section.fields)"
                       :key="field.id"
                       :field="field"
-                      :draggable="!isReadOnly"
-                      @dragstart="!isReadOnly && handleFieldDragStart($event, field, section.id)"
+                      :draggable="!isStepReadOnly"
+                      @dragstart="!isStepReadOnly && handleFieldDragStart($event, field, section.id)"
                       @dragover.prevent
-                      @drop.stop="!isReadOnly && handleFieldDrop($event, field, section.id)"
-                      @toggle-required="!isReadOnly && updateField(section.id, field.id, { required: $event })"
-                      @toggle-active="!isReadOnly && updateField(section.id, field.id, { active: $event })"
-                      @edit="!isReadOnly && handleEditField(field, section.id)"
-                      @delete="!isReadOnly && handleConfirmDeleteField(field, section.id)"
-                      :is-read-only="isReadOnly"
+                      @drop.stop="!isStepReadOnly && handleFieldDrop($event, field, section.id)"
+                      @toggle-required="!isStepReadOnly && updateField(section.id, field.id, { required: $event })"
+                      @toggle-active="!isStepReadOnly && updateField(section.id, field.id, { active: $event })"
+                      @edit="!isStepReadOnly && handleEditField(field, section.id)"
+                      @delete="!isStepReadOnly && handleConfirmDeleteField(field, section.id)"
+                      :is-read-only="isStepReadOnly"
                     />
                     <tr v-if="getFilteredFields(section.fields).length === 0">
                       <td colspan="6" class="px-4 py-8 text-center text-sm text-neutral-500 bg-neutral-50">
@@ -280,7 +315,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useFormConfigStore } from '../../stores/formConfig'
 import { useProcessStore } from '../../stores/processStore'
 import { useAuthStore } from '../../stores/auth'
-import { IconPlus, IconMenu2, IconGripVertical, IconEdit, IconTrash } from '@tabler/icons-vue'
+import { IconPlus, IconMenu2, IconGripVertical, IconEdit, IconTrash, IconLock } from '@tabler/icons-vue'
 import Sidebar from '../../components/Sidebar.vue'
 import FieldTableRow from '../../components/FieldTableRow.vue'
 import FieldModal from '../../components/FieldModal.vue'
@@ -288,6 +323,7 @@ import StepModal from '../../components/StepModal.vue'
 import SectionModal from '../../components/SectionModal.vue'
 import PreviewModal from '../../components/PreviewModal.vue'
 import ConfirmDialog from '../../components/ConfirmDialog.vue'
+import MapPicker from '../../components/listing/MapPicker.vue'
 
 const formStore = useFormConfigStore()
 const processStore = useProcessStore()
@@ -349,6 +385,50 @@ const deleteConfirm = ref({
 
 // --- Computed Properties ---
 const activeStep = computed(() => formStore.activeStep)
+
+const isDisclosureStep = computed(() => activeStep.value?.type === 'disclosure')
+
+// Locked steps (Map, Pictures & Virtual Tours, Payment) are view-only for everyone
+const isStepReadOnly = computed(() => isReadOnly.value || !!activeStep.value?.locked)
+
+const lockedStepText = computed(() => {
+  switch (activeStep.value?.kind) {
+    case 'map': return 'Sellers pin the property location on the map.'
+    case 'media': return 'Sellers upload property photos and add virtual tour links.'
+    case 'payment': return 'Sellers review the service package and price before publishing.'
+    default: return ''
+  }
+})
+
+// Describes the step-level showIf rule, e.g. "Shown only when Property Sub Type is Condominium."
+const disclosureVisibilityText = computed(() => {
+  const rule = activeStep.value?.showIf
+  if (!rule?.field) return ''
+  for (const step of formStore.steps) {
+    for (const section of step.sections || []) {
+      const field = (section.fields || []).find(f => f.name === rule.field || f.id === rule.field)
+      if (field) {
+        const option = (field.options || []).find(o => String(o.value) === String(rule.equals))
+        return `Shown only when ${field.label} is ${option?.label ?? rule.equals}.`
+      }
+    }
+  }
+  return `Shown only when ${rule.field} is ${rule.equals}.`
+})
+
+const handleResetDisclosureStep = () => {
+  const step = activeStep.value
+  deleteConfirm.value = {
+    open: true,
+    title: 'Reset to Master Disclosure',
+    message: `Replace the questions in "${step.name}" with the master disclosure questions? Your edits to this step will be lost.`,
+    onConfirm: async () => {
+      deleteConfirm.value.open = false
+      await formStore.resetDisclosureStep(step.disclosure_code)
+      formStore.setActiveStep(step.id)
+    }
+  }
+}
 
 const getFilteredFields = (fields) => {
   if (!fields) return []
@@ -415,7 +495,9 @@ const handleConfirmDeleteStep = (step) => {
   deleteConfirm.value = {
     open: true,
     title: 'Delete Step',
-    message: `Are you sure you want to delete "${step.name}" and all its fields? This cannot be undone.`,
+    message: step.type === 'disclosure'
+      ? `Delete "${step.name}"? This also removes the disclosure from this process's required disclosures, and any question edits are lost.`
+      : `Are you sure you want to delete "${step.name}" and all its fields? This cannot be undone.`,
     onConfirm: () => {
       formStore.deleteStep(step.id)
       deleteConfirm.value.open = false
@@ -505,7 +587,8 @@ const handleSectionDrop = (e, targetSection) => {
     sections.forEach((sec, idx) => {
       sec.order = idx + 1
     })
-    
+
+    formStore.markCustomized(activeStep.value)
     formStore.hasChanges = true
     formStore.autoSave()
   }
@@ -574,7 +657,8 @@ const handleFieldDrop = (e, targetField, targetSectionId) => {
       
       // Add to target
       targetSection.fields.splice(targetIdx, 0, draggedField)
-      
+
+      formStore.markCustomized(activeStep.value)
       formStore.hasChanges = true
       formStore.autoSave()
     }
