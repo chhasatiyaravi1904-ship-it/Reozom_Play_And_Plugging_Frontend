@@ -78,3 +78,22 @@ export function getAuditReportUrl(agreementId: number): string {
   const query = token ? `?token=${encodeURIComponent(token)}` : ''
   return `${base}/euno-agreements/${agreementId}/audit${query}`
 }
+
+export interface PendingSignature {
+  agreement_id: number
+  listing_id: number
+  listing_address: string
+  document_name: string
+  document_count: number
+  sent_at: string | null
+  signing_url: string
+}
+
+/**
+ * Listing documents waiting for the logged-in user's signature (each with their own link).
+ */
+export async function getPendingSignatures(): Promise<PendingSignature[]> {
+  const res = await api.get('/me/pending-signatures')
+  const data = (res.data as any)?.data ?? res.data
+  return Array.isArray(data?.items) ? data.items : []
+}

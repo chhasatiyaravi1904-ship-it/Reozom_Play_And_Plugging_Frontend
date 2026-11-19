@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import {
   Handshake,
-  DollarSign,
   TrendingUp,
   Clock,
   CheckCircle2,
-  XCircle,
   FileText,
-  Download,
   Eye,
-  User,
-  Users,
-  Building,
-  Calendar,
-  ShieldCheck,
-  Search,
   RefreshCw,
-  AlertCircle,
-  Check,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -27,15 +17,11 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
-import Modal from '@/components/ui/Modal.vue'
 import PaginationBar from '@/components/ui/PaginationBar.vue'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import Tabs from '@/components/ui/Tabs.vue'
-import { useToastStore } from '@/stores/toast'
 import * as offerApi from '@/services/offerService'
-import type { ListingOffer, AdminOffersResponse } from '@/services/offerService'
-
-const toast = useToastStore()
+import type { ListingOffer } from '@/services/offerService'
 
 const offers = ref<ListingOffer[]>([])
 const isLoading = ref(false)
@@ -71,12 +57,6 @@ const statusTabs = [
   { value: 'rejected', label: 'Rejected' },
   { value: 'withdrawn', label: 'Withdrawn' },
 ]
-
-// Modal & Offer Inspection State
-const selectedOffer = ref<ListingOffer | null>(null)
-const isDetailModalOpen = ref(false)
-const isDownloadingDoc = ref<string | null>(null)
-const isDownloadingContract = ref(false)
 
 async function loadOffers() {
   isLoading.value = true
@@ -128,60 +108,6 @@ function handlePageChange(page: number) {
   loadOffers()
 }
 
-async function openDetailModal(offer: ListingOffer) {
-  selectedOffer.value = offer
-  isDetailModalOpen.value = true
-  try {
-    const res = await offerApi.getAdminOffer(offer.id)
-    if (res.data) {
-      selectedOffer.value = res.data
-    }
-  } catch {
-    // Keep list view copy if detailed fetch fails
-  }
-}
-
-async function handleDownloadDoc(docId: string, fileName: string) {
-  if (!selectedOffer.value) return
-  isDownloadingDoc.value = docId
-  try {
-    const res = await offerApi.downloadOfferDocument(selectedOffer.value.id, docId)
-    const url = window.URL.createObjectURL(new Blob([res.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', fileName)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
-  } catch {
-    toast.error('Failed to download document.')
-  } finally {
-    isDownloadingDoc.value = null
-  }
-}
-
-async function handleDownloadContract() {
-  if (!selectedOffer.value) return
-  isDownloadingContract.value = true
-  try {
-    const res = await offerApi.downloadOfferContract(selectedOffer.value.id)
-    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `Purchase_Agreement_${selectedOffer.value.reference_code}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
-    toast.success('Purchase agreement contract downloaded.')
-  } catch {
-    toast.error('Failed to download contract.')
-  } finally {
-    isDownloadingContract.value = false
-  }
-}
-
 function formatCurrency(val?: number | string | null) {
   if (val === undefined || val === null) return '$0'
   return `$${Number(val).toLocaleString()}`
@@ -190,11 +116,6 @@ function formatCurrency(val?: number | string | null) {
 function formatDate(iso?: string | null) {
   if (!iso) return 'N/A'
   return new Date(iso).toLocaleDateString()
-}
-
-function formatDateTime(iso?: string | null) {
-  if (!iso) return 'N/A'
-  return new Date(iso).toLocaleString()
 }
 
 function formatStatus(status: string) {
@@ -418,14 +339,13 @@ onMounted(() => {
 
               <!-- Actions -->
               <td class="px-5 py-4 text-right">
-                <BaseButton
-                  variant="secondary"
-                  size="sm"
-                  @click="openDetailModal(offer)"
+                <RouterLink
+                  :to="{ name: 'admin-offer-detail', params: { id: offer.id } }"
+                  class="inline-flex items-center rounded-lg bg-secondary px-4 py-1.5 text-label-sm font-label-sm text-on-secondary shadow-sm hover:bg-secondary-fixed"
                 >
                   <Eye class="mr-1.5 h-3.5 w-3.5" />
                   Inspect
-                </BaseButton>
+                </RouterLink>
               </td>
             </tr>
           </tbody>
@@ -443,327 +363,5 @@ onMounted(() => {
       </div>
     </BaseCard>
 
-    <!-- Inspection Modal -->
-    <Modal
-      v-model="isDetailModalOpen"
-      size="lg"
-      :title="`Offer Inspection: ${selectedOffer?.reference_code || ''}`"
-    >
-      <div v-if="selectedOffer" class="space-y-6">
-        <!-- Top Status Banner -->
-        <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface-raised p-4">
-          <div>
-            <span class="text-xs uppercase tracking-wider text-fg-muted font-semibold">Offer Status</span>
-            <div class="mt-1 flex items-center gap-2">
-              <BaseBadge :variant="getStatusBadgeVariant(selectedOffer.status)" class="capitalize text-sm py-1 px-3">
-                {{ formatStatus(selectedOffer.status) }}
-              </BaseBadge>
-              <span v-if="selectedOffer.is_backup_offer" class="text-xs bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-semibold px-2 py-0.5 rounded">
-                Backup Offer
-              </span>
-            </div>
-          </div>
-
-          <div class="text-right">
-            <span class="text-xs uppercase tracking-wider text-fg-muted font-semibold">Purchase Price</span>
-            <div class="text-2xl font-black text-fg">
-              {{ formatCurrency(selectedOffer.offer_amount) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Property & Parties Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Property Info -->
-          <div class="rounded-xl border border-border p-4 bg-surface">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
-              <Building class="h-4 w-4 text-primary" />
-              Property Details
-            </h4>
-            <div class="text-sm font-semibold text-fg">
-              {{ selectedOffer.listing?.address }}
-            </div>
-            <div class="text-xs text-fg-muted">
-              {{ selectedOffer.listing?.city }}, {{ selectedOffer.listing?.state }} {{ selectedOffer.listing?.zip }}
-            </div>
-            <div class="mt-2 text-xs text-fg-muted">
-              Listing Ref: <span class="font-mono text-fg">{{ selectedOffer.listing?.reference_code }}</span>
-            </div>
-          </div>
-
-          <!-- Buyer & Agent Info -->
-          <div class="rounded-xl border border-border p-4 bg-surface">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
-              <User class="h-4 w-4 text-primary" />
-              Buyer Contact
-            </h4>
-            <div class="text-sm font-semibold text-fg">
-              {{ selectedOffer.buyer_name || selectedOffer.buyer?.name || 'Buyer' }}
-            </div>
-            <div class="text-xs text-fg-muted">
-              Email: {{ selectedOffer.buyer_email || selectedOffer.buyer?.email || 'N/A' }}
-            </div>
-            <div v-if="selectedOffer.buyer_phone" class="text-xs text-fg-muted">
-              Phone: {{ selectedOffer.buyer_phone }}
-            </div>
-            <div v-if="selectedOffer.has_agent_representation" class="mt-2 pt-2 border-t border-border text-xs">
-              <span class="font-semibold text-fg">Agent:</span> {{ selectedOffer.agent_name }} ({{ selectedOffer.agent_email }})
-            </div>
-          </div>
-        </div>
-
-        <!-- Legal Purchasers Section -->
-        <div v-if="selectedOffer.purchasers && selectedOffer.purchasers.length > 0" class="rounded-xl border border-border p-4 bg-surface">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
-            <Users class="h-4 w-4 text-primary" />
-            Legal Offer Purchasers ({{ selectedOffer.purchasers.length }})
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div
-              v-for="(purchaser, idx) in selectedOffer.purchasers"
-              :key="idx"
-              class="p-3 rounded-lg border border-border bg-surface-raised text-xs space-y-1"
-            >
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-fg">{{ purchaser.first_name }} {{ purchaser.last_name }}</span>
-                <span v-if="purchaser.is_main" class="bg-indigo-50 dark:bg-indigo-950 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
-                  Primary Purchaser
-                </span>
-              </div>
-              <div class="text-fg-muted">{{ purchaser.email }}</div>
-              <div v-if="purchaser.street_address" class="text-fg-muted">
-                {{ purchaser.street_address }}{{ purchaser.unit_number ? `, Unit ${purchaser.unit_number}` : '' }}, {{ purchaser.city }}, {{ purchaser.zip }}
-              </div>
-              <div v-if="purchaser.non_us_citizen" class="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
-                ⚠ Non-US Citizen Purchaser
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Financial Breakdown & Reozom Net Calculation -->
-        <div class="rounded-xl border border-border p-4 bg-surface">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-4 flex items-center gap-1.5">
-            <DollarSign class="h-4 w-4 text-primary" />
-            Financial Terms & Bottom Line Net Calculation
-          </h4>
-
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div>
-              <span class="text-fg-muted block">Earnest Money (EMD)</span>
-              <span class="text-sm font-bold text-fg mt-0.5 block">
-                {{ formatCurrency(selectedOffer.earnest_money_deposit) }}
-              </span>
-            </div>
-            <div>
-              <span class="text-fg-muted block">Down Payment</span>
-              <span class="text-sm font-bold text-fg mt-0.5 block">
-                {{ formatCurrency(selectedOffer.down_payment_amount) }}
-              </span>
-            </div>
-            <div>
-              <span class="text-fg-muted block">Payment Method</span>
-              <span class="text-sm font-bold capitalize text-fg mt-0.5 block">
-                {{ selectedOffer.payment_method }}
-              </span>
-            </div>
-            <div>
-              <span class="text-fg-muted block">Seller Concessions</span>
-              <span class="text-sm font-bold text-amber-600 dark:text-amber-400 mt-0.5 block">
-                {{ formatCurrency(selectedOffer.seller_concessions) }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Reozom Live Net Calculation Breakdown -->
-          <div class="mt-4 pt-3 border-t border-border space-y-1.5 text-xs">
-            <div class="flex items-center justify-between text-fg-muted">
-              <span>Gross Purchase Price:</span>
-              <span class="font-medium text-fg">{{ formatCurrency(selectedOffer.offer_amount) }}</span>
-            </div>
-            <div v-if="Number(selectedOffer.seller_concessions) > 0" class="flex items-center justify-between text-amber-600 dark:text-amber-400">
-              <span>Less Seller Concessions:</span>
-              <span>-{{ formatCurrency(selectedOffer.seller_concessions) }}</span>
-            </div>
-            <div v-if="Number(selectedOffer.commission) > 0" class="flex items-center justify-between text-fg-muted">
-              <span>Less Buyer Agent Commission ({{ selectedOffer.commission }}{{ selectedOffer.commission_type === 1 ? '%' : '$' }}):</span>
-              <span>
-                -{{ formatCurrency(selectedOffer.commission_type === 1 ? (Number(selectedOffer.offer_amount) * Number(selectedOffer.commission) / 100) : Number(selectedOffer.commission)) }}
-              </span>
-            </div>
-            <div v-if="selectedOffer.home_warranty_included" class="flex items-center justify-between text-fg-muted">
-              <span>Less Home Warranty:</span>
-              <span>-{{ formatCurrency(selectedOffer.home_warranty_price || 499) }}</span>
-            </div>
-            <div class="flex items-center justify-between pt-2 border-t border-border font-bold">
-              <span class="text-fg">Reozom Bottom Line Net to Seller:</span>
-              <div class="text-right">
-                <span class="text-base text-emerald-600 dark:text-emerald-400">
-                  {{ formatCurrency(selectedOffer.bottom_line_offer ?? (Number(selectedOffer.offer_amount) - Number(selectedOffer.seller_concessions || 0))) }}
-                </span>
-                <span class="text-xs text-primary font-semibold ml-1.5">
-                  ({{ selectedOffer.percentage ?? 100 }}%)
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Contingencies & Closing Details -->
-        <div class="rounded-xl border border-border p-4 bg-surface">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
-            <Calendar class="h-4 w-4 text-primary" />
-            Closing & Contingencies
-          </h4>
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs mb-4">
-            <div>
-              <span class="text-fg-muted block">Closing Date</span>
-              <span class="font-semibold text-fg">{{ formatDate(selectedOffer.closing_date) }}</span>
-            </div>
-            <div>
-              <span class="text-fg-muted block">Occupancy</span>
-              <span class="font-semibold text-fg capitalize">
-                {{ selectedOffer.occupancy_type ? selectedOffer.occupancy_type.replace(/_/g, ' ') : 'At Closing' }}
-                <span v-if="selectedOffer.occupancy_days">({{ selectedOffer.occupancy_days }} days<span v-if="selectedOffer.fee_per_day"> @ ${{ selectedOffer.fee_per_day }}/day</span>)</span>
-              </span>
-            </div>
-            <div>
-              <span class="text-fg-muted block">Expiration Deadline</span>
-              <span class="font-semibold text-fg">{{ formatDateTime(selectedOffer.deadline) }}</span>
-            </div>
-          </div>
-
-          <!-- Contingencies Checklist -->
-          <div v-if="selectedOffer.contingencies" class="pt-3 border-t border-border">
-            <span class="text-xs font-semibold text-fg block mb-2">Selected Contingencies:</span>
-            <div class="flex flex-wrap gap-2">
-              <template v-for="(val, key) in selectedOffer.contingencies" :key="key">
-                <span
-                  v-if="val"
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-raised border border-border text-xs text-fg font-medium capitalize"
-                >
-                  <Check class="h-3.5 w-3.5 text-emerald-500" />
-                  {{ String(key).replace(/_/g, ' ') }}
-                </span>
-              </template>
-            </div>
-          </div>
-
-          <!-- Additional Terms -->
-          <div v-if="selectedOffer.additional_terms" class="mt-3 pt-3 border-t border-border">
-            <span class="text-xs font-semibold text-fg block mb-1">Additional Terms:</span>
-            <p class="text-xs text-fg-muted bg-surface-raised p-3 rounded-lg whitespace-pre-wrap">
-              {{ selectedOffer.additional_terms }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Official Purchase Agreement Contract (PDF) -->
-        <div class="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <FileText class="h-5 w-5 text-primary" />
-            <div>
-              <div class="text-xs font-bold text-fg">Reozom Purchase Agreement & Offer Contract</div>
-              <div class="text-[11px] text-fg-muted">Official electronic legal contract with pricing, terms, contingencies and signatures</div>
-            </div>
-          </div>
-          <BaseButton
-            variant="primary"
-            size="sm"
-            :disabled="isDownloadingContract"
-            @click="handleDownloadContract"
-          >
-            <Download class="mr-1.5 h-3.5 w-3.5" :class="{ 'animate-bounce': isDownloadingContract }" />
-            {{ isDownloadingContract ? 'Generating...' : 'Download Contract (PDF)' }}
-          </BaseButton>
-        </div>
-
-        <!-- Attached Documents -->
-        <div class="rounded-xl border border-border p-4 bg-surface">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
-            <FileText class="h-4 w-4 text-primary" />
-            Verification Documents ({{ selectedOffer.documents?.length || 0 }})
-          </h4>
-
-          <div v-if="!selectedOffer.documents || selectedOffer.documents.length === 0" class="text-xs text-fg-muted">
-            No attached documents submitted with this offer.
-          </div>
-
-          <div v-else class="space-y-2">
-            <div
-              v-for="doc in selectedOffer.documents"
-              :key="doc.id"
-              class="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-raised text-xs"
-            >
-              <div class="flex items-center gap-3">
-                <FileText class="h-4 w-4 text-primary shrink-0" />
-                <div>
-                  <div class="font-medium text-fg">{{ doc.original_name }}</div>
-                  <div class="text-[11px] text-fg-muted capitalize">{{ doc.type.replace(/_/g, ' ') }} • {{ Math.round(doc.size / 1024) }} KB</div>
-                </div>
-              </div>
-
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :disabled="isDownloadingDoc === doc.id"
-                @click="handleDownloadDoc(doc.id, doc.original_name)"
-              >
-                <Download class="mr-1 h-3.5 w-3.5" :class="{ 'animate-bounce': isDownloadingDoc === doc.id }" />
-                Download
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-
-        <!-- Action / Negotiation History Timeline -->
-        <div class="rounded-xl border border-border p-4 bg-surface">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-1.5">
-            <Clock class="h-4 w-4 text-primary" />
-            Negotiation & Activity Timeline
-          </h4>
-
-          <div v-if="!selectedOffer.actions || selectedOffer.actions.length === 0" class="text-xs text-fg-muted">
-            Initial offer submission recorded on {{ formatDateTime(selectedOffer.created_at) }}.
-          </div>
-
-          <div v-else class="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-border">
-            <div
-              v-for="act in selectedOffer.actions"
-              :key="act.id"
-              class="relative flex items-start gap-3 pl-8"
-            >
-              <div class="absolute left-1.5 mt-1 h-4 w-4 rounded-full border-2 border-surface bg-primary ring-2 ring-primary/20"></div>
-
-              <div class="flex-1 rounded-lg border border-border bg-surface-raised p-3 text-xs">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-bold text-fg capitalize">
-                    {{ act.action_type.replace(/_/g, ' ') }}
-                    <span v-if="act.offer_amount" class="text-primary font-bold">
-                      ({{ formatCurrency(act.offer_amount) }})
-                    </span>
-                  </span>
-                  <span class="text-fg-muted text-[11px]">{{ formatDateTime(act.created_at) }}</span>
-                </div>
-                <div class="text-fg-muted mt-1">
-                  Actor: <span class="text-fg font-medium capitalize">{{ act.actor_type }}</span>
-                  <span v-if="act.user"> ({{ act.user.name || act.user.first_name }})</span>
-                </div>
-                <p v-if="act.comment" class="mt-2 text-fg bg-surface p-2 rounded border border-border/50 text-xs italic">
-                  "{{ act.comment }}"
-                </p>
-                <div v-if="act.terms_snapshot" class="mt-2 p-2 bg-surface rounded border border-border/50 text-[11px] text-fg-muted">
-                  <span class="font-semibold text-fg">Terms Snapshot:</span>
-                  <span v-if="act.terms_snapshot.offer_amount"> Price: {{ formatCurrency(act.terms_snapshot.offer_amount) }}</span>
-                  <span v-if="act.terms_snapshot.closing_date"> • Close: {{ act.terms_snapshot.closing_date }}</span>
-                  <span v-if="act.terms_snapshot.seller_concessions"> • Concessions: {{ formatCurrency(act.terms_snapshot.seller_concessions) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Modal>
   </div>
 </template>

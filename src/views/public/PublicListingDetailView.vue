@@ -74,7 +74,16 @@
           <div class="text-3xl md:text-4xl font-bold text-primary">
             {{ formatField(priceField) }}
           </div>
+          <!-- Owners can't make an offer on their own listing -->
+          <div v-if="listing.is_owner" class="mt-3 md:ml-auto max-w-xs rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-800">
+            <div class="font-semibold">This is your listing</div>
+            <div class="mt-0.5 text-xs">You can't make an offer on a property you listed.</div>
+            <router-link :to="manageListingLink" class="mt-2 inline-block text-xs font-bold text-amber-900 underline">
+              Manage listing
+            </router-link>
+          </div>
           <router-link
+            v-else
             :to="`/properties/${listingId}/send-offer`"
             class="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5"
           >
@@ -124,6 +133,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { usePublicListingStore } from '@/stores/publicListing'
+import { useAuthStore } from '@/stores/auth'
 import { ArrowLeft as IconArrowLeft, Image as IconImage, MapPin as IconMapPin, AlertCircle as IconAlertCircle } from 'lucide-vue-next'
 import { formatPublicField } from '@/utils/fieldFormatters'
 import type { PublicFieldConfig } from '@/services/publicListingService'
@@ -131,6 +141,11 @@ import SubmitOfferModal from '@/components/offers/SubmitOfferModal.vue'
 
 const route = useRoute()
 const store = usePublicListingStore()
+const authStore = useAuthStore()
+
+// The owner manages the listing in their own portal
+const manageListingLink = computed(() =>
+  `${authStore.user?.role === 'agent' ? '/agent' : ''}/listings/${listingId.value}`)
 
 const listing = computed(() => store.activeListing)
 const listingId = computed(() => Number(route.params.id))

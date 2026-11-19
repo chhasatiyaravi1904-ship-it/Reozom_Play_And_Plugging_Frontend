@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   ArrowRight,
   ArrowUpDown,
@@ -91,6 +91,43 @@ const statusTabs = computed(() => {
     { value: 'sold', label: 'Sold & Closed', count: metrics.value.sold },
   )
   return base
+})
+
+// The tab lives in the URL (?tab=) so the header's "My Listings" link opens the
+// "My Listed Properties" filter and stays highlighted only while it's selected.
+const route = useRoute()
+const router = useRouter()
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const value = typeof tab === 'string' ? tab : 'all'
+    selectedStatus.value = statusTabs.value.some((t) => t.value === value) ? value : 'all'
+  },
+  { immediate: true },
+)
+
+watch(selectedStatus, (value) => {
+  const current = typeof route.query.tab === 'string' ? route.query.tab : 'all'
+  if (value === current) return
+  router.replace({ query: { ...route.query, tab: value === 'all' ? undefined : value } })
+})
+
+const isMyListings = computed(() => selectedStatus.value === 'my_listings')
+
+// The summary cards are shown on "My Listings", so they count only the user's own listings.
+const cardMetrics = computed(() => {
+  const own = listingStore.listings.filter((l) => l.isOwner)
+  return {
+    total: own.length,
+    published: own.filter((l) => l.status === 'published').length,
+    inContract: own.filter((l) =>
+      ['under_contract', 'ccs', 'contingent_continue_to_show'].includes(l.status),
+    ).length,
+    inProgress: own.filter((l) =>
+      ['draft', 'in_progress', 'submitted', 'under_review'].includes(l.status),
+    ).length,
+  }
 })
 
 const filteredListings = computed(() => {
@@ -206,7 +243,8 @@ function clearAllFilters() {
     </div>
 
     <!-- Interactive KPI Metric Cards (Clickable Quick Filters) -->
-    <div v-if="listingStore.listings.length > 0" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <!-- Shown only on "My Listings"; hidden for now on the "Listings" tab -->
+    <div v-if="listingStore.listings.length > 0" v-show="isMyListings" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <!-- 1. Total Properties -->
       <button
         type="button"
@@ -231,7 +269,7 @@ function clearAllFilters() {
         </div>
         <div class="mt-3">
           <span class="text-xs text-fg-muted font-medium block">Total Properties</span>
-          <span class="text-2xl font-black text-fg mt-0.5 block tracking-tight">{{ metrics.total }}</span>
+          <span class="text-2xl font-black text-fg mt-0.5 block tracking-tight">{{ cardMetrics.total }}</span>
           <span class="text-[11px] text-fg-muted mt-1 block">Full agency portfolio</span>
         </div>
       </button>
@@ -258,7 +296,7 @@ function clearAllFilters() {
         </div>
         <div class="mt-3">
           <span class="text-xs text-fg-muted font-medium block">Active & Published</span>
-          <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block tracking-tight">{{ metrics.published }}</span>
+          <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block tracking-tight">{{ cardMetrics.published }}</span>
           <span class="text-[11px] text-fg-muted mt-1 block">Syndicated on marketplace</span>
         </div>
       </button>
@@ -287,7 +325,7 @@ function clearAllFilters() {
         </div>
         <div class="mt-3">
           <span class="text-xs text-fg-muted font-medium block">Under Contract / CCS</span>
-          <span class="text-2xl font-black text-amber-600 mt-0.5 block tracking-tight">{{ metrics.inContract }}</span>
+          <span class="text-2xl font-black text-amber-600 mt-0.5 block tracking-tight">{{ cardMetrics.inContract }}</span>
           <span class="text-[11px] text-fg-muted mt-1 block">Offers accepted / Escrow</span>
         </div>
       </button>
@@ -316,7 +354,7 @@ function clearAllFilters() {
         </div>
         <div class="mt-3">
           <span class="text-xs text-fg-muted font-medium block">Setup & Drafts</span>
-          <span class="text-2xl font-black text-sky-600 mt-0.5 block tracking-tight">{{ metrics.inProgress }}</span>
+          <span class="text-2xl font-black text-sky-600 mt-0.5 block tracking-tight">{{ cardMetrics.inProgress }}</span>
           <span class="text-[11px] text-fg-muted mt-1 block">Pending compliance / photos</span>
         </div>
       </button>
@@ -328,7 +366,7 @@ function clearAllFilters() {
       class="p-4 rounded-2xl border border-border bg-surface shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
     >
       <!-- Status Tabs -->
-      <div class="overflow-x-auto min-w-0">
+      <div v-show="!isMyListings" class="overflow-x-auto min-w-0">
         <Tabs
           :tabs="statusTabs"
           :model-value="selectedStatus"

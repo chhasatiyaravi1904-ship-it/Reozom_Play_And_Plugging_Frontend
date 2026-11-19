@@ -13,6 +13,20 @@
         </button>
       </div>
 
+      <!-- Paid plans can only be sold once the agent can receive the money (Stripe payouts) -->
+      <div
+        v-if="payoutStatus && payoutStatus !== 'ready'"
+        class="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <span>
+          <strong>Set up payouts to sell your paid plans.</strong>
+          Sellers can't pay for your plans until your Stripe payout account is ready.
+        </span>
+        <RouterLink to="/agent/payouts" class="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700">
+          {{ payoutStatus === 'not_started' ? 'Set up payouts' : 'View payout status' }}
+        </RouterLink>
+      </div>
+
       <!-- Main Content -->
       <div class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden flex-1 flex flex-col">
         <div class="px-6 py-4 border-b border-neutral-200 bg-neutral-50/50 flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -65,7 +79,10 @@
                   </div>
                 </td>
                 <td class="px-6 py-4">
-                  <span class="text-sm font-medium text-neutral-700">${{ pkg.price || '0.00' }}</span>
+                  <span class="block text-sm font-medium text-neutral-700">
+                    {{ Number(pkg.price ?? 0) > 0 ? formatMoney(pkg.price) : 'Free' }}
+                  </span>
+                  <StripeSyncBadge class="mt-1" :sync="pkg.stripe_sync" :retry="() => retryStripeSync(pkg)" />
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex flex-wrap gap-1">
@@ -222,7 +239,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconFileText, IconLoader2, IconChevronDown } from '@tabler/icons-vue'
-import { fetchServicePackages, createServicePackage, updateServicePackage, deleteServicePackage, searchZipCodes, type ServicePackage } from '@/services/servicePackageService'
+import { fetchServicePackages, createServicePackage, updateServicePackage, deleteServicePackage, searchZipCodes, syncServicePackageToStripe, type ServicePackage } from '@/services/servicePackageService'
+import StripeSyncBadge from '@/components/payments/StripeSyncBadge.vue'
+import { formatMoney, fetchPayoutAccount, type PayoutAccountStatus } from '@/services/paymentService'
+import { RouterLink } from 'vue-router'
 import { useZipCodeStore } from '@/stores/zipCode'
 import { useProcessStore } from '@/stores/processStore'
 import { useToastStore } from '@/stores/toast'
@@ -298,11 +318,28 @@ const loadPackages = async () => {
   }
 }
 
+// Payout account status (banner when paid plans can't be sold yet)
+const payoutStatus = ref<PayoutAccountStatus | null>(null)
+
 onMounted(() => {
+  fetchPayoutAccount().then((a) => { payoutStatus.value = a.status }).catch(() => { payoutStatus.value = null })
   loadPackages()
   zipCodeStore.fetchZipCodes()
   processStore.loadProcesses()
 })
+
+// Retry creating the plan in Stripe (failed or pending sync)
+const retryStripeSync = async (pkg: ServicePackage) => {
+  try {
+    const res = await syncServicePackageToStripe(pkg.id)
+    pkg.stripe_sync = res.data
+    toast.success(`${pkg.name} is now in Stripe.`)
+  } catch (e: any) {
+    const sync = e?.response?.data?.errors?.stripe_sync
+    if (sync) pkg.stripe_sync = sync
+    toast.error(e?.response?.data?.message || 'Stripe sync failed.')
+  }
+}
 
 const openCreateModal = () => {
   form.value = {

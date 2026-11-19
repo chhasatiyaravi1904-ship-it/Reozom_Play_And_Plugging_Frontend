@@ -298,3 +298,35 @@ export const getAdminOffers = (params?: {
 export const getAdminOffer = (offerId: number) => {
   return api.get<ListingOffer>(`/admin/offers/${offerId}`)
 }
+
+// --- "Offers" page: Received / Sent tabs (GET /offers/involvement) ---
+
+export type OfferInvolvement = 'received' | 'sent'
+
+export interface InvolvementOffer extends ListingOffer {
+  /** The viewer's role on this offer; 'agent' = a client's listing on one of the agent's plans (view only). */
+  my_role: 'seller' | 'buyer' | 'agent' | 'admin' | 'other'
+  is_action_required: boolean
+}
+
+export interface InvolvementOffersResponse {
+  offers: {
+    data: InvolvementOffer[]
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+  counts: { action_required: number; received: number; sent: number; total: number }
+  involvement: string
+}
+
+export const getOffersByInvolvement = (params: {
+  involvement: OfferInvolvement
+  status?: string
+  search?: string
+  page?: number
+  per_page?: number
+}) => {
+  return api.get<InvolvementOffersResponse>('/offers/involvement', { params })
+}

@@ -74,7 +74,11 @@ const canMakeOffer = computed(() => {
 })
 
 // Active Tab inside Command Center
-const activeTab = ref<'command' | 'workflow' | 'offers' | 'media' | 'documents'>('command')
+type OverviewTab = 'command' | 'workflow' | 'offers' | 'media' | 'documents'
+const OVERVIEW_TABS: OverviewTab[] = ['command', 'workflow', 'offers', 'media', 'documents']
+// ?tab=offers (e.g. from admin "Log in as Seller") opens that tab directly
+const requestedTab = String(route.query.tab ?? '') as OverviewTab
+const activeTab = ref<OverviewTab>(OVERVIEW_TABS.includes(requestedTab) ? requestedTab : 'command')
 
 // Modal States
 const isStatusModalOpen = ref(false)

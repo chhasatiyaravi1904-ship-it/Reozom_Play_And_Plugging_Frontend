@@ -22,6 +22,8 @@ export interface PublicListing {
   }
   public_info: PublicFieldConfig[]
   values: Record<string, any>
+  /** True when the logged-in viewer created this listing (owners can't make offers on it). */
+  is_owner?: boolean
   images: {
     id: number
     url: string
@@ -54,4 +56,14 @@ export const fetchPublicListings = (page = 1, params?: Record<string, any>) => {
 
 export const fetchPublicListing = (listingId: number) => {
   return api.get<PublicListingResponse>(`/public/listings/${listingId}`)
+}
+
+export interface PublicListingFilters {
+  property_types: { value: string; label: string }[]
+  price: { min: number | null; max: number | null }
+}
+
+/** api.ts unwraps the { success, data } envelope, so response.data is the filters object. */
+export const fetchPublicListingFilters = () => {
+  return api.get<PublicListingFilters>('/public/listings/filters')
 }

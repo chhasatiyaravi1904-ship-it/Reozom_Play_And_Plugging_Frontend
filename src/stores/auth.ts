@@ -14,6 +14,17 @@ import type { LoginPayload, RegisterPayload, User } from '@/types/auth'
 
 const TOKEN_KEY = TOKEN_STORAGE_KEY
 
+/** Set on login; PendingSignaturesPopup reads and clears it so the prompt shows once per login. */
+export const SIGN_PROMPT_KEY = 'reozom_sign_prompt'
+
+function markSignPrompt() {
+  try {
+    sessionStorage.setItem(SIGN_PROMPT_KEY, '1')
+  } catch {
+    // Storage blocked: the prompt is optional
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   // This tab's "login as user" token wins over the normal login (see services/api.ts)
@@ -28,6 +39,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = nextToken
     user.value = nextUser
     localStorage.setItem(TOKEN_KEY, nextToken)
+    // Admins don't sign listing documents
+    if (nextUser.role !== 'admin') markSignPrompt()
   }
 
   function clearSession() {
@@ -199,6 +212,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function loginWithToken(nextToken: string) {
     token.value = nextToken
     localStorage.setItem(TOKEN_KEY, nextToken)
+    markSignPrompt()
     await loadCurrentUser()
     return !!user.value
   }

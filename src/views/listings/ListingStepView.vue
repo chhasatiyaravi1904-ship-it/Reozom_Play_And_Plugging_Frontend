@@ -15,6 +15,7 @@ import { useListingStore } from '@/stores/listing'
 import { useListingSteps } from '@/composables/useListingSteps'
 import { useAutoSave } from '@/composables/useAutoSave'
 import type { FieldValue } from '@/types/field'
+import * as paymentService from '@/services/paymentService'
 
 const route = useRoute()
 const router = useRouter()
@@ -59,6 +60,42 @@ const packagePriceText = computed(() => {
   if (price === null || price === undefined) return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
 })
+
+// --- Payment step (Stripe Checkout) ---
+const paymentStatus = ref<paymentService.ListingPaymentStatus | null>(null)
+const isLoadingPayment = ref(false)
+const isStartingPayment = ref(false)
+const paymentBlocked = computed(
+  () => currentStep.value?.kind === 'payment' && !!paymentStatus.value?.required && !paymentStatus.value?.paid,
+)
+
+async function loadPaymentStatus() {
+  if (currentStep.value?.kind !== 'payment' || !listingId.value) return
+  isLoadingPayment.value = true
+  try {
+    paymentStatus.value = await paymentService.fetchListingPaymentStatus(listingId.value)
+  } catch {
+    paymentStatus.value = null
+  } finally {
+    isLoadingPayment.value = false
+  }
+}
+
+watch(() => [currentStep.value?.kind, listingId.value], loadPaymentStatus, { immediate: true })
+
+async function handlePay() {
+  isStartingPayment.value = true
+  formError.value = ''
+  try {
+    // Save the step first so nothing typed is lost while the seller is on Stripe
+    await workflowStore.saveStep(listingId.value, stepId.value)
+    const checkout = await paymentService.startListingCheckout(listingId.value)
+    paymentService.redirectToCheckout(checkout.checkout_url)
+  } catch (err: any) {
+    formError.value = err?.response?.data?.message || err?.message || 'Could not start the payment.'
+    isStartingPayment.value = false
+  }
+}
 
 const isLastDynamicStep = computed(() => {
   const index = dynamicSteps.value.findIndex((s) => s.id === stepId.value)
@@ -128,6 +165,11 @@ async function handleBack() {
 
 async function handleContinue() {
   if (!validate()) return
+
+  if (paymentBlocked.value) {
+    formError.value = 'Please complete the payment for your service package before continuing.'
+    return
+  }
 
   isSaving.value = true
   formError.value = ''
@@ -214,22 +256,62 @@ async function handleContinue() {
         </div>
       </div>
 
-      <!-- Payment step: package summary (online payment is not connected yet) -->
+      <!-- Payment step: pay the service package with Stripe Checkout -->
       <div v-if="currentStep.kind === 'payment'" class="space-y-4">
         <div class="rounded-xl border border-outline-variant/40 p-5 flex items-center justify-between gap-4">
           <div>
             <div class="text-label-sm font-label-sm uppercase tracking-wider text-outline-variant">Service Package</div>
             <div class="text-headline-sm font-headline-sm text-primary mt-1">
-              {{ listingStore.activeListing?.packageName || 'Selected package' }}
+              {{ paymentStatus?.package?.name || listingStore.activeListing?.packageName || 'Selected package' }}
             </div>
           </div>
           <div class="text-right">
             <div class="text-label-sm font-label-sm uppercase tracking-wider text-outline-variant">Price</div>
-            <div class="text-headline-sm font-headline-sm text-primary mt-1">{{ packagePriceText }}</div>
+            <div class="text-headline-sm font-headline-sm text-primary mt-1">
+              {{ paymentStatus ? (paymentStatus.required ? paymentService.formatMoney(paymentStatus.amount, paymentStatus.currency) : 'Free') : packagePriceText }}
+            </div>
           </div>
         </div>
-        <p class="text-body-md font-body-md text-on-surface-variant">
-          Please review your package. Online payment is not available yet. Continue to confirm the package and finish your listing.
+
+        <p v-if="isLoadingPayment" class="text-body-md font-body-md text-on-surface-variant">Checking payment status…</p>
+
+        <div
+          v-else-if="paymentStatus?.required && paymentStatus.paid"
+          class="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800"
+        >
+          <span class="material-symbols-outlined text-green-600">check_circle</span>
+          <div class="text-sm font-medium">Paid. Continue to finish your listing.</div>
+        </div>
+
+        <div v-else-if="paymentStatus?.required" class="space-y-3">
+          <p class="text-body-md font-body-md text-on-surface-variant">
+            Pay for your service package to publish your listing. You'll pay on Stripe's secure page and come back here.
+          </p>
+          <p v-if="!paymentStatus.payment_available" class="text-sm text-red-700">
+            Online payment isn't set up yet. Please contact support.
+          </p>
+          <p v-else-if="!paymentStatus.agent_ready" class="text-sm text-amber-800">
+            This package isn't available for payment yet: the agent is still setting up their payout account.
+            Please try again later or contact the agent.
+          </p>
+          <p v-else-if="!paymentStatus.can_pay" class="text-sm text-on-surface-variant">
+            The listing owner needs to complete this payment.
+          </p>
+          <button
+            v-else
+            type="button"
+            :disabled="isStartingPayment"
+            class="px-6 h-12 rounded-lg bg-primary text-surface-container-lowest font-label-lg text-label-lg font-bold inline-flex items-center gap-2 shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="handlePay"
+          >
+            <span class="material-symbols-outlined text-[18px]">lock</span>
+            {{ isStartingPayment ? 'Opening secure payment…' : `Pay ${paymentService.formatMoney(paymentStatus.amount, paymentStatus.currency)}` }}
+          </button>
+          <p class="text-xs text-on-surface-variant">Card details are handled by Stripe and never stored on this site.</p>
+        </div>
+
+        <p v-else-if="paymentStatus" class="text-body-md font-body-md text-on-surface-variant">
+          This package is free. Continue to finish your listing.
         </p>
       </div>
 

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Check, PackageCheck } from 'lucide-vue-next'
 import * as packageService from '@/services/packageService'
+import * as paymentService from '@/services/paymentService'
 import { isNetworkError } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
@@ -13,7 +14,11 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+
+// Plan chosen at signup that still needs payment (?package=<id>).
+const chosenPackageId = typeof route.query.package === 'string' ? route.query.package : null
 const toast = useToastStore()
 
 const packages = ref<PackageItem[]>([])
@@ -43,9 +48,18 @@ async function fetchPackages() {
   }
 }
 
+const isPaid = (pkg: PackageItem) => Number(pkg.price ?? 0) > 0
+
 async function handleSelect(pkg: PackageItem) {
   selectingId.value = pkg.id
   try {
+    // Paid packages go through Stripe Checkout; they activate after Stripe confirms payment.
+    if (isPaid(pkg)) {
+      const checkout = await paymentService.startPackageCheckout(pkg.id)
+      paymentService.redirectToCheckout(checkout.checkout_url)
+      return
+    }
+
     const response = await packageService.selectPackage(pkg.id)
     authStore.user = response.data
     toast.success(`You're all set with the ${pkg.name} package.`)
@@ -89,11 +103,23 @@ const isCurrentPackage = (pkg: PackageItem) => {
       </ErrorState>
 
       <div v-else class="grid gap-5 sm:grid-cols-3 mt-6">
-        <BaseCard v-for="pkg in packages" :key="pkg.id" :padding="true" class="flex flex-col">
+        <BaseCard
+          v-for="pkg in packages"
+          :key="pkg.id"
+          :padding="true"
+          class="flex flex-col"
+          :class="chosenPackageId === pkg.id ? 'ring-2 ring-primary' : ''"
+        >
+          <p v-if="chosenPackageId === pkg.id && !isCurrentPackage(pkg)" class="mb-2 text-xs font-semibold text-primary">
+            Your chosen plan: complete payment to activate it
+          </p>
           <div class="flex-1">
             <h2 class="text-lg font-semibold text-fg">{{ pkg.name }}</h2>
             <p v-if="pkg.description" class="mt-1.5 text-sm text-fg-muted">{{ pkg.description }}</p>
-            <p class="mt-3 text-xs text-fg-muted">{{ pkg.durationDays }}-day access</p>
+            <p class="mt-3 text-2xl font-bold text-fg">
+              {{ isPaid(pkg) ? paymentService.formatMoney(pkg.price) : 'Free' }}
+            </p>
+            <p class="mt-1 text-xs text-fg-muted">{{ pkg.durationDays }}-day access</p>
           </div>
           <BaseButton
             class="mt-5"
@@ -104,8 +130,13 @@ const isCurrentPackage = (pkg: PackageItem) => {
             @click="handleSelect(pkg)"
           >
             <Check class="h-4 w-4" />
-            <span class="ml-1.5">{{ isCurrentPackage(pkg) ? 'Current Package' : 'Select ' + pkg.name }}</span>
+            <span class="ml-1.5">
+              {{ isCurrentPackage(pkg) ? 'Current Package' : isPaid(pkg) ? `Pay ${paymentService.formatMoney(pkg.price)}` : 'Select ' + pkg.name }}
+            </span>
           </BaseButton>
+          <p v-if="isPaid(pkg) && !isCurrentPackage(pkg)" class="mt-2 text-center text-[11px] text-fg-muted">
+            Secure payment by Stripe
+          </p>
         </BaseCard>
       </div>
     </div>

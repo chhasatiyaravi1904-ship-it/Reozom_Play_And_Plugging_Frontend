@@ -189,6 +189,11 @@ function handleOpenSignedDoc() {
 }
 
 // Send to Email Trigger
+// Templates can't reach the global `document`, so the scroll lives here.
+function scrollToUploadSection() {
+  document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })
+}
+
 function handleOpenSendEmail(doc: DocumentRequirement) {
   targetEmailDoc.value = doc
   isSendEmailModalOpen.value = true
@@ -332,7 +337,7 @@ function handleContinue() {
       <BaseButton
         variant="secondary"
         size="sm"
-        @click="document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })"
+        @click="scrollToUploadSection"
       >
         <Upload class="mr-1.5 h-3.5 w-3.5" />
         Upload more documents

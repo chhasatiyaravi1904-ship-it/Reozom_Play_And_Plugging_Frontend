@@ -1,3 +1,5 @@
+import type { StripeSyncSummary } from './stripe'
+
 export interface PackageItem {
   id: string
   name: string
@@ -9,6 +11,7 @@ export interface PackageItem {
   isActive: boolean
   maxListingProcesses?: number | null
   features?: string[]
+  stripeSync?: StripeSyncSummary
   createdAt?: string
   updatedAt?: string
 }

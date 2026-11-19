@@ -124,9 +124,19 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminListingsView.vue'),
         },
         {
+          path: 'service-packages',
+          name: 'admin-service-packages',
+          component: () => import('@/views/admin/AdminServicePackagesView.vue'),
+        },
+        {
           path: 'offers',
           name: 'admin-offers',
           component: () => import('@/views/admin/AdminOffersView.vue'),
+        },
+        {
+          path: 'offers/:id(\\d+)',
+          name: 'admin-offer-detail',
+          component: () => import('@/views/admin/AdminOfferDetailView.vue'),
         },
         {
           path: 'listing-processes',
@@ -159,6 +169,17 @@ const router = createRouter({
           component: () => import('@/views/documents/ManageDocumentsView.vue'),
         },
         {
+          path: 'payments',
+          name: 'admin-payments',
+          component: () => import('@/views/payments/PaymentsView.vue'),
+          props: { scope: 'admin' },
+        },
+        {
+          path: 'payouts',
+          name: 'admin-payouts',
+          component: () => import('@/views/payments/AdminPayoutsView.vue'),
+        },
+        {
           path: 'mls',
           name: 'admin-mls',
           component: () => import('@/views/admin/AdminMlsView.vue'),
@@ -189,6 +210,13 @@ const router = createRouter({
           component: () => import('@/views/profile/ProfileView.vue'),
         },
       ],
+    },
+    {
+      // Stripe Checkout returns here (success and cancel) for agents and sellers
+      path: '/payments/result',
+      name: 'payment-result',
+      component: () => import('@/views/payments/PaymentResultView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/agent/subscription',
@@ -232,9 +260,26 @@ const router = createRouter({
           component: () => import('@/views/listings/ListingsView.vue'),
         },
         {
+          // Offers: received on own/clients' listings, and sent as a buyer
+          path: 'offers',
+          name: 'agent-offers',
+          component: () => import('@/views/offers/OffersView.vue'),
+        },
+        {
           path: 'documents',
           name: 'agent-documents',
           component: () => import('@/views/documents/ManageDocumentsView.vue'),
+        },
+        {
+          path: 'payments',
+          name: 'agent-payments',
+          component: () => import('@/views/payments/PaymentsView.vue'),
+          props: { scope: 'agent' },
+        },
+        {
+          path: 'payouts',
+          name: 'agent-payouts',
+          component: () => import('@/views/payments/AgentPayoutsView.vue'),
         },
         {
           path: 'listings/create',
@@ -294,14 +339,15 @@ const router = createRouter({
           component: () => import('@/views/listings/ListingsView.vue'),
         },
         {
+          // Old static mockup URL; the real page is /listings filtered to the user's own.
           path: 'my-listings',
-          name: 'my-listings',
-          component: () => import('@/views/listings/MyListingsView.vue'),
+          redirect: { name: 'listings', query: { tab: 'my_listings' } },
         },
         {
+          // Offers: Received / Sent tabs (?tab=received|sent)
           path: 'my-offers',
           name: 'my-offers',
-          component: () => import('@/views/dashboard/MyOffersView.vue'),
+          component: () => import('@/views/offers/OffersView.vue'),
         },
         {
           path: 'my-documents',
@@ -417,7 +463,7 @@ router.beforeEach(async (to) => {
 
   // Agents must pick a package before using the rest of the app. Packages
   // recur/expire, so this also re-triggers once a package lapses.
-  const allowedAgentNoPackageRoutes = ['select-package', 'agent-subscription']
+  const allowedAgentNoPackageRoutes = ['select-package', 'agent-subscription', 'payment-result']
   if (
     authStore.isAuthenticated &&
     authStore.user?.role === 'agent' &&

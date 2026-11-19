@@ -4,6 +4,9 @@ import { RouterLink, useRoute } from 'vue-router'
 import {
   Building,
   Building2,
+  BriefcaseBusiness,
+  Banknote,
+  CreditCard,
   FileText,
   Flag,
   Handshake,
@@ -39,8 +42,11 @@ const adminNavGroups = [
     items: [
       { label: 'Users', to: '/admin/users', icon: Users },
       { label: 'Packages', to: '/admin/packages', icon: Package },
+      { label: 'Agent Service Packages', to: '/admin/service-packages', icon: BriefcaseBusiness },
       { label: 'Listings', to: '/admin/listings', icon: Building2 },
       { label: 'Offers', to: '/admin/offers', icon: Handshake },
+      { label: 'Payments', to: '/admin/payments', icon: CreditCard },
+      { label: 'Agent Payouts', to: '/admin/payouts', icon: Banknote },
       { label: 'Listing Process Management', to: '/admin/listing-processes', icon: Workflow },
       { label: 'Disclosures', to: '/admin/disclosures', icon: FileText },
       { label: 'Manage Documents', to: '/admin/documents', icon: FileText },

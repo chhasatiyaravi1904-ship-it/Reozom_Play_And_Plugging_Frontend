@@ -1,6 +1,6 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="sm:flex sm:items-center sm:justify-between mb-8">
+  <div :class="embedded ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10'">
+    <div v-if="!embedded" class="sm:flex sm:items-center sm:justify-between mb-8">
       <div>
         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">My Offers</h1>
         <p class="mt-2 text-sm text-slate-500">Track and manage all purchase offers submitted on Reozom properties.</p>
@@ -310,6 +310,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useOfferStore } from '@/stores/offer'
 import { downloadOfferDocument, downloadOfferContract, type ListingOffer } from '@/services/offerService'
+
+// embedded: shown as the "Sent Offers" tab of the Offers page (no own page heading)
+defineProps<{ embedded?: boolean }>()
 
 const offerStore = useOfferStore()
 const actionInProgress = ref(false)

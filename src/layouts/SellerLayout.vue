@@ -4,6 +4,7 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 import ImpersonationBanner from '@/components/layout/ImpersonationBanner.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
+import PendingSignaturesPopup from '@/components/document/PendingSignaturesPopup.vue'
 </script>
 
 <template>
@@ -15,5 +16,6 @@ import ToastContainer from '@/components/ui/ToastContainer.vue'
     </main>
     <AppFooter />
     <ToastContainer />
+    <PendingSignaturesPopup />
   </div>
 </template>

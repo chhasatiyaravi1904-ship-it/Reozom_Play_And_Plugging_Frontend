@@ -148,7 +148,11 @@ async function handleSubmit() {
     const pendingZip = localStorage.getItem('pending_listing_zip_code')
     const pendingPackageId = localStorage.getItem('pending_listing_package_id')
     
-    if (pendingZip && pendingPackageId) {
+    const chosen = packages.value.find((p) => p.id === payload.packageId)
+    if (form.userType === 'agent' && chosen && Number(chosen.price ?? 0) > 0) {
+      // Paid plans activate only after Stripe payment.
+      router.push({ name: 'agent-subscription', query: { package: chosen.id } })
+    } else if (pendingZip && pendingPackageId) {
       router.push('/listings/create')
     } else {
       router.push('/dashboard')

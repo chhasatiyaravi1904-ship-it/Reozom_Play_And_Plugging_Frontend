@@ -1,4 +1,5 @@
 import api from './api'
+import type { StripeSyncSummary } from '@/types/stripe'
 
 export interface ServicePackage {
   id: number;
@@ -10,6 +11,7 @@ export interface ServicePackage {
   listing_process_id?: number | null;
   listing_process?: any;
   is_active: boolean;
+  stripe_sync?: StripeSyncSummary;
   created_at?: string;
   updated_at?: string;
 }
@@ -42,3 +44,28 @@ export const searchServicePackagesByZip = (zipcode: string) => {
   return api.get<any>(`/public/service-packages/search`, { params: { zipcode } })
 }
 
+export interface PublicPackageMatch {
+  id: number
+  name: string
+  description: string | null
+  price: string | number | null
+  agent: { id: number; first_name: string | null; last_name: string | null }
+  zip_codes: string[]
+  zip_codes_count: number
+}
+
+export interface PublicPackageMatchPage {
+  data: PublicPackageMatch[]
+  meta: { current_page: number; last_page: number; per_page: number; total: number }
+}
+
+/** Public ZIP matching engine: paginated, optional ZIP prefix. */
+export const listPublicServicePackages = (params: { zip?: string; page?: number; per_page?: number }) => {
+  return api.get<PublicPackageMatchPage>('/public/service-packages', { params })
+}
+
+
+/** Create/refresh this plan in Stripe now (Retry for a failed or pending sync). */
+export const syncServicePackageToStripe = (id: number) => {
+  return api.post<StripeSyncSummary>(`/agent/service-packages/${id}/stripe-sync`)
+}

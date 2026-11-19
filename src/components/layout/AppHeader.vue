@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Bell, ChevronDown, Menu } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { user, logout } = useAuth()
 const router = useRouter()
+const route = useRoute()
 
 const isMobileMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
@@ -14,10 +15,20 @@ const isUserMenuOpen = ref(false)
 const navLinks = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Listings', to: '/listings' },
-  { label: 'My Offers', to: '/my-offers' },
+  { label: 'My Listings', to: '/listings?tab=my_listings' },
+  { label: 'Offers', to: '/my-offers' },
   { label: 'My Documents', to: '/my-documents' },
   { label: 'Browse Properties', to: '/properties' },
 ]
+
+// "Listings" and "My Listings" are the same page, so the ?tab= decides which one is active.
+function isActive(to: string): boolean {
+  const [path = '', query] = to.split('?')
+  if (!route.path.startsWith(path)) return false
+  const isMine = route.path === '/listings' && route.query.tab === 'my_listings'
+  if (path === '/listings') return query === 'tab=my_listings' ? isMine : !isMine
+  return true
+}
 
 async function handleLogout() {
   isUserMenuOpen.value = false
@@ -40,7 +51,7 @@ async function handleLogout() {
           :key="link.label"
           :to="link.to"
           class="rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-raised hover:text-fg"
-          active-class="bg-primary/10 text-primary font-semibold"
+          :class="isActive(link.to) && 'bg-primary/10 text-primary font-semibold'"
         >
           {{ link.label }}
         </RouterLink>
@@ -107,7 +118,7 @@ async function handleLogout() {
           :key="link.label"
           :to="link.to"
           class="rounded-lg px-3 py-2 text-sm font-medium text-fg hover:bg-surface-raised"
-          active-class="bg-primary/10 text-primary font-semibold"
+          :class="isActive(link.to) && 'bg-primary/10 text-primary font-semibold'"
           @click="isMobileMenuOpen = false"
         >
           {{ link.label }}

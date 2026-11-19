@@ -12,7 +12,7 @@
               <img
                 alt="REOZOM Logo"
                 class="h-9 w-9 object-contain rounded-md"
-                src="https://lh3.googleusercontent.com/aida/AEtjO1XC5OIcOBhCVaDJep_6PTsv94jiDesgJgD67a1TVcMdBzPOXmrdrTPjevxl8QOhQ-eMz5Yv6xZvQQMEHu6sgPpx22DfFVtGebieL3T5ff6tNGFqgpCNiuZzuG6ey3mMXq7YHUimUA-GwqkroAPShYeL9G2MepHSrgNqRQi-AN_GPMcusYda7Dqrc3SZ8BulhX4TDKA7Py9MEsoXMP0yHcr7IQ5U380SNuaAcISk7f8ozx9l54oznuR6"
+                :src="reozomLogo"
               />
               <span
                 class="text-headline-md font-headline-md font-bold text-surface dark:text-primary"
@@ -165,3 +165,7 @@
       </div>
     </footer>
 </template>
+
+<script setup lang="ts">
+import reozomLogo from '@/assets/reozom-logo.svg'
+</script>

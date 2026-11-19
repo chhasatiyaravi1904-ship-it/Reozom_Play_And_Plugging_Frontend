@@ -53,15 +53,15 @@ const handleZipSearch = async () => {
     
     // Flatten and inject agent details directly into the package
     availablePackages.value = packages.map((pkg: any) => {
-      const agentName = pkg.agent?.full_name || pkg.agent?.first_name ? `${pkg.agent.first_name} ${pkg.agent.last_name || ''}`.trim() : 'Verified Agent';
-      const agentInitials = pkg.agent?.first_name ? `${pkg.agent.first_name[0]}${pkg.agent.last_name ? pkg.agent.last_name[0] : ''}` : 'VA';
-      const agentLicense = pkg.agent?.license || 'State Licensed';
-      
+      const first = pkg.agent?.first_name ?? ''
+      const last = pkg.agent?.last_name ?? ''
+
       return {
         ...pkg,
-        agentName,
-        agentInitials,
-        agentLicense
+        agentName: `${first} ${last}`.trim() || 'Verified Agent',
+        agentInitials: `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'VA',
+        // A plan without a resolvable listing process can't start a listing.
+        isAvailable: !!pkg.listing_process,
       };
     });
   } catch (e) {
@@ -168,9 +168,16 @@ onMounted(() => {
               <div 
                 v-for="pkg in availablePackages" 
                 :key="pkg.id"
-                class="group relative rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 overflow-hidden flex flex-col"
-                :class="selectedPackage?.id === pkg.id ? 'border-primary bg-primary/[0.02] shadow-md scale-[1.02]' : 'border-border/60 bg-surface hover:border-primary/40 hover:shadow-sm'"
-                @click="selectedPackage = pkg"
+                class="group relative rounded-2xl border-2 p-6 transition-all duration-300 overflow-hidden flex flex-col"
+                :class="[
+                  !pkg.isAvailable
+                    ? 'border-border/40 bg-surface opacity-60 cursor-not-allowed'
+                    : selectedPackage?.id === pkg.id
+                      ? 'border-primary bg-primary/[0.02] shadow-md scale-[1.02] cursor-pointer'
+                      : 'border-border/60 bg-surface hover:border-primary/40 hover:shadow-sm cursor-pointer',
+                ]"
+                :aria-disabled="!pkg.isAvailable"
+                @click="pkg.isAvailable && (selectedPackage = pkg)"
               >
                 <!-- Selection Indicator -->
                 <div v-if="selectedPackage?.id === pkg.id" class="absolute top-4 right-4 bg-primary text-white rounded-full p-1 shadow-sm animate-in zoom-in duration-200">
@@ -188,7 +195,7 @@ onMounted(() => {
                         <h3 class="text-sm font-bold text-fg line-clamp-1">{{ pkg.agentName }}</h3>
                         <ShieldCheck class="w-3.5 h-3.5 text-secondary shrink-0" />
                       </div>
-                      <div class="text-[10px] text-fg-muted uppercase tracking-wider">{{ pkg.agentLicense }}</div>
+                      <div class="text-[10px] text-fg-muted uppercase tracking-wider">Verified Agent</div>
                     </div>
                   </div>
 
@@ -201,14 +208,30 @@ onMounted(() => {
                     </div>
                   </div>
                   
-                  <p class="text-sm text-fg-muted leading-relaxed flex-grow mb-6">
+                  <p class="text-sm text-fg-muted leading-relaxed mb-4">
                     {{ pkg.description || 'Comprehensive real estate services designed to maximize your property value.' }}
                   </p>
-                  
+
+                  <!-- The listing process this plan uses -->
+                  <div class="flex-grow mb-6 rounded-lg bg-surface-container/40 p-3">
+                    <template v-if="pkg.listing_process">
+                      <div class="text-xs font-semibold text-fg">{{ pkg.listing_process.name }}</div>
+                      <div class="mt-0.5 text-[11px] font-medium text-fg-muted">
+                        {{ pkg.listing_process.steps.length }} step{{ pkg.listing_process.steps.length !== 1 ? 's' : '' }}
+                      </div>
+                      <ol class="mt-2 space-y-0.5 text-[11px] text-fg-muted list-decimal list-inside">
+                        <li v-for="(step, i) in pkg.listing_process.steps" :key="i" class="line-clamp-1">{{ step }}</li>
+                      </ol>
+                    </template>
+                    <div v-else class="text-xs font-semibold text-error">
+                      Not available right now
+                    </div>
+                  </div>
+
                   <div class="mt-auto pt-4 border-t border-border/50 flex items-end justify-between">
                     <div class="text-xs font-semibold text-fg-muted uppercase tracking-wider">Package Price</div>
                     <div class="text-2xl font-black text-fg" :class="selectedPackage?.id === pkg.id ? 'text-primary' : ''">
-                      ${{ Number(pkg.price || 0).toLocaleString() }}
+                      {{ Number(pkg.price) > 0 ? '$' + Number(pkg.price).toLocaleString() : 'Free' }}
                     </div>
                   </div>
                 </div>

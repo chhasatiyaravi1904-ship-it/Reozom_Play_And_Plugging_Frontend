@@ -25,6 +25,8 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import AddEditPackageModal from '@/components/admin/AddEditPackageModal.vue'
+import StripeSyncBadge from '@/components/payments/StripeSyncBadge.vue'
+import { formatMoney } from '@/services/paymentService'
 
 const toast = useToastStore()
 
@@ -158,6 +160,19 @@ async function toggleActive(pkg: PackageItem) {
   }
 }
 
+// Retry creating the plan in Stripe (failed or pending sync)
+async function retryStripeSync(pkg: PackageItem) {
+  try {
+    const response = await packageService.syncPackageToStripe(pkg.id)
+    pkg.stripeSync = response.data
+    toast.success(`${pkg.name} is now in Stripe.`)
+  } catch (err: any) {
+    const sync = err?.response?.data?.errors?.stripe_sync
+    if (sync) pkg.stripeSync = sync
+    toast.error(apiErrorMessage(err, 'Stripe sync failed.'))
+  }
+}
+
 async function handleDelete() {
   if (!packageToDelete.value) return
   isDeleting.value = true
@@ -225,6 +240,7 @@ async function handleDelete() {
                 <th class="px-3 py-3">Slug</th>
                 <th class="px-3 py-3">Duration</th>
                 <th class="px-3 py-3">Price</th>
+                <th class="px-3 py-3">Stripe</th>
                 <th class="px-3 py-3">Status</th>
                 <th class="px-3 py-3 text-right">Actions</th>
               </tr>
@@ -239,7 +255,10 @@ async function handleDelete() {
                 </td>
                 <td class="px-3 py-3 font-mono text-xs text-fg-muted">{{ pkg.slug }}</td>
                 <td class="px-3 py-3 text-fg-muted">{{ pkg.durationDays }} days</td>
-                <td class="px-3 py-3 text-fg-muted">{{ pkg.price ?? '—' }}</td>
+                <td class="px-3 py-3 text-fg-muted">{{ Number(pkg.price ?? 0) > 0 ? formatMoney(pkg.price) : 'Free' }}</td>
+                <td class="px-3 py-3">
+                  <StripeSyncBadge :sync="pkg.stripeSync" :retry="() => retryStripeSync(pkg)" />
+                </td>
                 <td class="px-3 py-3">
                   <StatusBadge :status="pkg.isActive ? 'active' : 'inactive'" kind="user" />
                 </td>

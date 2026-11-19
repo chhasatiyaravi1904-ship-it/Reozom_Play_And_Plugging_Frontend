@@ -4,7 +4,10 @@ import { RouterLink, useRoute } from 'vue-router'
 import {
   Building,
   Building2,
+  Banknote,
+  CreditCard,
   FileText,
+  Handshake,
   Flag,
   LayoutDashboard,
   MapPin,
@@ -44,7 +47,10 @@ const navGroups = computed(() => {
   agentItems.push({ label: 'Service Packages', to: '/agent/service-packages', icon: FileText })
   agentItems.push({ label: 'Listing Processes', to: '/agent/listing-processes', icon: Workflow })
   agentItems.push({ label: 'Listings', to: '/agent/listings', icon: Building2 })
+  agentItems.push({ label: 'Offers', to: '/agent/offers', icon: Handshake })
   agentItems.push({ label: 'Manage Documents', to: '/agent/documents', icon: FileText })
+  agentItems.push({ label: 'Payments', to: '/agent/payments', icon: CreditCard })
+  agentItems.push({ label: 'Payouts', to: '/agent/payouts', icon: Banknote })
   agentItems.push({ label: 'Profile', to: '/agent/profile', icon: Users })
 
   return [

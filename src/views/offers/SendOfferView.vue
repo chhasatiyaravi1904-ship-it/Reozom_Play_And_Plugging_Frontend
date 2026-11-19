@@ -899,9 +899,11 @@ import {
   getExamplePurchaseAgreementUrl,
   type SendOfferConfig,
 } from '@/services/offerService'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const listingId = computed(() => Number(route.params.id))
 
 const isLoadingConfig = ref(true)
@@ -1188,7 +1190,11 @@ const handleSubmit = async () => {
 
     const res = await submitOffer(listingId.value, payload, filesToUpload)
     alert(`Your official offer of $${Number(form.offer_amount).toLocaleString()} has been submitted to the seller!`)
-    router.push('/dashboard/my-offers')
+    // The sender's "Sent Offers" tab, in their own portal (the old /dashboard/my-offers didn't exist)
+    router.push({
+      name: authStore.user?.role === 'agent' ? 'agent-offers' : 'my-offers',
+      query: { tab: 'sent' },
+    })
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message || 'Failed to submit official offer. Please check all fields.'
   } finally {

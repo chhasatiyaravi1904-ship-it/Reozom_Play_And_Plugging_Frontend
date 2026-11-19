@@ -95,7 +95,7 @@
                   <img
                     class="w-full h-96 object-cover object-center"
                     data-alt="A striking modern architectural home featuring sleek geometric lines, expansive glass facades, clean concrete panels, and soft warm interior illumination during dusk. The landscaping is minimalist with structured gravel and architectural grass. Rendered in a high-end luxury architectural editorial style with cool slate shadows and teal reflecting waters."
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuADKwqLF75qO1Q_BQUBsbSULb8Fn_jwLgSOrOodveOxA5qliQ5nA_0LB3BWBt36TQr0kT3Sov1M5xzWaasCw1aGa-nx4_Yx8qdrjI2CAWoorZrsqqg7Nks0e2jZ3K_vMuS83H858k7Y4C1F5_JuX6MR-i2CXvyx1-U40eJXuCnz5-fTrd8aO9Oc8qdtJsTtA-nIHN3Zfu37y5c1ANoPeUd4e_vJpgzu7nnnyF2Yc4rR1SNR8JGmER4"
+                    alt="Modern home at dusk" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
                   />
                   <div
                     class="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/10 to-transparent"
@@ -329,10 +329,9 @@
                 class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
               >
                 <option value="all">All Types</option>
-                <option value="single_family">Single Family</option>
-                <option value="condo">Condominium</option>
-                <option value="townhouse">Townhouse</option>
-                <option value="multi_family">Multi-Family</option>
+                <option v-for="opt in propertyTypeOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
               </select>
             </div>
             <!-- Price Range Dropdown -->
@@ -400,13 +399,7 @@
         <!-- Quick Category Filter Chips -->
         <div class="flex flex-wrap gap-2 mb-8">
           <button
-            v-for="cat in [
-              { label: 'All Properties', val: 'all' },
-              { label: 'Single Family', val: 'single_family' },
-              { label: 'Condominium', val: 'condo' },
-              { label: 'Townhouse', val: 'townhouse' },
-              { label: 'Multi-Family', val: 'multi_family' },
-            ]"
+            v-for="cat in [{ label: 'All Properties', val: 'all' }, ...propertyTypeOptions.map((o) => ({ label: o.label, val: o.value }))]"
             :key="cat.val"
             @click="filterByType(cat.val)"
             class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer"
@@ -469,7 +462,7 @@
           </p>
           <button
             class="px-5 py-2.5 bg-secondary text-surface-container-lowest rounded-lg font-label-md"
-            @click="filterByType('all')"
+            @click="resetListingFilters()"
           >
             Reset Filters
           </button>
@@ -794,17 +787,20 @@
                   <input
                     class="w-full h-12 px-4 rounded-lg border border-outline-variant bg-surface font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary"
                     id="zipInput"
-                    placeholder="Enter ZIP Code (e.g. 380001, 78701)"
+                    placeholder="Enter ZIP Code (e.g. 78701)"
                     type="text"
+                    inputmode="numeric"
+                    maxlength="10"
+                    aria-label="Property ZIP code"
                     v-model="zipSearchInput"
-                    @keyup.enter="handleZipSearch"
+                    @keyup.enter="handleZipSearch()"
                   />
                 </div>
                 <button
                   class="px-5 h-12 bg-primary-container text-on-primary font-label-lg text-label-lg rounded-lg hover:bg-primary transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                   id="zipSearchBtn"
                   type="button"
-                  @click="handleZipSearch"
+                  @click="handleZipSearch()"
                   :disabled="isSearchingZip"
                 >
                   <span v-if="!isSearchingZip">Find Available Options</span>
@@ -823,21 +819,36 @@
                 {{ searchError }}
               </div>
               
-              <div v-else-if="searchedZip" class="mt-6 space-y-4" id="zipResultsContainer">
-                <div class="flex items-center justify-between">
-                  <span class="text-label-sm font-label-sm text-on-surface-variant uppercase"
-                    >Results for ZIP:
-                    <strong class="text-primary font-bold" id="currentZipLabel"
-                      >{{ searchedZip }}</strong
-                    ></span
-                  >
-                  <span class="text-label-sm font-label-sm text-secondary font-bold"
-                    >{{ zipSearchResults.length }} Licensed Agent{{ zipSearchResults.length !== 1 ? 's' : '' }} Available</span
-                  >
+              <div v-else class="mt-6 space-y-4" id="zipResultsContainer" aria-live="polite">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-label-sm font-label-sm text-on-surface-variant uppercase">
+                    <template v-if="searchedZip">
+                      Results for ZIP:
+                      <strong class="text-primary font-bold" id="currentZipLabel">{{ searchedZip }}</strong>
+                    </template>
+                    <template v-else>Available plans</template>
+                  </span>
+                  <span class="text-label-sm font-label-sm text-secondary font-bold">
+                    {{ zipMeta.total }} Plan{{ zipMeta.total !== 1 ? 's' : '' }} Available
+                  </span>
                 </div>
-                
-                <div v-if="zipSearchResults.length === 0" class="text-center py-8 text-on-surface-variant">
-                  <p>No agents found offering service packages in this ZIP code.</p>
+
+                <div v-if="zipSelectHint" class="p-3 rounded-lg bg-secondary/10 text-primary text-body-sm">
+                  {{ zipSelectHint }}
+                </div>
+
+                <div
+                  v-if="isSearchingZip && zipPackages.length === 0"
+                  class="text-center py-8 text-on-surface-variant"
+                >
+                  <p>Searching...</p>
+                </div>
+                <div
+                  v-else-if="zipPackages.length === 0"
+                  class="text-center py-8 text-on-surface-variant"
+                >
+                  <p v-if="searchedZip">No agents found offering service packages in this ZIP code.</p>
+                  <p v-else>No plans are available yet.</p>
                 </div>
 
                 <!-- Dynamic Agent Cards -->
@@ -858,7 +869,7 @@
                           {{ agent.name }}
                         </h4>
                         <p class="text-body-sm font-body-sm text-on-surface-variant">
-                          Verified Network Agent · Lic #{{ agent.license }}
+                          Verified Network Agent
                         </p>
                       </div>
                     </div>
@@ -878,21 +889,53 @@
                           >{{ pkg.name }}</span
                         >
                         <span class="text-label-sm font-label-sm text-secondary font-bold"
-                          >${{ pkg.price ? Number(pkg.price).toFixed(2) : 'Free' }}</span
+                          >{{ Number(pkg.price) > 0 ? '$' + Number(pkg.price).toFixed(2) : 'Free' }}</span
                         >
                       </div>
-                      <p class="text-body-sm text-xs text-on-surface-variant mt-1 mb-3 flex-1">
+                      <p class="text-body-sm text-xs text-on-surface-variant mt-1 flex-1">
                         {{ pkg.description || 'Verified Service Package' }}
                       </p>
-                      <button 
+                      <p class="text-[11px] text-on-surface-variant mt-1 mb-3">
+                        ZIP {{ pkg.zip_codes.join(', ')
+                        }}<template v-if="pkg.zip_codes_count > pkg.zip_codes.length">
+                          +{{ pkg.zip_codes_count - pkg.zip_codes.length }} more</template
+                        >
+                      </p>
+                      <button
                         class="w-full py-2 bg-surface-container text-primary font-label-sm text-label-sm font-bold rounded hover:bg-secondary hover:text-surface-container-lowest transition-colors flex items-center justify-center gap-1"
-                        @click="selectPackage(pkg.id)"
+                        @click="selectPackage(pkg)"
                       >
                         Select Plan
                         <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
                       </button>
                     </div>
                   </div>
+                </div>
+
+                <!-- Pagination -->
+                <div
+                  v-if="zipMeta.last_page > 1"
+                  class="flex items-center justify-between pt-2"
+                >
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg border border-outline-variant text-label-sm font-label-sm text-primary disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container"
+                    :disabled="isSearchingZip || zipMeta.current_page <= 1"
+                    @click="handleZipSearch(zipMeta.current_page - 1)"
+                  >
+                    Previous
+                  </button>
+                  <span class="text-label-sm font-label-sm text-on-surface-variant">
+                    Page {{ zipMeta.current_page }} of {{ zipMeta.last_page }}
+                  </span>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg border border-outline-variant text-label-sm font-label-sm text-primary disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container"
+                    :disabled="isSearchingZip || zipMeta.current_page >= zipMeta.last_page"
+                    @click="handleZipSearch(zipMeta.current_page + 1)"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
               <div class="mt-5 text-center">
@@ -2131,7 +2174,7 @@
               <img
                 alt="REOZOM Logo"
                 class="h-9 w-9 object-contain rounded-md"
-                src="https://lh3.googleusercontent.com/aida/AEtjO1XC5OIcOBhCVaDJep_6PTsv94jiDesgJgD67a1TVcMdBzPOXmrdrTPjevxl8QOhQ-eMz5Yv6xZvQQMEHu6sgPpx22DfFVtGebieL3T5ff6tNGFqgpCNiuZzuG6ey3mMXq7YHUimUA-GwqkroAPShYeL9G2MepHSrgNqRQi-AN_GPMcusYda7Dqrc3SZ8BulhX4TDKA7Py9MEsoXMP0yHcr7IQ5U380SNuaAcISk7f8ozx9l54oznuR6"
+                :src="reozomLogo"
               />
               <span
                 class="text-headline-md font-headline-md font-bold text-surface dark:text-primary"
@@ -2303,7 +2346,7 @@
           <img
             alt="REOZOM"
             class="h-8 w-8 object-contain rounded-md"
-            src="https://lh3.googleusercontent.com/aida/AEtjO1XC5OIcOBhCVaDJep_6PTsv94jiDesgJgD67a1TVcMdBzPOXmrdrTPjevxl8QOhQ-eMz5Yv6xZvQQMEHu6sgPpx22DfFVtGebieL3T5ff6tNGFqgpCNiuZzuG6ey3mMXq7YHUimUA-GwqkroAPShYeL9G2MepHSrgNqRQi-AN_GPMcusYda7Dqrc3SZ8BulhX4TDKA7Py9MEsoXMP0yHcr7IQ5U380SNuaAcISk7f8ozx9l54oznuR6"
+            :src="reozomLogo"
           />
           <div>
             <h3 class="text-headline-sm font-headline-sm text-primary" id="authModalTitle">
@@ -2428,14 +2471,15 @@
 </template>
 
 <script setup lang="ts">
+import reozomLogo from '@/assets/reozom-logo.svg'
 import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import TopNavBar from '@/components/layout/TopNavBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
-import { searchServicePackagesByZip, type ServicePackage } from '@/services/servicePackageService'
+import { listPublicServicePackages, type PublicPackageMatch } from '@/services/servicePackageService'
 import { useAuthStore } from '@/stores/auth'
 import { usePublicListingStore } from '@/stores/publicListing'
-import type { PublicListing } from '@/services/publicListingService'
+import { fetchPublicListingFilters, type PublicListing } from '@/services/publicListingService'
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -2461,7 +2505,7 @@ const formatNumber = (val: any) => {
 };
 
 const formatPropertyType = (val: any) => {
-  if (!val) return 'Single Family';
+  if (!val) return 'Property';
   const map: Record<string, string> = {
     single_family: 'Single Family',
     condo: 'Condominium',
@@ -2488,111 +2532,150 @@ const toggleFavorite = (id: number) => {
   }
 };
 
-const loadFeaturedListings = (params?: Record<string, any>) => {
-  publicListingStore.fetchListings(1, { per_page: 8, ...params });
+// Filter options come from the published listings themselves.
+const propertyTypeOptions = ref<{ value: string; label: string }[]>([]);
+
+const PRICE_RANGES: Record<string, { min?: number; max?: number }> = {
+  '300-500': { min: 300000, max: 500000 },
+  '500-800': { min: 500000, max: 800000 },
+  '800-1500': { min: 800000, max: 1500000 },
+  '1500+': { min: 1500000 },
 };
 
-const handleListingSearch = () => {
+const currentListingFilters = () => {
   const params: Record<string, any> = {};
   if (searchLocation.value.trim()) {
     params.location = searchLocation.value.trim();
   }
-  if (searchPropertyType.value && searchPropertyType.value !== 'all') {
+  if (searchPropertyType.value !== 'all') {
     params.property_type = searchPropertyType.value;
   }
-  loadFeaturedListings(params);
+  const range = PRICE_RANGES[searchPriceRange.value];
+  if (range?.min !== undefined) params.min_price = range.min;
+  if (range?.max !== undefined) params.max_price = range.max;
+  return params;
+};
+
+const loadFeaturedListings = () => {
+  publicListingStore.fetchListings(1, { per_page: 8, ...currentListingFilters() });
+};
+
+const handleListingSearch = () => {
+  activeTypeFilter.value = searchPropertyType.value;
+  loadFeaturedListings();
   document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
 };
 
 const filterByType = (type: string) => {
   activeTypeFilter.value = type;
   searchPropertyType.value = type;
-  const params: Record<string, any> = {};
-  if (searchLocation.value.trim()) {
-    params.location = searchLocation.value.trim();
-  }
-  if (type !== 'all') {
-    params.property_type = type;
-  }
-  loadFeaturedListings(params);
+  loadFeaturedListings();
 };
 
-onMounted(() => {
+const resetListingFilters = () => {
+  searchLocation.value = '';
+  searchPriceRange.value = 'all';
+  filterByType('all');
+};
+
+onMounted(async () => {
   loadFeaturedListings();
+  try {
+    const response = await fetchPublicListingFilters();
+    propertyTypeOptions.value = response.data?.property_types ?? [];
+  } catch {
+    propertyTypeOptions.value = [];
+  }
 });
 
 // --- ZIP Code Matching Engine Logic ---
+const ZIP_PAGE_SIZE = 6;
 const zipSearchInput = ref('');
-const searchedZip = ref('');
+const searchedZip = ref(''); // ZIP prefix the current results are for ('' = default plans)
 const isSearchingZip = ref(false);
-const zipSearchResults = ref<any[]>([]); // Grouped by agent
+const zipPackages = ref<PublicPackageMatch[]>([]);
+const zipMeta = ref({ current_page: 1, last_page: 1, per_page: ZIP_PAGE_SIZE, total: 0 });
 const searchError = ref<string | null>(null);
+const zipSelectHint = ref<string | null>(null);
 
-let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
-
-watch(zipSearchInput, (newVal) => {
-  if (debounceTimeout) {
-    clearTimeout(debounceTimeout);
+// Group the current page's packages by agent for display.
+const zipSearchResults = computed(() => {
+  const agents = new Map<number, { id: number; name: string; initials: string; packages: PublicPackageMatch[] }>();
+  for (const pkg of zipPackages.value) {
+    const first = pkg.agent.first_name ?? '';
+    const last = pkg.agent.last_name ?? '';
+    if (!agents.has(pkg.agent.id)) {
+      agents.set(pkg.agent.id, {
+        id: pkg.agent.id,
+        name: `${first} ${last}`.trim() || 'Verified Agent',
+        initials: `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'AG',
+        packages: [],
+      });
+    }
+    agents.get(pkg.agent.id)!.packages.push(pkg);
   }
-  
-  if (!newVal.trim()) {
-    zipSearchResults.value = [];
-    searchedZip.value = '';
-    return;
-  }
-  
-  debounceTimeout = setTimeout(() => {
-    handleZipSearch();
-  }, 400); // 400ms debounce delay
+  return Array.from(agents.values());
 });
 
-const handleZipSearch = async () => {
-  const query = zipSearchInput.value.trim();
-  if (!query) return;
+let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+let latestZipRequest = 0;
+
+watch(zipSearchInput, () => {
+  if (debounceTimeout) clearTimeout(debounceTimeout);
+  zipSelectHint.value = null;
+  debounceTimeout = setTimeout(() => handleZipSearch(), 400);
+});
+
+const handleZipSearch = async (page = 1) => {
+  if (debounceTimeout) clearTimeout(debounceTimeout);
+  const query = zipSearchInput.value.replace(/\D/g, '').slice(0, 10);
+  const requestId = ++latestZipRequest;
 
   isSearchingZip.value = true;
   searchError.value = null;
-  zipSearchResults.value = [];
-  
-  try {
-    const response = await searchServicePackagesByZip(query);
-    const packages = Array.isArray(response.data) ? response.data : 
-                     (response.data?.data ? response.data.data : []);
-    
-    // Group packages by agent
-    const agentsMap = new Map();
-    
-    packages.forEach((pkg: any) => {
-      const agentId = pkg.agent_id || (pkg.agent && pkg.agent.id);
-      if (!agentId) return;
-      
-      if (!agentsMap.has(agentId)) {
-        agentsMap.set(agentId, {
-          id: agentId,
-          name: pkg.agent?.full_name || pkg.agent?.first_name ? `${pkg.agent.first_name} ${pkg.agent.last_name}` : 'Verified Agent',
-          initials: pkg.agent?.first_name ? `${pkg.agent.first_name[0]}${pkg.agent.last_name ? pkg.agent.last_name[0] : ''}` : 'AG',
-          license: pkg.agent?.license || 'N/A',
-          packages: []
-        });
-      }
-      
-      agentsMap.get(agentId).packages.push(pkg);
-    });
 
-    zipSearchResults.value = Array.from(agentsMap.values());
+  try {
+    const response = await listPublicServicePackages({
+      zip: query || undefined,
+      page,
+      per_page: ZIP_PAGE_SIZE,
+    });
+    if (requestId !== latestZipRequest) return;
+    zipPackages.value = response.data.data;
+    zipMeta.value = response.data.meta;
     searchedZip.value = query;
   } catch (e) {
+    if (requestId !== latestZipRequest) return;
     console.error(e);
+    zipPackages.value = [];
     searchError.value = 'Failed to fetch available options for this ZIP code.';
   } finally {
-    isSearchingZip.value = false;
+    if (requestId === latestZipRequest) isSearchingZip.value = false;
   }
 };
 
-const selectPackage = (packageId: number) => {
-  localStorage.setItem('pending_listing_zip_code', searchedZip.value);
-  localStorage.setItem('pending_listing_package_id', String(packageId));
-  
+onMounted(() => {
+  handleZipSearch();
+});
+
+// The listing flow needs one exact ZIP the package serves.
+const resolvePackageZip = (pkg: PublicPackageMatch): string | null => {
+  if (searchedZip.value && pkg.zip_codes.includes(searchedZip.value)) return searchedZip.value;
+  if (pkg.zip_codes_count === 1) return pkg.zip_codes[0] ?? null;
+  return null;
+};
+
+const selectPackage = (pkg: PublicPackageMatch) => {
+  const zip = resolvePackageZip(pkg);
+  if (!zip) {
+    zipSelectHint.value = `"${pkg.name}" serves several ZIP codes. Enter your property's full ZIP code to choose it.`;
+    document.getElementById('zipInput')?.focus();
+    return;
+  }
+
+  localStorage.setItem('pending_listing_zip_code', zip);
+  localStorage.setItem('pending_listing_package_id', String(pkg.id));
+
   if (authStore.isAuthenticated) {
     router.push('/listings/create');
   } else {

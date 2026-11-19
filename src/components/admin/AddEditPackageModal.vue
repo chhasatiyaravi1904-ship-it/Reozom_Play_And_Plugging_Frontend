@@ -119,6 +119,11 @@ function validate(): boolean {
   }
   if (form.value.price && Number.isNaN(Number(form.value.price))) {
     errors.value.price = 'Price must be a number.'
+  } else if (form.value.price && Number(form.value.price) < 0) {
+    errors.value.price = 'Price cannot be negative.'
+  } else if (form.value.price && Number(form.value.price) > 0 && Number(form.value.price) < 0.5) {
+    // Stripe's minimum charge in USD
+    errors.value.price = 'Paid packages must cost at least $0.50.'
   }
   if (form.value.maxListingProcesses && Number.isNaN(Number(form.value.maxListingProcesses))) {
     errors.value.maxListingProcesses = 'Must be a valid number.'
@@ -216,7 +221,7 @@ function handleSubmit() {
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
-          <label class="mb-1.5 block text-xs font-semibold text-fg">Price (optional)</label>
+          <label class="mb-1.5 block text-xs font-semibold text-fg">Price (USD)</label>
           <input
             v-model="form.price"
             type="text"
@@ -226,6 +231,7 @@ function handleSubmit() {
             :class="{ 'border-danger': errors.price }"
           />
           <p v-if="errors.price" class="mt-1 text-xs text-danger">{{ errors.price }}</p>
+          <p v-else class="mt-1 text-[11px] text-fg-muted">Agents pay this with Stripe. Empty or 0 = free.</p>
         </div>
 
         <div>

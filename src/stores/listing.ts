@@ -85,9 +85,12 @@ export const useListingStore = defineStore('listing', () => {
       await listingService.submitListing(listingId)
       await fetchListing(listingId)
       return true
-    } catch (err) {
+    } catch (err: any) {
       if (import.meta.env.DEV && isNetworkError(err)) return true
-      error.value = 'Unable to publish your listing. Please try again.'
+      // 402 = the service package must be paid first; show the server's message
+      error.value = err?.response?.status === 402
+        ? (err.response.data?.message || 'Please complete the payment before publishing.')
+        : 'Unable to publish your listing. Please try again.'
       return false
     }
   }

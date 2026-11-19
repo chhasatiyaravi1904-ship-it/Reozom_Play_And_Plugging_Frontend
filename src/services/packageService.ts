@@ -1,5 +1,6 @@
 import api from './api'
 import type { User } from '@/types/auth'
+import type { StripeSyncSummary } from '@/types/stripe'
 import type {
   PackageItem,
   PackageListResponse,
@@ -63,4 +64,34 @@ export const deletePackage = (id: string) => {
 
 export const fetchAdminPermissions = () => {
   return api.get<string[]>('/admin/packages/permissions')
+}
+
+/** Create/refresh this plan in Stripe now (Retry for a failed or pending sync). */
+export const syncPackageToStripe = (id: string) => {
+  return api.post<StripeSyncSummary>(`/admin/packages/${id}/stripe-sync`)
+}
+
+export type SubscriptionStatus = 'active' | 'replaced' | 'expired' | 'refunded'
+
+export interface SubscriptionHistoryRow {
+  id: string
+  package: { id: string; name: string; duration_days: number } | null
+  started_at: string
+  expires_at: string
+  status: SubscriptionStatus
+  /** In cents; 0 for free plans. */
+  amount: number
+  currency: string
+  paid_at: string | null
+  payment_status: string | null
+}
+
+export interface SubscriptionHistoryPage {
+  data: SubscriptionHistoryRow[]
+  meta: { current_page: number; last_page: number; per_page: number; total: number }
+}
+
+/** The logged-in agent's subscription purchase history (GET /agent/subscriptions). */
+export const fetchMySubscriptions = (page = 1) => {
+  return api.get<SubscriptionHistoryPage>('/agent/subscriptions', { params: { page } })
 }

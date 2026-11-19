@@ -6,6 +6,7 @@ import AgentSidebar from '@/components/layout/AgentSidebar.vue'
 import ImpersonationBanner from '@/components/layout/ImpersonationBanner.vue'
 import AdminProfileMenu from '@/components/admin/AdminProfileMenu.vue'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
+import PendingSignaturesPopup from '@/components/document/PendingSignaturesPopup.vue'
 
 const isSidebarOpen = ref(false)
 </script>
@@ -45,6 +46,7 @@ const isSidebarOpen = ref(false)
     </div>
 
     <ToastContainer />
+    <PendingSignaturesPopup />
   </div>
 </template>
 
