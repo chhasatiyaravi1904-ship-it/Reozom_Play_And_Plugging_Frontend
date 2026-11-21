@@ -234,7 +234,7 @@ watch(() => route.params.id, loadOffer)
       to this offer. This is recorded in the admin activity log.
     </ConfirmDialog>
 
-    <LoadingState v-if="isLoading" label="Loading offer..." />
+    <LoadingState variant="detail" v-if="isLoading" label="Loading offer..." />
     <ErrorState v-else-if="errorMessage" :description="errorMessage" @retry="loadOffer" />
 
     <div v-else-if="offer" class="space-y-6">

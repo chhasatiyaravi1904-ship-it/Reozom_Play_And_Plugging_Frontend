@@ -26,6 +26,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import MlsDirectoryDetailModal from '@/components/admin/MlsDirectoryDetailModal.vue'
 import AddEditMlsDirectoryModal from '@/components/admin/AddEditMlsDirectoryModal.vue'
 import DeleteMlsDirectoryModal from '@/components/admin/DeleteMlsDirectoryModal.vue'
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 
 const mlsStore = useMlsStore()
 const toast = useToastStore()
@@ -175,15 +176,7 @@ function toggleSort(field: string) {
       <div class="relative overflow-x-auto">
         <!-- Skeleton Loading -->
         <div v-if="mlsStore.status === 'loading'" class="divide-y divide-border">
-          <div v-for="i in 5" :key="i" class="flex items-center justify-between gap-4 p-4 animate-pulse">
-            <div class="h-4 w-48 rounded bg-border"></div>
-            <div class="h-4 w-16 rounded bg-border"></div>
-            <div class="h-4 w-28 rounded bg-border"></div>
-            <div class="flex gap-2">
-              <div class="h-7 w-7 rounded bg-border"></div>
-              <div class="h-7 w-7 rounded bg-border"></div>
-            </div>
-          </div>
+          <SkeletonTable :rows="5" :columns="4" />
         </div>
 
         <!-- Error State -->

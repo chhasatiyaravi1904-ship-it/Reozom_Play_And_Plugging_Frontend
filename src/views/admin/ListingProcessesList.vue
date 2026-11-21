@@ -29,8 +29,18 @@
       </div>
     </div>
 
+    <!-- Loading: shimmer table instead of an empty page -->
+    <div
+      v-if="processStore.isLoading && processStore.processes.length === 0"
+      class="mb-8 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden"
+      role="status"
+      aria-label="Loading listing processes"
+    >
+      <SkeletonTable :rows="5" :columns="4" />
+    </div>
+
     <!-- Processes List -->
-    <div v-for="group in displayGroups" :key="group.title" class="mb-8">
+    <div v-for="group in displayGroups" v-else :key="group.title" class="mb-8">
       <h2 v-if="isAgent && group.processes.length > 0" class="text-lg font-bold text-neutral-900 mb-4">{{ group.title }} <span v-if="group.title === 'System Default'" class="text-xs font-normal text-neutral-500 ml-2">(Read Only)</span></h2>
       <div v-if="group.processes.length > 0" class="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
         <table class="w-full text-left">
@@ -407,6 +417,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProcessStore } from '@/stores/processStore'
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 import { useAuthStore } from '@/stores/auth'
 import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconEye, IconFileText, IconCopy } from '@tabler/icons-vue'
 import { fetchServicePackages } from '@/services/servicePackageService'

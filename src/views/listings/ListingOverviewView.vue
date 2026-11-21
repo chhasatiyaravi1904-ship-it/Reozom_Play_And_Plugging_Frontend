@@ -283,7 +283,7 @@ function formatPhotoUrl(url: string | null | undefined): string {
     </div>
 
     <!-- Loading State -->
-    <LoadingState
+    <LoadingState variant="detail"
       v-if="listingStore.status === 'loading' && !listingStore.activeListing"
       :rows="3"
     />

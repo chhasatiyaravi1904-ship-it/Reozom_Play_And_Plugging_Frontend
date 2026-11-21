@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 import {
   Plus,
   Search,
@@ -248,16 +249,7 @@ function toggleSort(field: string) {
       <div class="relative overflow-x-auto">
         <!-- Skeleton Loading -->
         <div v-if="stateStore.status === 'loading'" class="divide-y divide-slate-100">
-          <div v-for="i in 5" :key="i" class="flex items-center justify-between gap-4 p-4 animate-pulse">
-            <div class="h-4 w-36 rounded bg-slate-200"></div>
-            <div class="h-6 w-12 rounded bg-slate-200"></div>
-            <div class="h-4 w-28 rounded bg-slate-200"></div>
-            <div class="h-5 w-9 rounded-full bg-slate-200"></div>
-            <div class="flex gap-2">
-              <div class="h-7 w-7 rounded bg-slate-200"></div>
-              <div class="h-7 w-7 rounded bg-slate-200"></div>
-            </div>
-          </div>
+          <SkeletonTable :rows="5" :columns="5" />
         </div>
 
         <!-- Table View -->

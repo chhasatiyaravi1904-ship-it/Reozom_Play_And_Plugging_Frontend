@@ -463,7 +463,15 @@ router.beforeEach(async (to) => {
 
   // Agents must pick a package before using the rest of the app. Packages
   // recur/expire, so this also re-triggers once a package lapses.
-  const allowedAgentNoPackageRoutes = ['select-package', 'agent-subscription', 'payment-result']
+  // Email verification comes first: without these, an unverified agent bounced forever between
+  // verify-email and agent-subscription (the Register button kept spinning after sign-up).
+  const allowedAgentNoPackageRoutes = [
+    'select-package',
+    'agent-subscription',
+    'payment-result',
+    'verify-email',
+    'email-verified',
+  ]
   if (
     authStore.isAuthenticated &&
     authStore.user?.role === 'agent' &&

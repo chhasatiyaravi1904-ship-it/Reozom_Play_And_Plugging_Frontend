@@ -16,9 +16,33 @@
       </div>
 
       <!-- Loading State -->
-      <div v-if="isLoadingConfig" class="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm">
-        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-r-transparent"></div>
-        <p class="mt-4 text-sm font-medium text-slate-600">Loading offer details and listing specifications...</p>
+      <div
+        v-if="isLoadingConfig"
+        class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+        role="status"
+        aria-label="Loading offer details"
+      >
+        <!-- Same shape as the form: dark header banner, then field groups -->
+        <div class="bg-slate-900 p-6 sm:p-8 space-y-3" aria-hidden="true">
+          <div class="h-5 w-28 rounded-md bg-white/10"></div>
+          <div class="h-7 w-72 max-w-full rounded bg-white/15"></div>
+          <div class="h-4 w-56 max-w-full rounded bg-white/10"></div>
+        </div>
+        <div class="p-6 sm:p-8 space-y-8" aria-hidden="true">
+          <div v-for="group in 2" :key="group" class="space-y-4">
+            <div class="skeleton h-5 w-44 rounded"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div v-for="field in 4" :key="field" class="space-y-2">
+                <div class="skeleton h-3 w-24 rounded"></div>
+                <div class="skeleton h-10 w-full rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <div class="skeleton h-11 w-40 rounded-xl"></div>
+          </div>
+        </div>
+        <span class="sr-only">Loading offer details…</span>
       </div>
 
       <!-- Main Form Container -->

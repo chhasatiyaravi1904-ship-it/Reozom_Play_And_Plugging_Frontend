@@ -10,15 +10,31 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="store.status === 'loading'" class="animate-pulse flex flex-col gap-8">
-      <div class="h-64 md:h-96 bg-neutral-200 rounded-2xl w-full"></div>
-      <div class="space-y-4">
-        <div class="h-8 bg-neutral-200 rounded w-1/2"></div>
-        <div class="h-6 bg-neutral-200 rounded w-1/3"></div>
+    <div v-if="store.status === 'loading'" class="flex flex-col gap-8" role="status" aria-label="Loading property">
+      <div class="flex flex-col gap-2" aria-hidden="true">
+        <div class="skeleton aspect-video md:aspect-[21/9] rounded-2xl w-full"></div>
+        <div class="flex gap-2">
+          <div v-for="i in 4" :key="i" class="skeleton w-24 h-16 md:w-32 md:h-20 rounded-lg"></div>
+        </div>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div v-for="i in 4" :key="i" class="h-16 bg-neutral-100 rounded border border-neutral-200"></div>
+      <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-neutral-200 pb-8" aria-hidden="true">
+        <div class="space-y-3 flex-1">
+          <div class="skeleton h-9 rounded w-2/3"></div>
+          <div class="skeleton h-5 rounded w-1/3"></div>
+          <div class="skeleton h-3 rounded w-24"></div>
+        </div>
+        <div class="space-y-3 md:w-56">
+          <div class="skeleton h-9 rounded w-40 md:ml-auto"></div>
+          <div class="skeleton h-10 rounded-xl w-full"></div>
+        </div>
       </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 bg-white rounded-xl border border-neutral-200" aria-hidden="true">
+        <div v-for="i in 4" :key="i" class="flex flex-col items-center gap-2">
+          <div class="skeleton h-3 w-16 rounded"></div>
+          <div class="skeleton h-5 w-20 rounded"></div>
+        </div>
+      </div>
+      <span class="sr-only">Loading property…</span>
     </div>
 
     <!-- Error State -->

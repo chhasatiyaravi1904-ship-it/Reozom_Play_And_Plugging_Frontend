@@ -8,12 +8,12 @@
 
     <!-- Loading State -->
     <div v-if="store.status === 'loading'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-neutral-200 h-80 animate-pulse flex flex-col">
-        <div class="h-48 bg-neutral-100 rounded-t-xl"></div>
+      <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-neutral-200 h-80 flex flex-col overflow-hidden">
+        <div class="skeleton h-48 rounded-t-xl" aria-hidden="true"></div>
         <div class="p-5 flex flex-col gap-3">
-          <div class="h-6 bg-neutral-200 rounded w-3/4"></div>
-          <div class="h-5 bg-neutral-200 rounded w-1/2"></div>
-          <div class="h-4 bg-neutral-200 rounded w-full mt-4"></div>
+          <div class="skeleton h-6 rounded w-3/4"></div>
+          <div class="skeleton h-5 rounded w-1/2"></div>
+          <div class="skeleton h-4 rounded w-full mt-4"></div>
         </div>
       </div>
     </div>

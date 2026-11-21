@@ -42,6 +42,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import { useToastStore } from '@/stores/toast'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 
 const toast = useToastStore()
 const authStore = useAuthStore()
@@ -700,31 +701,7 @@ watch(totalUsers, (total) => {
       <div class="relative overflow-x-auto">
         <!-- Skeleton Loading State -->
         <div v-if="isLoading" class="divide-y divide-border">
-          <div v-for="i in 6" :key="i" class="flex items-center justify-between gap-4 p-4 animate-pulse">
-            <!-- User col skeleton -->
-            <div class="flex items-center gap-3 w-1/4">
-              <div class="h-9 w-9 rounded-full bg-border"></div>
-              <div class="space-y-1.5 flex-1">
-                <div class="h-3.5 w-28 rounded bg-border"></div>
-                <div class="h-2.5 w-16 rounded bg-surface-raised"></div>
-              </div>
-            </div>
-            <!-- Role skeleton -->
-            <div class="h-5 w-16 rounded bg-border"></div>
-            <!-- Status skeleton -->
-            <div class="h-3 w-14 rounded bg-border"></div>
-            <!-- Email skeleton -->
-            <div class="h-3 w-36 rounded bg-border"></div>
-            <!-- Phone skeleton -->
-            <div class="h-3 w-24 rounded bg-border"></div>
-            <!-- Date skeleton -->
-            <div class="h-3 w-20 rounded bg-border"></div>
-            <!-- Actions skeleton -->
-            <div class="flex gap-2">
-              <div class="h-7 w-7 rounded bg-border"></div>
-              <div class="h-7 w-7 rounded bg-border"></div>
-            </div>
-          </div>
+          <SkeletonTable :rows="6" :columns="6" />
         </div>
 
         <!-- Error State -->

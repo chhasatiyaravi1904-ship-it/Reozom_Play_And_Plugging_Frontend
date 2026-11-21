@@ -9,6 +9,7 @@ import ErrorState from '@/components/ui/ErrorState.vue'
 import Stepper from '@/components/listing/Stepper.vue'
 import DynamicWorkflow from '@/components/listing/DynamicWorkflow.vue'
 import MapPicker from '@/components/listing/MapPicker.vue'
+import ListingImageManager from '@/components/listing/ListingImageManager.vue'
 import { conditionMatches } from '@/utils/conditions'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useListingStore } from '@/stores/listing'
@@ -31,6 +32,27 @@ const formError = ref<string>('')
 const isSaving = ref<boolean>(false)
 
 const currentStep = computed(() => workflowStore.workflow?.steps.find((s) => s.id === stepId.value))
+
+// "Pictures & Virtual Tours": photos are uploaded straight to the listing by ListingImageManager,
+// so the step's file field is replaced by the uploader and at least one saved photo is required.
+const MEDIA_IMAGES_FIELD = 'property_images'
+const isMediaStep = computed(() => currentStep.value?.kind === 'media')
+const imageCount = ref(0)
+const mediaFormStep = computed(() => {
+  if (!currentStep.value) return currentStep.value
+  return {
+    ...currentStep.value,
+    sections: currentStep.value.sections.map((section) => ({
+      ...section,
+      fields: section.fields.filter((field) => field.id !== MEDIA_IMAGES_FIELD),
+    })),
+  }
+})
+
+function handleImageCount(count: number) {
+  imageCount.value = count
+  if (count > 0) delete errors[MEDIA_IMAGES_FIELD]
+}
 
 const { state: saveState, schedule } = useAutoSave(() =>
   workflowStore.saveStep(listingId.value, stepId.value),
@@ -128,6 +150,7 @@ function validate(): boolean {
   for (const section of currentStep.value.sections) {
     for (const field of section.fields) {
       if (!isFieldVisible(field, section)) continue
+      if (isMediaStep.value && field.id === MEDIA_IMAGES_FIELD) continue
 
       const val = workflowStore.values[field.id]
       const isEmpty = val === undefined || val === null || (typeof val === 'string' && val.trim() === '')
@@ -135,6 +158,10 @@ function validate(): boolean {
         errors[field.id] = `${field.label} is required.`
       }
     }
+  }
+
+  if (isMediaStep.value && imageCount.value === 0) {
+    errors[MEDIA_IMAGES_FIELD] = 'Please upload at least one property photo.'
   }
 
   const hasErrors = Object.keys(errors).length > 0
@@ -175,6 +202,9 @@ async function handleContinue() {
   formError.value = ''
 
   try {
+    // Record how many photos the listing has (the photos themselves are already saved)
+    if (isMediaStep.value) workflowStore.setValue(MEDIA_IMAGES_FIELD, imageCount.value)
+
     const saved = await workflowStore.saveStep(listingId.value, stepId.value)
     if (!saved) {
       formError.value = workflowStore.error || 'Unable to save step. Please check your connection and try again.'
@@ -209,7 +239,8 @@ async function handleContinue() {
       <div class="flex items-end justify-between">
         <div>
           <span class="text-outline-variant font-label-sm text-label-sm uppercase tracking-wider mb-2 block">Create Your Listing</span>
-          <h1 class="text-headline-md font-headline-md text-primary">{{ currentStep?.name || 'Loading...' }}</h1>
+          <h1 v-if="currentStep?.name" class="text-headline-md font-headline-md text-primary">{{ currentStep.name }}</h1>
+          <div v-else class="skeleton h-8 w-64 max-w-full rounded" role="status" aria-label="Loading step"></div>
         </div>
         <div class="text-right">
           <span class="text-primary font-label-md text-label-md block">Step {{ dynamicSteps.findIndex(s => s.id === stepId) + 1 }} of {{ dynamicSteps.length }}</span>
@@ -290,10 +321,6 @@ async function handleContinue() {
           <p v-if="!paymentStatus.payment_available" class="text-sm text-red-700">
             Online payment isn't set up yet. Please contact support.
           </p>
-          <p v-else-if="!paymentStatus.agent_ready" class="text-sm text-amber-800">
-            This package isn't available for payment yet: the agent is still setting up their payout account.
-            Please try again later or contact the agent.
-          </p>
           <p v-else-if="!paymentStatus.can_pay" class="text-sm text-on-surface-variant">
             The listing owner needs to complete this payment.
           </p>
@@ -324,6 +351,23 @@ async function handleContinue() {
         :errors="errors"
         @update="handleMapUpdate"
       />
+
+      <!-- Pictures & Virtual Tours: real uploader (saved to the listing), then tour link + terms -->
+      <div v-else-if="isMediaStep" class="space-y-6">
+        <div :id="MEDIA_IMAGES_FIELD">
+          <ListingImageManager :listing-id="listingId" @count="handleImageCount" />
+          <p v-if="errors[MEDIA_IMAGES_FIELD]" class="mt-2 text-sm text-red-700" role="alert">
+            {{ errors[MEDIA_IMAGES_FIELD] }}
+          </p>
+        </div>
+        <DynamicWorkflow
+          v-if="mediaFormStep"
+          :step="mediaFormStep"
+          :values="workflowStore.values"
+          :errors="errors"
+          @update:field="handleFieldUpdate"
+        />
+      </div>
 
       <DynamicWorkflow
         v-else

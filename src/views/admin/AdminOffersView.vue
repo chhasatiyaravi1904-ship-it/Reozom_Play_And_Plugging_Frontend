@@ -229,7 +229,7 @@ onMounted(() => {
     <!-- Offers Table Card -->
     <BaseCard class="overflow-hidden">
       <div v-if="isLoading" class="p-8">
-        <LoadingState label="Loading offer transactions..." />
+        <LoadingState variant="table" label="Loading offer transactions..." />
       </div>
 
       <div v-else-if="errorMessage" class="p-8">

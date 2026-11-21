@@ -21,6 +21,8 @@ function toApiPayload(payload: Partial<CreatePackagePayload>): Record<string, un
   if (payload.isActive !== undefined) body.is_active = payload.isActive
   if (payload.maxListingProcesses !== undefined) body.max_listing_processes = payload.maxListingProcesses
   if (payload.features !== undefined) body.features = payload.features
+  if (payload.includedFeatures !== undefined) body.included_features = payload.includedFeatures
+  if (payload.excludedFeatures !== undefined) body.excluded_features = payload.excludedFeatures
   return body
 }
 

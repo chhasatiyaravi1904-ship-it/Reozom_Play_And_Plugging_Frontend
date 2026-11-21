@@ -111,7 +111,7 @@ async function handleDeleteInfo(info: MlsInfoItem) {
 
     <div class="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
       <div v-if="mlsStore.detailStatus === 'loading'" class="space-y-3">
-        <div v-for="i in 2" :key="i" class="h-20 animate-pulse rounded-xl bg-surface-raised"></div>
+        <div v-for="i in 2" :key="i" class="skeleton h-20 rounded-xl" aria-hidden="true"></div>
       </div>
 
       <EmptyState

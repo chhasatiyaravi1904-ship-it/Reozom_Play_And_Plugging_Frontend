@@ -14,9 +14,16 @@
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="py-12 text-center text-slate-400">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-r-transparent"></div>
-        <p class="mt-2 text-xs">Loading history...</p>
+      <div v-if="loading" class="mt-6 space-y-6" role="status" aria-label="Loading history">
+        <!-- Timeline-shaped placeholder: dot + two lines per entry -->
+        <div v-for="i in 4" :key="i" class="flex gap-3" aria-hidden="true">
+          <div class="skeleton h-8 w-8 shrink-0 rounded-full"></div>
+          <div class="flex-1 space-y-2 pt-1">
+            <div class="skeleton h-3.5 rounded" :class="i % 2 ? 'w-2/3' : 'w-1/2'"></div>
+            <div class="skeleton h-3 w-1/3 rounded"></div>
+          </div>
+        </div>
+        <span class="sr-only">Loading history…</span>
       </div>
 
       <!-- Timeline -->

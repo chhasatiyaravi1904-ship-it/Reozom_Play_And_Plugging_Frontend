@@ -421,16 +421,16 @@
           <div
             v-for="i in 4"
             :key="i"
-            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 overflow-hidden animate-pulse flex flex-col h-[420px]"
+            class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 overflow-hidden flex flex-col h-[420px]"
           >
-            <div class="h-56 bg-surface-container"></div>
+            <div class="skeleton h-56" aria-hidden="true"></div>
             <div class="p-5 flex-1 flex flex-col justify-between">
               <div class="space-y-3">
-                <div class="h-6 bg-surface-container rounded w-1/2"></div>
-                <div class="h-5 bg-surface-container rounded w-3/4"></div>
-                <div class="h-4 bg-surface-container rounded w-1/3"></div>
+                <div class="skeleton h-6 rounded w-1/2"></div>
+                <div class="skeleton h-5 rounded w-3/4"></div>
+                <div class="skeleton h-4 rounded w-1/3"></div>
               </div>
-              <div class="h-10 bg-surface-container rounded mt-4"></div>
+              <div class="skeleton h-10 rounded mt-4"></div>
             </div>
           </div>
         </div>
@@ -1790,228 +1790,8 @@
             Sellers and Buyers register for free. Listing Agents subscribe to scale their digital
             territory and workflow builder.
           </div>
-          <!-- 3 Pricing Cards Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            <!-- Basic Plan -->
-            <div
-              class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-8 flex flex-col justify-between shadow-xs"
-            >
-              <div>
-                <div
-                  class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider"
-                >
-                  Basic Tier
-                </div>
-                <h3 class="text-headline-md font-headline-md text-primary mt-1">
-                  Independent Agent
-                </h3>
-                <p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
-                  For new Listing Agents establishing regional presence.
-                </p>
-                <div class="my-6">
-                  <span class="font-headline-lg text-4xl text-primary font-bold">$79</span>
-                  <span class="text-on-surface-variant text-body-md">/month</span>
-                </div>
-                <ul class="space-y-3 pt-4 border-t border-outline-variant/20">
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    5 Active Property Listings
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    2 Custom Listing Processes
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Up to 3 Active ZIP Codes
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Standard Escrow Routing
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-on-surface-variant">
-                    <span
-                      class="material-symbols-outlined text-outline-variant text-base mr-2"
-                      data-icon="close"
-                      >close</span
-                    >
-                    Dynamic Builder Webhooks
-                  </li>
-                </ul>
-              </div>
-              <div class="mt-8">
-                <button
-                  class="w-full py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container font-label-lg text-label-lg transition-colors"
-                  onclick="openAuthModal('Subscribe to Basic Plan ($79/mo)')"
-                >
-                  Get Started
-                </button>
-              </div>
-            </div>
-            <!-- Professional Plan (Highlighted) -->
-            <div
-              class="bg-surface-container-lowest rounded-2xl border-2 border-secondary p-8 flex flex-col justify-between shadow-xl relative scale-105"
-            >
-              <div
-                class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 bg-secondary text-surface-container-lowest rounded-full text-label-sm font-label-sm font-bold tracking-wider uppercase"
-              >
-                MOST POPULAR
-              </div>
-              <div>
-                <div
-                  class="text-label-md font-label-md text-secondary uppercase tracking-wider font-bold"
-                >
-                  Professional Tier
-                </div>
-                <h3 class="text-headline-md font-headline-md text-primary mt-1">Growth Broker</h3>
-                <p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
-                  For active Listing Agents handling steady transaction volume.
-                </p>
-                <div class="my-6">
-                  <span class="font-headline-lg text-4xl text-primary font-bold">$199</span>
-                  <span class="text-on-surface-variant text-body-md">/month</span>
-                </div>
-                <ul class="space-y-3 pt-4 border-t border-outline-variant/20">
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    25 Active Property Listings
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    10 Custom Listing Processes
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Dynamic Intake Form Builder
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Up to 15 Active ZIP Codes
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Priority Escrow &amp; MLS Syndication
-                  </li>
-                </ul>
-              </div>
-              <div class="mt-8">
-                <button
-                  class="w-full py-3.5 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest font-label-lg text-label-lg transition-colors shadow-sm"
-                  onclick="openAuthModal('Subscribe to Professional Plan ($199/mo)')"
-                >
-                  Get Started
-                </button>
-              </div>
-            </div>
-            <!-- Enterprise Plan -->
-            <div
-              class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-8 flex flex-col justify-between shadow-xs"
-            >
-              <div>
-                <div
-                  class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider"
-                >
-                  Enterprise Tier
-                </div>
-                <h3 class="text-headline-md font-headline-md text-primary mt-1">
-                  Brokerage &amp; Team
-                </h3>
-                <p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
-                  For high-volume teams and regional brokerage operations.
-                </p>
-                <div class="my-6">
-                  <span class="font-headline-lg text-4xl text-primary font-bold">$449</span>
-                  <span class="text-on-surface-variant text-body-md">/month</span>
-                </div>
-                <ul class="space-y-3 pt-4 border-t border-outline-variant/20">
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Unlimited Active Listings
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Unlimited Custom Processes
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Statewide / Nationwide ZIP Coverage
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Custom API &amp; Webhooks Integration
-                  </li>
-                  <li class="flex items-center text-body-md font-body-md text-primary">
-                    <span
-                      class="material-symbols-outlined text-secondary text-base mr-2"
-                      data-icon="check"
-                      >check</span
-                    >
-                    Dedicated Escrow Officer &amp; Account Manager
-                  </li>
-                </ul>
-              </div>
-              <div class="mt-8">
-                <button
-                  class="w-full py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container font-label-lg text-label-lg transition-colors"
-                  @click="$router.push('/auth/register')"
-                >
-                  Contact Us
-                </button>
-              </div>
-            </div>
-          </div>
+          <!-- Plan cards: active plans from /admin/packages (Included / Not included lists) -->
+          <PricingPlans />
         </div>
       </section>
       <!-- SECTION 12: TRUST & SECURITY -->
@@ -2480,6 +2260,7 @@ import { listPublicServicePackages, type PublicPackageMatch } from '@/services/s
 import { useAuthStore } from '@/stores/auth'
 import { usePublicListingStore } from '@/stores/publicListing'
 import { fetchPublicListingFilters, type PublicListing } from '@/services/publicListingService'
+import PricingPlans from '@/components/public/PricingPlans.vue'
 
 const router = useRouter();
 const authStore = useAuthStore();

@@ -25,6 +25,7 @@ import CountyDetailModal from '@/components/admin/CountyDetailModal.vue'
 import AddEditCountyModal from '@/components/admin/AddEditCountyModal.vue'
 import DeleteCountyModal from '@/components/admin/DeleteCountyModal.vue'
 import PaginationBar from '@/components/ui/PaginationBar.vue'
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 
 const countyStore = useCountyStore()
 const stateStore = useStateStore()
@@ -265,16 +266,7 @@ function toggleSort(field: string) {
       <div class="relative overflow-x-auto">
         <!-- Skeleton Loading -->
         <div v-if="countyStore.status === 'loading'" class="divide-y divide-slate-100">
-          <div v-for="i in 5" :key="i" class="flex items-center justify-between gap-4 p-4 animate-pulse">
-            <div class="h-4 w-36 rounded bg-slate-200"></div>
-            <div class="h-6 w-12 rounded bg-slate-200"></div>
-            <div class="h-4 w-28 rounded bg-slate-200"></div>
-            <div class="h-5 w-9 rounded-full bg-slate-200"></div>
-            <div class="flex gap-2">
-              <div class="h-7 w-7 rounded bg-slate-200"></div>
-              <div class="h-7 w-7 rounded bg-slate-200"></div>
-            </div>
-          </div>
+          <SkeletonTable :rows="5" :columns="6" />
         </div>
 
         <!-- Table View -->

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 import { onMounted, ref, watch } from 'vue'
 import { BriefcaseBusiness, FilterX, RefreshCw } from 'lucide-vue-next'
 import Breadcrumb from '@/components/ui/Breadcrumb.vue'
@@ -110,11 +111,7 @@ function formatPrice(price: string | null): string {
 
       <div class="relative overflow-x-auto">
         <div v-if="status === 'loading' && packages.length === 0" class="divide-y divide-border">
-          <div v-for="i in 5" :key="i" class="flex items-center gap-4 p-4 animate-pulse">
-            <div class="h-4 w-48 rounded bg-border"></div>
-            <div class="h-4 w-32 rounded bg-border"></div>
-            <div class="h-4 w-16 rounded bg-border"></div>
-          </div>
+          <SkeletonTable :rows="5" :columns="6" />
         </div>
 
         <ErrorState

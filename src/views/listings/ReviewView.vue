@@ -193,7 +193,7 @@ async function handleDownload(doc: any) {
   <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 py-4">
     <Stepper :steps="steps" @select="(id) => router.push(routeFor(id))" />
 
-    <LoadingState v-if="workflowStore.status === 'loading'" :rows="4" label="Loading review" />
+    <LoadingState variant="detail" v-if="workflowStore.status === 'loading'" :rows="4" label="Loading review" />
 
     <ErrorState
       v-else-if="workflowStore.status === 'error'"

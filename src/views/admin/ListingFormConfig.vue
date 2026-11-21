@@ -253,6 +253,21 @@
           </div>
         </div>
         
+        <!-- Loading: editor-shaped placeholder (step header + field sections) -->
+        <div v-else-if="formStore.isLoading" class="max-w-4xl mx-auto space-y-6" role="status" aria-label="Loading form">
+          <div class="space-y-3" aria-hidden="true">
+            <div class="skeleton h-7 w-64 max-w-full rounded"></div>
+            <div class="skeleton h-4 w-96 max-w-full rounded"></div>
+          </div>
+          <div v-for="section in 2" :key="section" class="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden" aria-hidden="true">
+            <div class="px-4 py-3 border-b border-neutral-200">
+              <div class="skeleton h-5 w-48 rounded"></div>
+            </div>
+            <SkeletonTable :rows="4" :columns="5" />
+          </div>
+          <span class="sr-only">Loading form…</span>
+        </div>
+
         <div v-else class="flex h-full items-center justify-center">
           <p class="text-neutral-500">Select a step from the sidebar</p>
         </div>
@@ -311,6 +326,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import SkeletonTable from '@/components/ui/skeleton/SkeletonTable.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFormConfigStore } from '../../stores/formConfig'
 import { useProcessStore } from '../../stores/processStore'

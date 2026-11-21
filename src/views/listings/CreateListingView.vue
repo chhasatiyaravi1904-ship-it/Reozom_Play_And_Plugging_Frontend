@@ -160,8 +160,27 @@ onMounted(() => {
 
           <ErrorState v-if="searchError" :description="searchError" />
 
+          <!-- Searching: plan-card placeholders instead of an empty area -->
+          <div
+            v-if="isSearchingZip"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-4 border-t border-border/50"
+            role="status"
+            aria-label="Finding plans for this ZIP"
+          >
+            <div v-for="i in 3" :key="i" class="rounded-2xl border-2 border-border/60 bg-surface p-6 space-y-4" aria-hidden="true">
+              <div class="skeleton h-5 w-2/3 rounded"></div>
+              <div class="skeleton h-8 w-24 rounded"></div>
+              <div class="space-y-2 pt-2">
+                <div v-for="line in 4" :key="line" class="flex items-center gap-2">
+                  <div class="skeleton h-4 w-4 shrink-0 rounded-full"></div>
+                  <div class="skeleton h-3 rounded" :class="line % 2 ? 'w-3/4' : 'w-1/2'"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Packages Container -->
-          <div v-if="availablePackages.length > 0 && !isSearchingZip" class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-4 border-t border-border/50">
+          <div v-else-if="availablePackages.length > 0" class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-4 border-t border-border/50">
             
             <!-- Packages Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

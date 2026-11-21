@@ -13,17 +13,23 @@
         </button>
       </div>
 
-      <!-- Paid plans can only be sold once the agent can receive the money (Stripe payouts) -->
+      <!-- Earnings: sellers pay REOZOM, the agent withdraws their share to their bank -->
       <div
-        v-if="payoutStatus && payoutStatus !== 'ready'"
-        class="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+        v-if="earnings"
+        class="mb-6 flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
       >
-        <span>
-          <strong>Set up payouts to sell your paid plans.</strong>
-          Sellers can't pay for your plans until your Stripe payout account is ready.
-        </span>
-        <RouterLink to="/agent/payouts" class="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700">
-          {{ payoutStatus === 'not_started' ? 'Set up payouts' : 'View payout status' }}
+        <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+          <div>
+            <div class="text-xs font-medium uppercase tracking-wider text-neutral-500">Available to withdraw</div>
+            <div class="text-2xl font-bold text-neutral-900">{{ formatMoney(earnings.balance.available) }}</div>
+          </div>
+          <div class="text-sm text-neutral-500">
+            {{ formatMoney(earnings.balance.pending) }} requested · {{ formatMoney(earnings.balance.withdrawn) }} paid out
+          </div>
+          <div v-if="!earnings.bank_account" class="text-sm text-amber-700">Add your bank details to withdraw.</div>
+        </div>
+        <RouterLink to="/agent/payouts" class="shrink-0 rounded-lg bg-primary px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-active">
+          {{ earnings.bank_account ? 'Withdraw' : 'Add bank details' }}
         </RouterLink>
       </div>
 
@@ -54,9 +60,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
-              <tr v-if="isLoading" class="bg-white">
-                <td colspan="6" class="px-6 py-8 text-center text-sm text-neutral-500">Loading packages...</td>
-              </tr>
+              <SkeletonTableRows v-if="isLoading" :columns="6" cell-class="px-6 py-4 bg-white" />
               <tr v-else-if="filteredPackages.length === 0" class="bg-white">
                 <td colspan="6" class="px-6 py-12 text-center">
                   <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-soft text-primary mb-3">
@@ -238,10 +242,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import SkeletonTableRows from '@/components/ui/skeleton/SkeletonTableRows.vue'
 import { IconPlus, IconSearch, IconX, IconEdit, IconTrash, IconFileText, IconLoader2, IconChevronDown } from '@tabler/icons-vue'
 import { fetchServicePackages, createServicePackage, updateServicePackage, deleteServicePackage, searchZipCodes, syncServicePackageToStripe, type ServicePackage } from '@/services/servicePackageService'
 import StripeSyncBadge from '@/components/payments/StripeSyncBadge.vue'
-import { formatMoney, fetchPayoutAccount, type PayoutAccountStatus } from '@/services/paymentService'
+import { formatMoney, fetchAgentPayouts, type AgentPayoutsOverview } from '@/services/paymentService'
 import { RouterLink } from 'vue-router'
 import { useZipCodeStore } from '@/stores/zipCode'
 import { useProcessStore } from '@/stores/processStore'
@@ -318,11 +323,11 @@ const loadPackages = async () => {
   }
 }
 
-// Payout account status (banner when paid plans can't be sold yet)
-const payoutStatus = ref<PayoutAccountStatus | null>(null)
+// Earnings card (balance + Withdraw); hidden if it can't load
+const earnings = ref<AgentPayoutsOverview | null>(null)
 
 onMounted(() => {
-  fetchPayoutAccount().then((a) => { payoutStatus.value = a.status }).catch(() => { payoutStatus.value = null })
+  fetchAgentPayouts().then((d) => { earnings.value = d }).catch(() => { earnings.value = null })
   loadPackages()
   zipCodeStore.fetchZipCodes()
   processStore.loadProcesses()

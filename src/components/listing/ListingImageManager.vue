@@ -34,8 +34,9 @@
     </div>
 
     <!-- Loading state -->
-    <div v-else-if="isLoading" class="flex justify-center p-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    <div v-else-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="status" aria-label="Loading images">
+      <div v-for="i in 3" :key="i" class="skeleton aspect-[4/3] rounded-xl" aria-hidden="true"></div>
+      <span class="sr-only">Loading images…</span>
     </div>
 
     <!-- Grid -->
@@ -127,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Upload as IconUpload, Image as IconImage, Lock as IconLock, Trash as IconTrash, ChevronLeft as IconChevronLeft, ChevronRight as IconChevronRight } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import * as listingImageService from '@/services/listingImageService'
@@ -137,7 +138,11 @@ const props = defineProps<{
   listingId: number
 }>()
 
+// Lets the "Pictures & Virtual Tours" step know how many photos are saved (it requires at least one)
+const emit = defineEmits<{ (e: 'count', value: number): void }>()
+
 const images = ref<ListingImage[]>([])
+watch(() => images.value.length, (n) => emit('count', n))
 const isLoading = ref(true)
 const isUploading = ref(false)
 const error = ref<string | null>(null)

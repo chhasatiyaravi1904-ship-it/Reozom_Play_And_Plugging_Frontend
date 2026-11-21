@@ -8,10 +8,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="offerStore.loading && offerStore.myOffers.length === 0" class="py-16 text-center">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-r-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">Loading your offers...</p>
-    </div>
+    <LoadingState v-if="offerStore.loading && offerStore.myOffers.length === 0" :rows="3" label="Loading your offers" />
 
     <!-- Empty State -->
     <div v-else-if="offerStore.myOffers.length === 0" class="text-center py-16 bg-white rounded-2xl border border-slate-200">
@@ -308,6 +305,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
 import { useOfferStore } from '@/stores/offer'
 import { downloadOfferDocument, downloadOfferContract, type ListingOffer } from '@/services/offerService'
 

@@ -34,7 +34,7 @@ export interface ListingPaymentStatus {
   package: { id: number; name: string } | null
   can_pay: boolean
   payment_available: boolean
-  /** False until the agent finishes Stripe payout setup (seller money goes to the agent) */
+  /** Always true now: the platform collects seller payments, the agent withdraws later */
   agent_ready: boolean
 }
 
@@ -141,26 +141,62 @@ export interface PayoutAccount {
   available: boolean
 }
 
-export type PayoutStatus = 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled'
+export type PayoutStatus = 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled' | 'rejected'
+
+/** The agent's saved bank account, as the agent sees it (no full numbers). */
+export interface BankAccountSummary {
+  account_holder_name: string
+  bank_name: string
+  account_type: 'checking' | 'savings'
+  account_last4: string
+  routing_last4: string
+  updated_at: string | null
+}
+
+export interface BankAccountInput {
+  account_holder_name: string
+  bank_name: string
+  routing_number: string
+  account_number: string
+  account_number_confirmation: string
+  account_type: 'checking' | 'savings'
+}
+
+/** Bank details on a withdrawal request (full for pending requests, masked after). Admin only. */
+export interface PayoutBankDetails {
+  account_holder_name: string
+  bank_name: string
+  account_type: string
+  routing_number: string
+  account_number: string
+}
 
 export interface PayoutRow {
   id: number
+  method: 'manual' | 'stripe'
   amount: number
   currency: string
   status: PayoutStatus
+  /** Admin's bank transfer reference (paid requests) */
+  reference: string | null
+  /** For rejected requests: the admin's reason */
   failure_message: string | null
+  bank_last4: string | null
   arrival_date: string | null
   paid_at: string | null
+  processed_at: string | null
   created_at: string | null
   agent?: { id: number; name: string; email: string } | null
+  processed_by?: string | null
+  bank_details?: PayoutBankDetails | null
 }
 
 export interface AgentPayoutsOverview {
-  account: PayoutAccount
   currency: string
-  balance: { available: number; pending: number }
-  balance_error: string | null
+  /** available = earned − pending requests − paid withdrawals */
+  balance: { available: number; pending: number; withdrawn: number }
   min_withdrawal: number
+  bank_account: BankAccountSummary | null
   earnings: { sales: number; gross: number; platform_fee: number; processing_fee: number; net: number }
   payouts: PayoutRow[]
 }
@@ -194,9 +230,20 @@ export async function fetchAgentPayouts(): Promise<AgentPayoutsOverview> {
   return res.data as AgentPayoutsOverview
 }
 
+/** Ask an admin to send `amount` to the saved bank account (paid by bank transfer). */
 export async function requestWithdrawal(amount: number): Promise<PayoutRow> {
   const res = await api.post('/agent/payouts', { amount: amount.toFixed(2) })
   return res.data as PayoutRow
+}
+
+export async function cancelWithdrawal(payoutId: number): Promise<PayoutRow> {
+  const res = await api.post(`/agent/payouts/${payoutId}/cancel`)
+  return res.data as PayoutRow
+}
+
+export async function saveBankAccount(input: BankAccountInput): Promise<BankAccountSummary> {
+  const res = await api.put('/agent/bank-account', input)
+  return res.data as BankAccountSummary
 }
 
 // --- Admin ---
@@ -213,11 +260,12 @@ export interface AgentPayoutAccountRow {
   id: number
   name: string
   email: string
-  payout_status: PayoutAccountStatus
-  requirements_due: number
+  has_bank_account: boolean
   gross: number
   net: number
   platform_fee: number
+  available: number
+  pending: number
   withdrawn: number
 }
 
@@ -238,9 +286,27 @@ export async function refundPayment(paymentId: number): Promise<void> {
   await api.post(`/admin/payments/${paymentId}/refund`)
 }
 
-export async function fetchAdminPayouts(status = ''): Promise<{ items: PayoutRow[]; meta: { current_page: number; last_page: number; total: number } }> {
+export interface AdminPayoutsPage {
+  items: PayoutRow[]
+  meta: { current_page: number; last_page: number; total: number }
+  /** Sum of withdrawal requests waiting for a bank transfer */
+  pending_total: number
+}
+
+export async function fetchAdminPayouts(status = ''): Promise<AdminPayoutsPage> {
   const res = await api.get('/admin/payouts', { params: status ? { status } : {} })
-  return res.data as { items: PayoutRow[]; meta: { current_page: number; last_page: number; total: number } }
+  return res.data as AdminPayoutsPage
+}
+
+/** The bank transfer was sent: record its reference (and optionally the date it was sent). */
+export async function markPayoutPaid(payoutId: number, reference: string, paidOn?: string): Promise<PayoutRow> {
+  const res = await api.post(`/admin/payouts/${payoutId}/mark-paid`, { reference, paid_on: paidOn || undefined })
+  return res.data as PayoutRow
+}
+
+export async function rejectPayout(payoutId: number, reason: string): Promise<PayoutRow> {
+  const res = await api.post(`/admin/payouts/${payoutId}/reject`, { reason })
+  return res.data as PayoutRow
 }
 
 export async function fetchAdminPayoutAccounts(): Promise<AgentPayoutAccountRow[]> {

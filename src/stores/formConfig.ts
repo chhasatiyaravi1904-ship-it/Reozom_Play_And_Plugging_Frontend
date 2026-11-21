@@ -14,6 +14,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
   const activeProcessId = ref('')
   const activeStepId = ref('')
   const hasChanges = ref(false)
+  const isLoading = ref(false)
   const saveStatus = ref('idle') // 'idle' | 'saving' | 'saved'
   const lastSaved = ref(null)
 
@@ -32,6 +33,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
   // Actions
   const loadProcess = async (processId: string) => {
     activeProcessId.value = processId
+    isLoading.value = true
     try {
       const response = await getListingProcess(processId)
       // The server keeps the steps in the Reozom shape (locked Map, Pictures, Payment), so use them as-is
@@ -43,6 +45,8 @@ export const useFormConfigStore = defineStore('formConfig', () => {
     } catch (e) {
       console.error('Failed to load process config', e)
       stepsByProcess.value[processId] = []
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -270,6 +274,7 @@ export const useFormConfigStore = defineStore('formConfig', () => {
   }
 
   return {
+    isLoading,
     steps,
     activeProcessId,
     activeStepId,

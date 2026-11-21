@@ -225,7 +225,7 @@ async function handleDelete() {
       </div>
 
       <div class="p-4">
-        <LoadingState v-if="isLoading" label="Loading packages" :rows="3" />
+        <LoadingState variant="table" v-if="isLoading" label="Loading packages" :rows="3" />
         <ErrorState v-else-if="loadError" :description="loadError" @retry="fetchPackages">
           <template #action>
             <BaseButton variant="secondary" @click="fetchPackages">Try again</BaseButton>

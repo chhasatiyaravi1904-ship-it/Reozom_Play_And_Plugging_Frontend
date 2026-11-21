@@ -263,7 +263,7 @@ function removeOption(field: DisclosureField, index: number) {
       </div>
     </div>
 
-    <LoadingState v-if="isLoading" :rows="3" label="Loading disclosure..." />
+    <LoadingState variant="detail" v-if="isLoading" :rows="3" label="Loading disclosure..." />
 
     <BaseCard v-else class="overflow-hidden">
       <!-- Tabs Navigation -->

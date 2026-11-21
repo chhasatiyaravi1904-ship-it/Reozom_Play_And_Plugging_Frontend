@@ -95,7 +95,7 @@ const isCurrentPackage = (pkg: PackageItem) => {
         </p>
       </div>
 
-      <LoadingState v-if="isLoading" label="Loading packages" :rows="3" />
+      <LoadingState variant="cards" v-if="isLoading" label="Loading packages" :rows="3" />
       <ErrorState v-else-if="loadError" :description="loadError" @retry="fetchPackages">
         <template #action>
           <BaseButton variant="secondary" @click="fetchPackages">Try again</BaseButton>

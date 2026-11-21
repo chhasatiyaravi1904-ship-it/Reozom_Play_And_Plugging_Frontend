@@ -244,7 +244,7 @@ const tabLabels = computed<Record<Tab, string>>(() => ({
       <ArrowLeft class="h-4 w-4" /> Back to Listings
     </router-link>
 
-    <LoadingState v-if="isLoading && !listing" :rows="4" label="Loading listing..." />
+    <LoadingState variant="detail" v-if="isLoading && !listing" :rows="4" label="Loading listing..." />
 
     <ErrorState v-else-if="errorMessage && !listing" :description="errorMessage">
       <template #action>

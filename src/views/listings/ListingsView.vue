@@ -457,7 +457,7 @@ function clearAllFilters() {
     </div>
 
     <!-- Loading State -->
-    <LoadingState
+    <LoadingState variant="cards"
       v-if="listingStore.status === 'loading'"
       :rows="3"
       label="Loading your property portfolio..."

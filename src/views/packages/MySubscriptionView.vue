@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import SkeletonTableRows from '@/components/ui/skeleton/SkeletonTableRows.vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import * as packageService from '@/services/packageService'
@@ -101,9 +102,7 @@ onMounted(() => loadHistory())
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100 bg-white">
-              <tr v-if="isLoading && rows.length === 0">
-                <td colspan="5" class="px-6 py-8 text-center text-neutral-500">Loading…</td>
-              </tr>
+              <SkeletonTableRows v-if="isLoading && rows.length === 0" :rows="3" :columns="5" cell-class="px-6 py-4" />
               <tr v-else-if="loadError">
                 <td colspan="5" class="px-6 py-8 text-center text-red-600">
                   {{ loadError }}

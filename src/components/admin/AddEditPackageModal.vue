@@ -4,6 +4,7 @@ import { PackagePlus, PackageCheck, Sparkles } from 'lucide-vue-next'
 import type { PackageItem, CreatePackagePayload } from '@/types/package'
 import Modal from '@/components/ui/Modal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import FeatureListEditor from '@/components/admin/FeatureListEditor.vue'
 import { fetchAdminPermissions } from '@/services/packageService'
 
 const props = defineProps<{
@@ -36,6 +37,9 @@ const form = ref({
   isActive: true,
   maxListingProcesses: '',
   features: [] as string[],
+  // Shown on the website's plan cards
+  includedFeatures: [] as string[],
+  excludedFeatures: [] as string[],
 })
 
 const isManualSlug = ref(false)
@@ -70,6 +74,8 @@ watch(
         isActive: pkg.isActive,
         maxListingProcesses: pkg.maxListingProcesses !== null && pkg.maxListingProcesses !== undefined ? String(pkg.maxListingProcesses) : '',
         features: pkg.features ? [...pkg.features] : [],
+        includedFeatures: [...(pkg.includedFeatures ?? [])],
+        excludedFeatures: [...(pkg.excludedFeatures ?? [])],
       }
       isManualSlug.value = true
     } else {
@@ -83,6 +89,8 @@ watch(
         isActive: true,
         maxListingProcesses: '',
         features: [],
+        includedFeatures: [],
+        excludedFeatures: [],
       }
     }
   },
@@ -148,6 +156,8 @@ function handleSubmit() {
     isActive: Boolean(form.value.isActive),
     maxListingProcesses: form.value.maxListingProcesses.trim() ? Number(form.value.maxListingProcesses) : null,
     features: form.value.features,
+    includedFeatures: form.value.includedFeatures,
+    excludedFeatures: form.value.excludedFeatures,
   })
   handleClose()
 }
@@ -219,6 +229,22 @@ function handleSubmit() {
         ></textarea>
       </div>
 
+      <!-- Website "Listing Agent Packages" card lists -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FeatureListEditor
+          v-model="form.includedFeatures"
+          label="Included (✓ on the website)"
+          tone="included"
+          placeholder="e.g. 5 Active Property Listings"
+        />
+        <FeatureListEditor
+          v-model="form.excludedFeatures"
+          label="Not included (✕ on the website)"
+          tone="excluded"
+          placeholder="e.g. Dynamic Builder Webhooks"
+        />
+      </div>
+
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label class="mb-1.5 block text-xs font-semibold text-fg">Price (USD)</label>
@@ -286,6 +312,9 @@ function handleSubmit() {
         </div>
       </div>
 
+      <!--
+        Hidden for now (on request). The plan's existing permissions are still loaded into
+        form.features and sent back unchanged on save, so editing a plan doesn't clear them.
       <div v-if="availablePermissions.length > 0">
         <label class="mb-2 block text-xs font-semibold text-fg">Features (Permissions)</label>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-border rounded-lg bg-surface">
@@ -295,6 +324,8 @@ function handleSubmit() {
           </label>
         </div>
       </div>
+      -->
+
 
       <div class="mt-6 flex items-center justify-end gap-3 border-t border-border pt-4">
         <BaseButton variant="secondary" type="button" @click="handleClose">Cancel</BaseButton>

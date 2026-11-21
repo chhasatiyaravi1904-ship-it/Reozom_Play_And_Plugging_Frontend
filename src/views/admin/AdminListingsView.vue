@@ -236,7 +236,7 @@ onMounted(() => {
     <!-- Listings Table Card -->
     <BaseCard class="overflow-hidden">
       <div v-if="isLoading" class="p-8">
-        <LoadingState label="Loading listings for moderation..." />
+        <LoadingState variant="table" label="Loading listings for moderation..." />
       </div>
 
       <div v-else-if="errorMessage" class="p-8">

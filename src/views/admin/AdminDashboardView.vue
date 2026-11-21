@@ -159,7 +159,7 @@ onMounted(() => {
               <component :is="stat.icon" class="h-8 w-8 transition-transform duration-300" />
             </span>
 
-            <p v-if="stat.loading" class="h-10 w-20 animate-pulse rounded bg-surface-raised mb-2"></p>
+            <p v-if="stat.loading" class="skeleton h-10 w-20 rounded mb-2" aria-hidden="true"></p>
             <div v-else class="mb-2">
               <p class="text-5xl font-extrabold tracking-tight text-fg tabular-nums transition-colors duration-300 group-hover:text-primary drop-shadow-sm">
                 {{ stat.value ?? '—' }}

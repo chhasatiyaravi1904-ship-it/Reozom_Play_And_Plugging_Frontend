@@ -11,6 +11,10 @@ export interface PackageItem {
   isActive: boolean
   maxListingProcesses?: number | null
   features?: string[]
+  /** Website card: what the plan includes (shown with ✓), in display order */
+  includedFeatures?: string[]
+  /** Website card: what the plan does not include (shown with ✕) */
+  excludedFeatures?: string[]
   stripeSync?: StripeSyncSummary
   createdAt?: string
   updatedAt?: string
@@ -39,6 +43,8 @@ export interface CreatePackagePayload {
   isActive?: boolean
   maxListingProcesses?: number | null
   features?: string[]
+  includedFeatures?: string[]
+  excludedFeatures?: string[]
 }
 
 export interface UpdatePackagePayload extends Partial<CreatePackagePayload> {}

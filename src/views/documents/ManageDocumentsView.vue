@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import SkeletonTableRows from '@/components/ui/skeleton/SkeletonTableRows.vue'
 import { useRoute } from 'vue-router'
 import { IconSearch, IconEye, IconDownload, IconEdit, IconTrash, IconMail, IconRefresh } from '@tabler/icons-vue'
 import RenameDocumentModal from '@/components/document/RenameDocumentModal.vue'
@@ -190,9 +191,7 @@ function formatDate(iso: string | null) {
           </tr>
         </thead>
         <tbody class="divide-y divide-neutral-100 text-sm">
-          <tr v-if="isLoading && documents.length === 0">
-            <td colspan="5" class="px-4 py-8 text-center text-neutral-500">Loading documents...</td>
-          </tr>
+          <SkeletonTableRows v-if="isLoading && documents.length === 0" :columns="5" cell-class="px-4 py-3" />
           <tr v-else-if="documents.length === 0">
             <td colspan="5" class="px-4 py-8 text-center text-neutral-500">No documents found.</td>
           </tr>

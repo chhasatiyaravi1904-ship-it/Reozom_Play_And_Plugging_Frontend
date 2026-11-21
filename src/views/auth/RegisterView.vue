@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ArrowRight, CheckCircle2, Check } from 'lucide-vue-next'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseSelect from '@/components/form/BaseSelect.vue'
@@ -18,6 +18,7 @@ import type { RegisterPayload } from '@/types/auth'
 import type { PackageItem, PackageListResponse } from '@/types/package'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToastStore()
 const { register, status, error } = useAuth()
 
@@ -52,6 +53,7 @@ const packages = ref<PackageItem[]>([])
 const packagesLoading = ref(false)
 const packagesError = ref<string | null>(null)
 const selectedPackageId = ref('')
+const selectedPackage = computed(() => packages.value.find((p) => p.id === selectedPackageId.value) ?? null)
 let packagesFetched = false
 
 function extractPackageItems(payload: PackageListResponse | PackageItem[] | undefined): PackageItem[] {
@@ -69,11 +71,21 @@ async function fetchPackages() {
   try {
     const { data } = await packageService.fetchPackages()
     packages.value = extractPackageItems(data)
+    // A plan picked on the website (?package=) only counts if it is an active plan
+    if (selectedPackageId.value && !packages.value.some((p) => p.id === selectedPackageId.value)) {
+      selectedPackageId.value = ''
+    }
   } catch {
     packagesError.value = 'Unable to load packages right now.'
   } finally {
     packagesLoading.value = false
   }
+}
+
+// "Get Started" on the website's plan cards opens /auth/register?type=agent&package=<id>
+if (route.query.type === 'agent') {
+  form.userType = 'agent'
+  if (typeof route.query.package === 'string') selectedPackageId.value = route.query.package
 }
 
 watch(
@@ -185,6 +197,13 @@ async function handleSubmit() {
 
       <form class="mt-8 flex flex-col gap-4" @submit.prevent="handleSubmit">
         <BaseSelect v-model="form.userType" label="I am a" :options="userTypeOptions" required />
+        <!-- Plan chosen on the website's "Listing Agent Packages" section -->
+        <p
+          v-if="form.userType === 'agent' && selectedPackage"
+          class="-mt-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-fg"
+        >
+          Selected plan: <strong>{{ selectedPackage.name }}</strong>
+        </p>
 
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

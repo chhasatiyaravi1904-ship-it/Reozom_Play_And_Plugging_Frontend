@@ -265,7 +265,7 @@ onMounted(loadSettings)
       </div>
     </BaseCard>
 
-    <LoadingState v-if="isLoading && !data" :rows="4" label="Loading payments" />
+    <LoadingState variant="table" v-if="isLoading && !data" :rows="4" label="Loading payments" />
 
     <BaseCard v-else-if="loadError" class="p-6 text-center text-sm text-rose-600">{{ loadError }}</BaseCard>
 

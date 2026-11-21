@@ -164,7 +164,7 @@ onMounted(async () => {
               </p>
             </div>
 
-            <LoadingState
+            <LoadingState variant="lines"
               v-if="workflowStore.status === 'loading'"
               :rows="4"
               class="mt-5 border-t border-border pt-4"
