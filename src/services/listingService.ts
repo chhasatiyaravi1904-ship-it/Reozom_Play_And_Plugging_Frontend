@@ -26,7 +26,7 @@ export const publishListing = (listingId: number) => {
 }
 
 export const updateListingPrice = (listingId: number, price: number, reason?: string) => {
-  return api.post<{ success: boolean; data: ListingSummary; message: string }>(`/listings/${listingId}/price`, {
+  return api.post<ListingSummary>(`/listings/${listingId}/price`, {
     price,
     reason,
   })
@@ -36,7 +36,7 @@ export const updateListingRemarks = (
   listingId: number,
   payload: { listing_title?: string; remarks?: string; directions?: string },
 ) => {
-  return api.put<{ success: boolean; data: ListingSummary; message: string }>(
+  return api.put<ListingSummary>(
     `/listings/${listingId}/remarks`,
     payload,
   )
@@ -51,7 +51,7 @@ export const updateListingCompensation = (
     seller_concessions?: number
   },
 ) => {
-  return api.put<{ success: boolean; data: ListingSummary; message: string }>(
+  return api.put<ListingSummary>(
     `/listings/${listingId}/compensation`,
     payload,
   )

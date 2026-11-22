@@ -84,7 +84,12 @@ async function goNext() {
     await authStore.loadCurrentUser()
   }
   if (p?.type === 'listing' && p.listing_id) {
-    router.push(`${base.value}/listings/${p.listing_id}/step/step_payment`)
+    // Paid = published: show the listing; otherwise back to the Payment step to try again
+    router.push(
+      p.status === 'paid'
+        ? `${base.value}/listings/${p.listing_id}`
+        : `${base.value}/listings/${p.listing_id}/step/step_payment`,
+    )
   } else if (p?.type === 'agent_package') {
     router.push(p.status === 'paid' ? { name: 'agent-dashboard' } : { name: 'agent-subscription' })
   } else {
@@ -113,10 +118,10 @@ onBeforeUnmount(() => {
         <h1 class="mt-4 text-lg font-semibold text-fg">Payment successful</h1>
         <p class="mt-1 text-sm text-fg-muted">
           {{ paymentService.formatMoney(payment?.amount, payment?.currency) }} paid.
-          {{ payment?.type === 'agent_package' ? 'Your package is now active.' : 'You can now publish your listing.' }}
+          {{ payment?.type === 'agent_package' ? 'Your package is now active.' : 'Your listing is now published.' }}
         </p>
         <BaseButton class="mt-6" block @click="goNext">
-          {{ payment?.type === 'listing' ? 'Back to my listing' : 'Go to dashboard' }}
+          {{ payment?.type === 'listing' ? 'View my listing' : 'Go to dashboard' }}
         </BaseButton>
       </template>
 

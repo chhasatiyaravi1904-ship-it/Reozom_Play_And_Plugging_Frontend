@@ -111,8 +111,8 @@ export const useListingStore = defineStore('listing', () => {
     status.value = 'loading'
     try {
       const res = await listingService.updateListingPrice(listingId, price, reason)
-      activeListing.value = res.data.data
-      return res.data.data
+      activeListing.value = res.data
+      return res.data
     } finally {
       status.value = 'idle'
     }
@@ -125,8 +125,8 @@ export const useListingStore = defineStore('listing', () => {
     status.value = 'loading'
     try {
       const res = await listingService.updateListingRemarks(listingId, payload)
-      activeListing.value = res.data.data
-      return res.data.data
+      activeListing.value = res.data
+      return res.data
     } finally {
       status.value = 'idle'
     }
@@ -144,8 +144,8 @@ export const useListingStore = defineStore('listing', () => {
     status.value = 'loading'
     try {
       const res = await listingService.updateListingCompensation(listingId, payload)
-      activeListing.value = res.data.data
-      return res.data.data
+      activeListing.value = res.data
+      return res.data
     } finally {
       status.value = 'idle'
     }

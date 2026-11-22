@@ -29,16 +29,9 @@ export function useListingSteps(listingId: number) {
     () => workflowStore.workflow?.steps.some((s) => s.type === 'disclosure') ?? false,
   )
 
-  const milestoneSteps = computed(() => [
-    ...(hasDisclosureSteps.value ? [] : [{ id: 'disclosures', label: 'Disclosures' }]),
-    { id: 'documents', label: 'Documents' },
-    { id: 'review', label: 'Review & Submit' },
-  ])
-
-  const stepIds = computed(() => [
-    ...dynamicSteps.value,
-    ...milestoneSteps.value,
-  ])
+  // The wizard is only the process steps (disclosures are managed as process steps);
+  // the last step submits the listing
+  const stepIds = computed(() => dynamicSteps.value)
 
   const currentStepId = computed(() => {
     if (route?.params?.stepId) {

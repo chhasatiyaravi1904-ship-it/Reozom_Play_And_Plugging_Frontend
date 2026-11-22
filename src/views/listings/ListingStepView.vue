@@ -17,6 +17,7 @@ import { useListingSteps } from '@/composables/useListingSteps'
 import { useAutoSave } from '@/composables/useAutoSave'
 import type { FieldValue } from '@/types/field'
 import * as paymentService from '@/services/paymentService'
+import { useToastStore } from '@/stores/toast'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,7 +26,8 @@ const stepId = computed(() => String(route.params.stepId))
 
 const workflowStore = useWorkflowStore()
 const listingStore = useListingStore()
-const { steps, routeFor, dynamicSteps, hasDisclosureSteps } = useListingSteps(listingId.value)
+const toast = useToastStore()
+const { steps, routeFor, dynamicSteps } = useListingSteps(listingId.value)
 
 const errors = reactive<Record<string, string>>({})
 const formError = ref<string>('')
@@ -124,6 +126,16 @@ const isLastDynamicStep = computed(() => {
   return index === dynamicSteps.value.length - 1
 })
 
+// A paid service package publishes the listing when the payment is confirmed, so the last step
+// needs no "Submit Listing" button then (it stays for free packages)
+const isListingPublished = computed(() => listingStore.activeListing?.status === 'published')
+const paymentPublishes = computed(
+  () => currentStep.value?.kind === 'payment' && isLastDynamicStep.value && !!paymentStatus.value?.required,
+)
+const listingOverviewPath = computed(
+  () => `${route.path.startsWith('/agent') ? '/agent' : ''}/listings/${listingId.value}`,
+)
+
 watch(stepId, () => {
   Object.keys(errors).forEach((key) => delete errors[key])
   formError.value = ''
@@ -215,10 +227,18 @@ async function handleContinue() {
     const next = dynamicSteps.value[index + 1]
     if (next) {
       router.push(routeFor(next.id))
-    } else {
-      // All steps done: disclosures were steps of this process, so go to Documents; otherwise the old Disclosures page
-      router.push(routeFor(hasDisclosureSteps.value ? 'documents' : 'disclosures'))
+      return
     }
+
+    // Last process step: submit the listing
+    const submitted = await listingStore.submitListing(listingId.value)
+    if (!submitted) {
+      formError.value = listingStore.error || 'Unable to submit your listing. Please try again.'
+      return
+    }
+    toast.success('Listing submitted successfully.')
+    const basePath = route.path.startsWith('/agent') ? '/agent' : ''
+    router.push(`${basePath}/listings/${listingId.value}/submit`)
   } catch (err: any) {
     formError.value = err?.response?.data?.message || err?.message || 'Failed to save step.'
   } finally {
@@ -311,12 +331,21 @@ async function handleContinue() {
           class="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800"
         >
           <span class="material-symbols-outlined text-green-600">check_circle</span>
-          <div class="text-sm font-medium">Paid. Continue to finish your listing.</div>
+          <div class="text-sm font-medium flex-1">
+            {{ isListingPublished ? 'Paid. Your listing is published.' : 'Paid. Your listing will be published shortly.' }}
+          </div>
+          <button
+            type="button"
+            class="text-sm font-bold underline hover:no-underline"
+            @click="router.push(listingOverviewPath)"
+          >
+            View listing
+          </button>
         </div>
 
         <div v-else-if="paymentStatus?.required" class="space-y-3">
           <p class="text-body-md font-body-md text-on-surface-variant">
-            Pay for your service package to publish your listing. You'll pay on Stripe's secure page and come back here.
+            Pay for your service package to publish your listing. You'll pay on Stripe's secure page, and your listing is published as soon as the payment is confirmed.
           </p>
           <p v-if="!paymentStatus.payment_available" class="text-sm text-red-700">
             Online payment isn't set up yet. Please contact support.
@@ -385,13 +414,14 @@ async function handleContinue() {
         >
           ← Back
         </button>
-        <button 
-          @click="handleContinue" 
+        <button
+          v-if="!paymentPublishes"
+          @click="handleContinue"
           :disabled="isSaving"
           class="px-8 h-12 rounded-lg bg-secondary hover:bg-on-secondary-container text-surface-container-lowest transition-colors font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span v-if="isSaving" class="inline-block animate-spin mr-1">⌛</span>
-          {{ isSaving ? 'Saving...' : (isLastDynamicStep ? (hasDisclosureSteps ? 'Continue to Documents' : 'Continue to Disclosures') : 'Save & Continue') }}
+          {{ isSaving ? 'Saving...' : (isLastDynamicStep ? 'Submit Listing' : 'Save & Continue') }}
           <span v-if="!isSaving" class="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>
