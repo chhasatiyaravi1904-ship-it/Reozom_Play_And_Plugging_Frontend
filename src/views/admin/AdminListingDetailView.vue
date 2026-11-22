@@ -15,6 +15,7 @@ import { useToastStore } from '@/stores/toast'
 import * as adminListingService from '@/services/adminListingService'
 import * as offerApi from '@/services/offerService'
 import * as documentService from '@/services/documentService'
+import * as eunoService from '@/services/eunoService'
 import type { AdminListingDetail } from '@/services/adminListingService'
 
 /** Admin listing detail & moderation (full page; replaces the previous popup). */
@@ -26,6 +27,22 @@ const listingId = computed(() => Number(route.params.id))
 const listing = ref<AdminListingDetail | null>(null)
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
+
+// Admin "regenerate and send documents for signature" (original Reozom). Without `replace` an open
+// request is kept and reused; with it, the open request is canceled and a new one is sent.
+const isSendingForSignature = ref(false)
+async function handleSendForSignature(replace: boolean) {
+  if (replace && !confirm('Cancel the open signing request (if any) and send the documents again to every signer?')) return
+  isSendingForSignature.value = true
+  try {
+    await eunoService.initiateListingSigning(listingId.value, replace)
+    toast.success(replace ? 'Documents sent again for signature.' : 'Documents are out for signature.')
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || 'Could not send the documents for signature.')
+  } finally {
+    isSendingForSignature.value = false
+  }
+}
 const isActionLoading = ref(false)
 
 type Tab = 'overview' | 'answers' | 'documents' | 'media' | 'offers'
@@ -387,6 +404,18 @@ const tabLabels = computed<Record<Tab, string>>(() => ({
 
       <!-- Documents -->
       <BaseCard v-if="activeTab === 'documents'" class="p-5 space-y-3">
+        <!-- Admin: regenerate the listing documents and send them out for signature (original Reozom) -->
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+          <p class="text-xs text-fg-muted">Send the unsigned listing documents to the owner and additional signers.</p>
+          <div class="flex gap-2">
+            <BaseButton size="sm" :loading="isSendingForSignature" @click="handleSendForSignature(false)">
+              Send for signature
+            </BaseButton>
+            <BaseButton size="sm" variant="secondary" :loading="isSendingForSignature" @click="handleSendForSignature(true)">
+              Cancel &amp; resend
+            </BaseButton>
+          </div>
+        </div>
         <div v-if="!listing.documents?.length" class="text-fg-muted text-sm italic">No documents yet.</div>
         <div
           v-for="doc in listing.documents"

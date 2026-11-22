@@ -149,3 +149,41 @@ export const fetchManagedDocuments = (params: {
 export const regenerateDocument = (listingId: number, documentId: string | number) => {
   return api.post(`/listings/${listingId}/documents/${documentId}/regenerate`)
 }
+
+// --- My Documents: the user's own library, not tied to a listing (original Reozom AllDocument) ---
+
+export interface UserDocument {
+  id: number
+  name: string
+  original_name: string
+  mime_type: string
+  size: number
+  /** upload, or addendum (a signed addendum shared with the buyer) */
+  source: 'upload' | 'addendum' | string
+  listing_id: number | null
+  listing_address: string | null
+  created_at: string | null
+}
+
+export const fetchMyDocuments = async (): Promise<UserDocument[]> => {
+  const res = await api.get('/me/documents')
+  return ((res.data as any)?.data ?? res.data) as UserDocument[]
+}
+
+export const uploadMyDocument = async (file: File, name?: string): Promise<UserDocument> => {
+  const form = new FormData()
+  form.append('file', file)
+  if (name) form.append('name', name)
+  const res = await api.post('/me/documents', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+  return ((res.data as any)?.data ?? res.data) as UserDocument
+}
+
+export const renameMyDocument = (id: number, name: string) => api.put(`/me/documents/${id}`, { name })
+
+export const deleteMyDocument = (id: number) => api.delete(`/me/documents/${id}`)
+
+export const downloadMyDocument = (id: number, inline = false) =>
+  api.get(`/me/documents/${id}/download${inline ? '?inline=1' : ''}`, { responseType: 'blob' })
+
+export const sendMyDocumentToEmail = (id: number, emails: string[], note?: string) =>
+  api.post(`/me/documents/${id}/send-email`, { emails, note })

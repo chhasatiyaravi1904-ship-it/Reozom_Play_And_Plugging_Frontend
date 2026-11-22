@@ -53,6 +53,9 @@ const workflowStore = useWorkflowStore()
 const authStore = useAuthStore()
 const { steps, routeFor } = useListingSteps(listingId)
 
+// Sellers use /listings/..., agents /agent/listings/...
+const documentsPath = `${route.path.startsWith('/agent') ? '/agent' : ''}/listings/${listingId}/documents`
+
 const isOwner = computed(() => {
   const l = listingStore.activeListing
   if (!l) return false
@@ -796,7 +799,7 @@ function formatPhotoUrl(url: string | null | undefined): string {
             <p class="text-xs text-fg-muted">Access formal signed agreements, Seller's Disclosure Statements, and Lead-Based Paint notices.</p>
           </div>
           <RouterLink
-            :to="`/agent/listings/${listingId}/documents`"
+            :to="documentsPath"
             class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition shadow-xs"
           >
             <FileCheck class="h-4 w-4" />
@@ -804,23 +807,8 @@ function formatPhotoUrl(url: string | null | undefined): string {
           </RouterLink>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="p-5 rounded-xl border border-border bg-surface-raised/40 flex items-start gap-4">
-            <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <FileText class="h-5 w-5" />
-            </div>
-            <div>
-              <h4 class="text-sm font-bold text-fg">Statutory Seller's Disclosure</h4>
-              <p class="text-xs text-fg-muted mt-1">Review answers provided for water, roofing, structural, electrical, and environmental questions.</p>
-              <RouterLink
-                :to="`/agent/listings/${listingId}/disclosures`"
-                class="inline-flex items-center gap-1 text-xs font-bold text-primary mt-2 hover:underline"
-              >
-                Open Disclosures Form <ArrowRight class="h-3 w-3" />
-              </RouterLink>
-            </div>
-          </div>
-
+        <!-- Disclosures are steps of the listing process, so there is no separate disclosures form here -->
+        <div class="grid grid-cols-1 gap-4">
           <div class="p-5 rounded-xl border border-border bg-surface-raised/40 flex items-start gap-4">
             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0">
               <ShieldCheck class="h-5 w-5" />
@@ -829,7 +817,7 @@ function formatPhotoUrl(url: string | null | undefined): string {
               <h4 class="text-sm font-bold text-fg">Digital E-Sign Agreements</h4>
               <p class="text-xs text-fg-muted mt-1">Review legal purchase contracts, agency agreements, and audit certificate trails.</p>
               <RouterLink
-                :to="`/agent/listings/${listingId}/documents`"
+                :to="documentsPath"
                 class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2 hover:underline"
               >
                 View Signed Contracts <ArrowRight class="h-3 w-3" />

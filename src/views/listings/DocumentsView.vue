@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   AlertTriangle,
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   Download,
   Edit3,
@@ -26,14 +25,11 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
-import Stepper from '@/components/listing/Stepper.vue'
 import Modal from '@/components/ui/Modal.vue'
 import EunoSignModal from '@/components/document/EunoSignModal.vue'
 import SendToEmailModal from '@/components/document/SendToEmailModal.vue'
 import RenameDocumentModal from '@/components/document/RenameDocumentModal.vue'
 import { useDocumentStore } from '@/stores/document'
-import { useListingSteps } from '@/composables/useListingSteps'
-import { useWorkflowStore } from '@/stores/workflow'
 import { useToastStore } from '@/stores/toast'
 import * as documentService from '@/services/documentService'
 import * as eunoService from '@/services/eunoService'
@@ -46,8 +42,6 @@ const toast = useToastStore()
 const listingId = computed(() => Number(route.params.listingId || route.params.id))
 
 const documentStore = useDocumentStore()
-const workflowStore = useWorkflowStore()
-const { steps, routeFor, dynamicSteps, hasDisclosureSteps } = useListingSteps(listingId.value)
 
 // Upload Form State
 const selectedDocType = ref('deed')
@@ -120,6 +114,13 @@ const hasActiveAgreement = computed(() =>
     eunoAgreement.value?.status === 'inprogress',
   ),
 )
+
+// Agent listings have no statutory listing documents to sign (original Reozom)
+const isAgentListing = computed(() => !!eunoAgreement.value?.is_agent_listing)
+
+// Signers sign in order (owner first, then additional signers): only the next one may sign
+const canSignNow = computed(() => !hasActiveAgreement.value || eunoAgreement.value?.can_sign_now !== false)
+const signingOrder = computed(() => eunoAgreement.value?.signers ?? [])
 
 async function checkEunoStatus(silent = false) {
   if (!listingId.value) return
@@ -299,31 +300,26 @@ async function handleRemove(doc: DocumentRequirement) {
 onMounted(() => {
   if (listingId.value) {
     documentStore.fetchDocuments(listingId.value)
-    // Needed for the step bar and to know whether disclosures are steps of this process
-    if (!workflowStore.workflow || workflowStore.workflow.listingId !== listingId.value) workflowStore.fetchWorkflow(listingId.value)
     checkEunoStatus(true)
   }
 })
 
-function handleBack() {
-  // With disclosure steps there is no separate Disclosures page: go back to the last listing step
-  const lastStep = dynamicSteps.value[dynamicSteps.value.length - 1]
-  router.push(routeFor(hasDisclosureSteps.value && lastStep ? lastStep.id : 'disclosures'))
-}
-
-function handleContinue() {
-  if (!allStatutorySigned.value) {
-    if (!confirm('Some statutory disclosures are still unsigned. Do you want to proceed to review anyway?')) {
-      return
-    }
-  }
-  router.push(routeFor('review'))
-}
+// Documents is a listing management page, as in Reozom (Edit Listing → Documents), not a wizard step
+const listingOverviewPath = computed(
+  () => `${route.path.startsWith('/agent') ? '/agent' : ''}/listings/${listingId.value}`,
+)
 </script>
 
 <template>
   <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 py-4">
-    <Stepper :steps="steps" @select="(id) => router.push(routeFor(id))" />
+    <button
+      type="button"
+      class="inline-flex w-fit items-center gap-1 text-sm font-medium text-primary hover:underline"
+      @click="router.push(listingOverviewPath)"
+    >
+      <ArrowLeft class="h-4 w-4" />
+      Back to listing
+    </button>
 
     <!-- Top Header matching Reozom -->
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
@@ -384,10 +380,15 @@ function handleContinue() {
             </p>
             <p>Documents have NOT been sent out for signature.</p>
             <p class="text-fg-muted">You can send them clicking on Sign Documents (below).</p>
-            <p v-if="eunoAgreement?.signers?.length" class="pt-1">
-              <span class="font-semibold">Signers:</span>
-              {{ eunoAgreement.signers.map((s) => `${s.name} (${s.email})`).join(', ') }}
-            </p>
+            <template v-if="signingOrder.length > 1">
+              <p class="pt-1">
+                You must sign the documents first. After you sign, the documents are sent to each
+                Additional Signer, one after another, in this order:
+              </p>
+              <ol class="list-decimal pl-5">
+                <li v-for="s in signingOrder" :key="s.email">{{ s.name }} — <strong>{{ s.email }}</strong></li>
+              </ol>
+            </template>
           </div>
 
           <BaseButton
@@ -415,14 +416,25 @@ function handleContinue() {
             </p>
             <p>Documents have been sent out for signature.</p>
             <p class="text-fg-muted">You can check status of documents by clicking on Audit Report (below).</p>
-            <p v-if="eunoAgreement?.signers?.length" class="pt-1">
-              <span class="font-semibold">Signers:</span>
-              {{ eunoAgreement.signers.map((s) => `${s.name} (${s.email})`).join(', ') }}
+            <template v-if="signingOrder.length">
+              <p class="pt-1 font-semibold">Signing order:</p>
+              <ol class="list-decimal pl-5">
+                <li v-for="s in signingOrder" :key="s.email">
+                  {{ s.name }} — <strong>{{ s.email }}</strong>
+                  <span v-if="s.signed" class="text-emerald-700 dark:text-emerald-300"> · Signed</span>
+                  <span v-else-if="s.is_next" class="font-semibold"> · Signing now</span>
+                  <span v-else class="text-fg-muted"> · Waiting</span>
+                </li>
+              </ol>
+            </template>
+            <p v-if="!canSignNow && eunoAgreement?.next_signer" class="pt-1 font-semibold">
+              Waiting for {{ eunoAgreement.next_signer }} to sign.
             </p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
             <BaseButton
+              v-if="canSignNow"
               variant="primary"
               size="md"
               class="font-bold px-5 shadow-md"
@@ -500,8 +512,17 @@ function handleContinue() {
         </div>
       </div>
 
+      <!-- Agent listings: no statutory documents to sign (original Reozom) -->
+      <div
+        v-if="isAgentListing"
+        class="rounded-xl border border-border bg-surface-raised p-4 text-xs text-fg-muted"
+      >
+        This listing was created by an agent, so there are no listing documents to sign.
+        You can upload and manage your own documents below.
+      </div>
+
       <!-- Section: Statutory Documents List (Matching Reozom documentsList) -->
-      <BaseCard class="p-6">
+      <BaseCard v-else class="p-6">
         <div class="mb-4 flex items-center justify-between border-b border-border pb-3">
           <div>
             <h2 class="text-base font-semibold text-fg">Statutory Disclosures & Agreements</h2>
@@ -616,6 +637,7 @@ function handleContinue() {
 
                 <!-- Sign Button (Primary Blue matching Reozom) -->
                 <BaseButton
+                  v-if="canSignNow"
                   size="sm"
                   variant="secondary"
                   class="text-xs font-semibold px-4 border-primary/50 text-primary hover:bg-primary/10"
@@ -809,19 +831,6 @@ function handleContinue() {
           </div>
         </div>
       </BaseCard>
-
-      <!-- Bottom Navigation -->
-      <div class="flex items-center justify-between border-t border-border pt-4">
-        <BaseButton variant="secondary" @click="handleBack">
-          <ArrowLeft class="mr-2 h-4 w-4" />
-          Back to Disclosures
-        </BaseButton>
-
-        <BaseButton variant="primary" @click="handleContinue">
-          Save & Continue to Review
-          <ArrowRight class="ml-2 h-4 w-4" />
-        </BaseButton>
-      </div>
     </div>
 
     <!-- Reozom EunoDoc Embedded Signing Modal (documentsView.blade.php) -->

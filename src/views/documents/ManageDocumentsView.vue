@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { IconSearch, IconEye, IconDownload, IconEdit, IconTrash, IconMail, IconRefresh } from '@tabler/icons-vue'
 import RenameDocumentModal from '@/components/document/RenameDocumentModal.vue'
 import SendToEmailModal from '@/components/document/SendToEmailModal.vue'
+import MyDocumentsSection from '@/components/document/MyDocumentsSection.vue'
 import * as documentService from '@/services/documentService'
 import type { ManagedDocument } from '@/services/documentService'
 import { useAuthStore } from '@/stores/auth'
@@ -144,6 +145,11 @@ function formatDate(iso: string | null) {
         Signing and uploads happen on each listing's Documents page.
       </p>
     </div>
+
+    <!-- The user's own library, as Reozom's Manage Documents -->
+    <MyDocumentsSection class="mb-6" />
+
+    <h2 class="text-base font-semibold text-neutral-900 mb-3">Listing Documents</h2>
 
     <!-- Filters -->
     <div class="flex flex-col gap-3 md:flex-row md:items-center mb-4">

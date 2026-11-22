@@ -84,10 +84,11 @@ async function goNext() {
     await authStore.loadCurrentUser()
   }
   if (p?.type === 'listing' && p.listing_id) {
-    // Paid = published: show the listing; otherwise back to the Payment step to try again
+    // Paid = published: on to the listing documents to sign (Reozom: "Please sign documents below");
+    // otherwise back to the Payment step to try again
     router.push(
       p.status === 'paid'
-        ? `${base.value}/listings/${p.listing_id}`
+        ? `${base.value}/listings/${p.listing_id}/documents`
         : `${base.value}/listings/${p.listing_id}/step/step_payment`,
     )
   } else if (p?.type === 'agent_package') {
@@ -118,10 +119,10 @@ onBeforeUnmount(() => {
         <h1 class="mt-4 text-lg font-semibold text-fg">Payment successful</h1>
         <p class="mt-1 text-sm text-fg-muted">
           {{ paymentService.formatMoney(payment?.amount, payment?.currency) }} paid.
-          {{ payment?.type === 'agent_package' ? 'Your package is now active.' : 'Your listing is now published.' }}
+          {{ payment?.type === 'agent_package' ? 'Your package is now active.' : 'Your listing is now published. Please sign your listing documents.' }}
         </p>
         <BaseButton class="mt-6" block @click="goNext">
-          {{ payment?.type === 'listing' ? 'View my listing' : 'Go to dashboard' }}
+          {{ payment?.type === 'listing' ? 'Sign listing documents' : 'Go to dashboard' }}
         </BaseButton>
       </template>
 

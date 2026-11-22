@@ -230,6 +230,20 @@
             Purchase Agreement Ratified & Under Contract
           </div>
           <button
+            @click="handleEunoSignOffer(offer)"
+            class="px-4 py-2 rounded-xl border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-semibold transition"
+            title="Open your EunoDoc signing page for the purchase agreement"
+          >
+            Sign Purchase Agreement
+          </button>
+          <button
+            @click="handleResendOfferSigning(offer)"
+            class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition"
+            title="Cancel the current signing request and send a new one to every signer"
+          >
+            Resend for signature
+          </button>
+          <button
             @click="handleDownloadContract(offer)"
             class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
             title="Download Executed Purchase Agreement Contract (PDF)"
@@ -240,6 +254,9 @@
             Download Executed Contract (PDF)
           </button>
         </div>
+
+        <!-- Addendum/Amendment to the purchase agreement (original Reozom Addendum) -->
+        <OfferAddendums v-if="offer.status === 'accepted'" :offer-id="offer.id" class="mt-4 pt-4 border-t border-slate-100" />
       </div>
     </div>
 
@@ -389,6 +406,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import OfferAddendums from '@/components/offers/OfferAddendums.vue'
 import { useOfferStore } from '@/stores/offer'
 import { downloadOfferDocument, downloadOfferContract, type ListingOffer } from '@/services/offerService'
 import * as eunoService from '@/services/eunoService'
@@ -573,9 +591,36 @@ const handleAccept = async (offer: ListingOffer) => {
       `Accept this offer of $${Number(offer.offer_amount).toLocaleString()}?\n\nPer Reozom workflow rules, this listing will transition to '${statusTarget}'.`,
     )
   ) {
-    await offerStore.accept(offer.id)
-    await offerStore.fetchListingOffers(props.listingId)
-    emit('listingUpdated')
+    // Reozom sends the person who accepted straight to their purchase agreement signing page.
+    // Open the tab now (browsers block pop-ups opened after an await) and point it at the link later.
+    const signingWindow = window.open('', '_blank')
+    try {
+      await offerStore.accept(offer.id)
+      await offerStore.fetchListingOffers(props.listingId)
+      emit('listingUpdated')
+      const res = await eunoService.initiateOfferSigning(offer.id)
+      if (res.signing_url && signingWindow) {
+        signingWindow.location.href = res.signing_url
+      } else {
+        signingWindow?.close()
+      }
+    } catch (err: any) {
+      signingWindow?.close()
+      alert(err?.response?.data?.message || 'The offer was not accepted or the signing page could not be opened.')
+    }
+  }
+}
+
+// Cancel the open purchase agreement and send a new one (Reozom: admin regenerate)
+const handleResendOfferSigning = async (offer: ListingOffer) => {
+  if (!confirm('Send the purchase agreement again? The current signing request will be canceled and every signer gets a new one.')) {
+    return
+  }
+  try {
+    const res = await eunoService.resendOfferSigning(offer.id)
+    if (res.signing_url) window.open(res.signing_url, '_blank')
+  } catch (err: any) {
+    alert(err?.response?.data?.message || 'Failed to resend the purchase agreement.')
   }
 }
 

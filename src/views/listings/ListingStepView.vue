@@ -337,6 +337,13 @@ async function handleContinue() {
           <button
             type="button"
             class="text-sm font-bold underline hover:no-underline"
+            @click="router.push(`${listingOverviewPath}/documents`)"
+          >
+            Sign documents
+          </button>
+          <button
+            type="button"
+            class="text-sm font-bold underline hover:no-underline"
             @click="router.push(listingOverviewPath)"
           >
             View listing

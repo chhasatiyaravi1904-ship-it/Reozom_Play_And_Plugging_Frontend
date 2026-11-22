@@ -54,7 +54,10 @@ async function syncActive() {
   if (!active.value) return
   isSyncing.value = true
   try {
-    await eunoService.getListingSigningStatus(active.value.listing_id)
+    const { kind, offer_id: offerId, listing_id: listingId } = active.value
+    if (kind === 'purchase_agreement' && offerId) await eunoService.getOfferSigningStatus(offerId)
+    else if (kind === 'addendum' && offerId) await eunoService.fetchOfferAddendums(offerId)
+    else await eunoService.getListingSigningStatus(listingId)
   } catch {
     // Signers who can't view the listing just rely on the pending list below
   } finally {
@@ -84,6 +87,8 @@ async function handleSignClose() {
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-semibold text-fg">{{ item.listing_address || `Listing #${item.listing_id}` }}</div>
           <div class="text-xs text-fg-muted">
+            <span v-if="item.kind === 'purchase_agreement'" class="font-semibold">Purchase Agreement · </span>
+            <span v-else-if="item.kind === 'addendum'" class="font-semibold">Addendum · </span>
             {{ item.document_name }}<span v-if="item.document_count"> · {{ item.document_count }} {{ item.document_count === 1 ? 'document' : 'documents' }}</span>
           </div>
         </div>

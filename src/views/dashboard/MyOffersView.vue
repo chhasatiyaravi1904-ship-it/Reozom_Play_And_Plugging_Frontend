@@ -191,6 +191,9 @@
             Withdraw Offer
           </button>
         </div>
+
+        <!-- Addendums to the accepted purchase agreement: the buyer adds, signs and cancels them too (Reozom) -->
+        <OfferAddendums v-if="offer.status === 'accepted'" :offer-id="offer.id" class="mt-4 pt-4 border-t border-slate-100" />
       </div>
     </div>
 
@@ -306,6 +309,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import OfferAddendums from '@/components/offers/OfferAddendums.vue'
 import { useOfferStore } from '@/stores/offer'
 import { downloadOfferDocument, downloadOfferContract, type ListingOffer } from '@/services/offerService'
 
