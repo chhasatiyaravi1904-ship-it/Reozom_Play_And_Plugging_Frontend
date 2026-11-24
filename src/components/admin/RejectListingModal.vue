@@ -53,7 +53,7 @@ async function confirmReject() {
         <textarea
           v-model="reason"
           rows="4"
-          class="w-full rounded border border-border bg-bg p-2.5 text-sm text-fg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full rounded border border-border bg-surface p-2.5 text-sm text-fg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="E.g., Property deed is unclear or blurry. Please upload a higher resolution document."
         ></textarea>
       </div>

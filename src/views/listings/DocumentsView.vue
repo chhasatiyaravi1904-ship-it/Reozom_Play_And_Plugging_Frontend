@@ -781,13 +781,13 @@ const listingOverviewPath = computed(
           </p>
         </div>
 
-        <div class="rounded-xl border border-border bg-bg-muted/30 p-4">
+        <div class="rounded-xl border border-border bg-surface-raised/30 p-4">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
             <div class="md:col-span-5">
               <label class="block text-xs font-semibold text-fg mb-1">Document Category *</label>
               <select
                 v-model="selectedDocType"
-                class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
+                class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
               >
                 <option v-for="type in reozomDocumentTypes" :key="type.value" :value="type.value">
                   {{ type.label }}
@@ -801,7 +801,7 @@ const listingOverviewPath = computed(
                 v-model="customDocName"
                 type="text"
                 placeholder="e.g. Well Inspection"
-                class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
+                class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg focus:border-primary focus:outline-none"
               />
             </div>
 

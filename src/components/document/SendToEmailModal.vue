@@ -88,10 +88,10 @@ async function handleSend() {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
   >
     <div
-      class="relative flex flex-col w-full max-w-lg rounded-2xl bg-bg border border-border shadow-2xl overflow-hidden"
+      class="relative flex flex-col w-full max-w-lg rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-border bg-bg-muted/40 px-5 py-4">
+      <div class="flex items-center justify-between border-b border-border bg-surface-raised/40 px-5 py-4">
         <div class="flex items-center gap-2.5">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-success text-white">
             <Mail class="h-4 w-4" />
@@ -111,7 +111,7 @@ async function handleSend() {
           </BaseButton>
 
           <button
-            class="rounded-lg p-1.5 text-fg-muted hover:bg-bg-muted hover:text-fg transition-colors"
+            class="rounded-lg p-1.5 text-fg-muted hover:bg-surface-raised hover:text-fg transition-colors"
             @click="handleClose"
           >
             <X class="h-5 w-5" />
@@ -123,7 +123,7 @@ async function handleSend() {
       <div class="p-5 space-y-4 text-xs">
         <div>
           <label class="block font-semibold text-fg mb-1">Document:</label>
-          <div class="rounded-lg border border-border bg-bg-muted/30 px-3 py-2 text-fg font-medium">
+          <div class="rounded-lg border border-border bg-surface-raised/30 px-3 py-2 text-fg font-medium">
             {{ documentName }}
           </div>
         </div>
@@ -139,7 +139,7 @@ async function handleSend() {
               v-model="emails[index]"
               type="email"
               placeholder="e.g. buyer@example.com"
-              class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-xs text-fg focus:border-primary focus:outline-none"
+              class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg focus:border-primary focus:outline-none"
             />
             <button
               v-if="emails.length > 1"
@@ -159,13 +159,13 @@ async function handleSend() {
             v-model="note"
             rows="3"
             placeholder="Add any instructions or note for the recipient..."
-            class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-xs text-fg focus:border-primary focus:outline-none"
+            class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg focus:border-primary focus:outline-none"
           />
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-end gap-2 border-t border-border bg-bg-muted/20 px-5 py-3.5">
+      <div class="flex items-center justify-end gap-2 border-t border-border bg-surface-raised/20 px-5 py-3.5">
         <BaseButton variant="secondary" size="sm" @click="handleClose">
           Cancel
         </BaseButton>

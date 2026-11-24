@@ -45,10 +45,10 @@ function handleOpenNewTab() {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200"
   >
     <div
-      class="relative flex flex-col w-full max-w-6xl max-h-[96vh] rounded-2xl bg-bg border border-border shadow-2xl overflow-hidden"
+      class="relative flex flex-col w-full max-w-6xl max-h-[96vh] rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden"
     >
       <!-- Top Modal Header -->
-      <div class="flex items-center justify-between border-b border-border bg-bg-muted/40 px-5 py-3.5">
+      <div class="flex items-center justify-between border-b border-border bg-surface-raised/40 px-5 py-3.5">
         <div class="flex items-center gap-2.5">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
             <ShieldCheck class="h-5 w-5" />
@@ -84,7 +84,7 @@ function handleOpenNewTab() {
           </BaseButton>
 
           <button
-            class="rounded-lg p-1.5 text-fg-muted hover:bg-bg-muted hover:text-fg transition-colors"
+            class="rounded-lg p-1.5 text-fg-muted hover:bg-surface-raised hover:text-fg transition-colors"
             title="Back to documents"
             @click="handleClose"
           >
@@ -121,7 +121,7 @@ function handleOpenNewTab() {
       <div class="relative flex-1 min-h-[600px] h-[78vh] bg-neutral-900 overflow-hidden">
         <div
           v-if="!iframeLoaded"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-bg/80 backdrop-blur-sm z-10 gap-3"
+          class="absolute inset-0 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-sm z-10 gap-3"
         >
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p class="text-xs font-semibold text-fg">Loading secure document signing interface...</p>

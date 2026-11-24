@@ -62,15 +62,15 @@ async function handleRename() {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
   >
     <div
-      class="relative flex flex-col w-full max-w-md rounded-2xl bg-bg border border-border shadow-2xl overflow-hidden"
+      class="relative flex flex-col w-full max-w-md rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden"
     >
-      <div class="flex items-center justify-between border-b border-border bg-bg-muted/40 px-5 py-4">
+      <div class="flex items-center justify-between border-b border-border bg-surface-raised/40 px-5 py-4">
         <div class="flex items-center gap-2">
           <Edit3 class="h-4 w-4 text-primary" />
           <h3 class="text-sm font-bold text-fg">Rename Document</h3>
         </div>
         <button
-          class="rounded-lg p-1.5 text-fg-muted hover:bg-bg-muted hover:text-fg transition-colors"
+          class="rounded-lg p-1.5 text-fg-muted hover:bg-surface-raised hover:text-fg transition-colors"
           @click="handleClose"
         >
           <X class="h-5 w-5" />
@@ -83,12 +83,12 @@ async function handleRename() {
           v-model="docName"
           type="text"
           placeholder="e.g. Deed_2026.pdf"
-          class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-xs text-fg focus:border-primary focus:outline-none"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg focus:border-primary focus:outline-none"
           @keydown.enter="handleRename"
         />
       </div>
 
-      <div class="flex items-center justify-end gap-2 border-t border-border bg-bg-muted/20 px-5 py-3.5">
+      <div class="flex items-center justify-end gap-2 border-t border-border bg-surface-raised/20 px-5 py-3.5">
         <BaseButton variant="secondary" size="sm" @click="handleClose">
           Cancel
         </BaseButton>

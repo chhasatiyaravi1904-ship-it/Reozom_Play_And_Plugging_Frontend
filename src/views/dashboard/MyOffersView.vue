@@ -183,12 +183,65 @@
           </button>
 
           <button
+            v-if="offer.status === 'accepted' && canSign(offer.id)"
+            @click="handleSignPurchaseAgreement(offer)"
+            class="px-3.5 py-1.5 rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-semibold transition"
+            title="Open your EunoDoc signing page for the purchase agreement"
+          >
+            Sign Purchase Agreement
+          </button>
+
+          <button
             v-if="['submitted', 'countered_by_seller', 'countered_by_buyer'].includes(offer.status)"
             @click="handleWithdraw(offer)"
             :disabled="actionInProgress"
             class="text-xs font-semibold text-rose-600 hover:text-rose-800 transition ml-auto"
           >
             Withdraw Offer
+          </button>
+        </div>
+
+        <!-- Purchase agreement signing status, fetched live from EunoDoc -->
+        <div
+          v-if="offer.status === 'accepted'"
+          class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-xs"
+        >
+          <div class="text-slate-700">
+            <template v-if="signingStatus[offer.id] === 'loading'">
+              <span class="text-slate-500">Checking signing status…</span>
+            </template>
+            <template v-else-if="signingStatus[offer.id] === 'error' || !signingStatus[offer.id]">
+              <span class="text-slate-500">Signing status unavailable.</span>
+            </template>
+            <template v-else-if="statusOf(offer.id)?.is_completed">
+              <span class="font-semibold text-emerald-700">
+                Purchase agreement fully signed{{ statusOf(offer.id)?.signed_at ? ` on ${formatDate(statusOf(offer.id)!.signed_at!)}` : '' }}
+              </span>
+            </template>
+            <template v-else-if="statusOf(offer.id)?.status === 'inprogress'">
+              <span class="font-semibold text-slate-800">Waiting for signatures:</span>
+              <span v-for="(signer, i) in statusOf(offer.id)?.signers || []" :key="i" class="ml-1.5">
+                {{ roleLabel(signer.role) }}
+                <span :class="signer.signed ? 'text-emerald-700 font-semibold' : 'text-amber-700'">
+                  {{ signer.signed ? '✓ signed' : 'pending' }}
+                </span>
+                <span v-if="i < (statusOf(offer.id)?.signers?.length || 0) - 1" class="text-slate-300"> · </span>
+              </span>
+            </template>
+            <template v-else-if="statusOf(offer.id)?.status === 'canceled'">
+              <span class="text-slate-500">The signing request was canceled. The seller can send it again.</span>
+            </template>
+            <template v-else>
+              <span class="text-slate-500">Purchase agreement not sent for signature yet.</span>
+            </template>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 text-xs font-semibold text-indigo-700 hover:text-indigo-900 disabled:opacity-50"
+            :disabled="signingStatus[offer.id] === 'loading'"
+            @click="refreshSigningStatus(offer.id)"
+          >
+            Refresh status
           </button>
         </div>
 
@@ -307,11 +360,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import OfferAddendums from '@/components/offers/OfferAddendums.vue'
 import { useOfferStore } from '@/stores/offer'
 import { downloadOfferDocument, downloadOfferContract, type ListingOffer } from '@/services/offerService'
+import { initiateOfferSigning, getOfferSigningStatus, type EunoAgreementStatus } from '@/services/eunoService'
 
 // embedded: shown as the "Sent Offers" tab of the Offers page (no own page heading)
 defineProps<{ embedded?: boolean }>()
@@ -352,6 +406,69 @@ const downloadDoc = async (offerId: number, docId: string, docName?: string) => 
   link.click()
   link.remove()
   window.URL.revokeObjectURL(url)
+}
+
+// Purchase agreement signing status per accepted offer. The status endpoint re-checks EunoDoc
+// (and stores the signed copy once everyone has signed), so this is always the latest state.
+const signingStatus = reactive<Record<number, EunoAgreementStatus | 'loading' | 'error'>>({})
+
+const statusOf = (offerId: number): EunoAgreementStatus | null => {
+  const status = signingStatus[offerId]
+  return status && typeof status === 'object' ? status : null
+}
+
+// Hide the sign button once the buyer has signed or everyone has
+const canSign = (offerId: number) => {
+  const status = statusOf(offerId)
+  return !status?.is_completed && status?.you_signed !== true
+}
+
+const refreshSigningStatus = async (offerId: number) => {
+  signingStatus[offerId] = 'loading'
+  try {
+    signingStatus[offerId] = await getOfferSigningStatus(offerId)
+  } catch {
+    signingStatus[offerId] = 'error'
+  }
+}
+
+const refreshAllSigningStatus = (offers: ListingOffer[]) =>
+  Promise.all(offers.filter((o) => o.status === 'accepted').map((o) => refreshSigningStatus(o.id)))
+
+// Every time the offer list (re)loads, fetch the accepted offers' latest signing status
+watch(() => offerStore.myOffers, refreshAllSigningStatus)
+
+// After opening the signing page, re-check when the buyer comes back to this tab
+const offerAwaitingSignature = ref<number | null>(null)
+const onWindowFocus = () => {
+  if (offerAwaitingSignature.value !== null) {
+    refreshSigningStatus(offerAwaitingSignature.value)
+    offerAwaitingSignature.value = null
+  }
+}
+window.addEventListener('focus', onWindowFocus)
+onBeforeUnmount(() => window.removeEventListener('focus', onWindowFocus))
+
+const roleLabel = (role?: string) =>
+  ({ buyer: 'Buyer', seller: 'Seller', additional_signer: 'Co-seller', listing_agent: 'Listing agent', selling_agent: 'Buyer agent' })[role || ''] || 'Signer'
+
+// The buyer's own EunoDoc signing page for the accepted offer's purchase agreement.
+// The tab is opened before the request (browsers block pop-ups opened after an await).
+const handleSignPurchaseAgreement = async (offer: ListingOffer) => {
+  const signingWindow = window.open('', '_blank')
+  try {
+    const res = await initiateOfferSigning(offer.id)
+    if (res.signing_url && signingWindow) {
+      offerAwaitingSignature.value = offer.id
+      signingWindow.location.href = res.signing_url
+    } else {
+      signingWindow?.close()
+      alert(res.signing_url ? 'Allow pop-ups to open the signing page.' : 'You are not a signer on this purchase agreement.')
+    }
+  } catch (err: any) {
+    signingWindow?.close()
+    alert(err?.response?.data?.message || 'The signing page could not be opened.')
+  }
 }
 
 const handleDownloadContract = async (offer: ListingOffer) => {

@@ -103,7 +103,7 @@ async function submit() {
         <select
           v-model="form.status"
           required
-          class="w-full rounded border border-border bg-bg p-2 text-sm text-fg focus:border-primary focus:outline-none"
+          class="w-full rounded border border-border bg-surface p-2 text-sm text-fg focus:border-primary focus:outline-none"
         >
           <option value="published">1 - Active / Published</option>
           <option value="under_contract">2 - Pending / Under Contract</option>
@@ -129,7 +129,7 @@ async function submit() {
           maxlength="250"
           required
           placeholder="Reason for changing status (max 250 characters)..."
-          class="w-full rounded border border-border bg-bg p-2.5 text-sm text-fg focus:border-primary focus:outline-none"
+          class="w-full rounded border border-border bg-surface p-2.5 text-sm text-fg focus:border-primary focus:outline-none"
         ></textarea>
         <div class="text-right text-[11px] text-fg-muted">{{ form.comment.length }} / 250</div>
       </div>
@@ -140,18 +140,18 @@ async function submit() {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div>
             <label class="block font-medium text-fg-muted mb-1">Anticipated Closing Date</label>
-            <input v-model="form.anticipated_closed_date" type="date" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs" />
+            <input v-model="form.anticipated_closed_date" type="date" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs" />
           </div>
           <div>
             <label class="block font-medium text-fg-muted mb-1">Agent Representation</label>
-            <select v-model.number="form.agent" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs">
+            <select v-model.number="form.agent" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs">
               <option :value="1">Listing Agent</option>
               <option :value="2">Co-Agent / Buyer Agent</option>
             </select>
           </div>
           <div class="col-span-2">
             <label class="block font-medium text-fg-muted mb-1">Agent / Agency Name</label>
-            <input v-model="form.agent_name" type="text" placeholder="Agent or brokerage name" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs" />
+            <input v-model="form.agent_name" type="text" placeholder="Agent or brokerage name" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs" />
           </div>
         </div>
       </div>
@@ -162,19 +162,19 @@ async function submit() {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div>
             <label class="block font-medium text-fg-muted mb-1">Final Closed Date</label>
-            <input v-model="form.closed_date" type="date" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs" />
+            <input v-model="form.closed_date" type="date" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs" />
           </div>
           <div>
             <label class="block font-medium text-fg-muted mb-1">Final Sales Price ($)</label>
-            <input v-model.number="form.sales_price" type="number" min="0" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs" />
+            <input v-model.number="form.sales_price" type="number" min="0" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs" />
           </div>
           <div>
             <label class="block font-medium text-fg-muted mb-1">Financing Type</label>
-            <input v-model="form.finance_type" type="text" placeholder="Cash, Conventional, FHA, VA" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs" />
+            <input v-model="form.finance_type" type="text" placeholder="Cash, Conventional, FHA, VA" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs" />
           </div>
           <div>
             <label class="block font-medium text-fg-muted mb-1">Seller Concessions ($)</label>
-            <input v-model.number="form.amount" type="number" min="0" class="w-full rounded border border-border bg-bg p-2 text-fg text-xs" />
+            <input v-model.number="form.amount" type="number" min="0" class="w-full rounded border border-border bg-surface p-2 text-fg text-xs" />
           </div>
         </div>
       </div>

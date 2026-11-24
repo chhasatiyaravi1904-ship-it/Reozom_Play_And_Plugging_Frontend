@@ -469,7 +469,7 @@ function clearAllFilters() {
       :description="listingStore.error || undefined"
     >
       <template #action>
-        <BaseButton size="sm" @click="listingStore.fetchListings">Try Again</BaseButton>
+        <BaseButton size="sm" @click="listingStore.fetchListings()">Try Again</BaseButton>
       </template>
     </ErrorState>
 

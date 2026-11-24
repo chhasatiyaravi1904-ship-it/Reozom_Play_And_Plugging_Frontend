@@ -11,11 +11,11 @@ export const useListingStore = defineStore('listing', () => {
   const status = ref<'idle' | 'loading' | 'error'>('idle')
   const error = ref<string | null>(null)
 
-  async function fetchListings() {
+  async function fetchListings(scope?: 'my') {
     status.value = 'loading'
     error.value = null
     try {
-      const { data } = await listingService.fetchListings()
+      const { data } = await listingService.fetchListings(scope)
       listings.value = data
       activeListing.value = data[0] ?? null
     } catch (err) {

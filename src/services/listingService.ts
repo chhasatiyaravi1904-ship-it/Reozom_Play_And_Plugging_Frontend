@@ -1,8 +1,9 @@
 import api from './api'
 import type { ListingSummary, PropertyAddress, ListingRouting } from '@/types/listing'
 
-export const fetchListings = () => {
-  return api.get<ListingSummary[]>('/listings')
+// scope 'my' = only the user's own listings (without it a seller also gets published market listings)
+export const fetchListings = (scope?: 'my') => {
+  return api.get<ListingSummary[]>('/listings', scope ? { params: { scope } } : undefined)
 }
 
 export const fetchListing = (listingId: number) => {

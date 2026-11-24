@@ -36,6 +36,17 @@ describe('listing store', () => {
     expect(store.activeListing?.id).toBe(3)
   })
 
+  it('passes the "my" scope through so the dashboard gets only the user\'s own listings', async () => {
+    vi.mocked(listingService.fetchListings).mockResolvedValue({ data: [listing(5)] } as any)
+    const store = useListingStore()
+
+    await store.fetchListings('my')
+    expect(listingService.fetchListings).toHaveBeenCalledWith('my')
+
+    await store.fetchListings()
+    expect(listingService.fetchListings).toHaveBeenLastCalledWith(undefined)
+  })
+
   it('shows an error (not sample data) when the server answers with an error', async () => {
     vi.mocked(listingService.fetchListings).mockRejectedValue(serverError())
     const store = useListingStore()

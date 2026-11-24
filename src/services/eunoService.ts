@@ -18,11 +18,16 @@ export interface EunoAgreementStatus {
   /** In signing order: owner first, then additional signers. */
   signers?: Array<{
     name?: string
-    email: string
+    /** Listing documents only (purchase agreement status gives names and roles). */
+    email?: string
+    /** Purchase agreement: buyer | seller | additional_signer | listing_agent | selling_agent */
+    role?: string
     type?: string
     signed?: boolean
     is_next?: boolean
   }>
+  /** Purchase agreement in progress: whether the viewer has signed (null if they don't sign). */
+  you_signed?: boolean | null
 }
 
 export interface EunoInitiateResponse {

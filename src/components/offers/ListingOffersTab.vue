@@ -603,6 +603,7 @@ const handleAccept = async (offer: ListingOffer) => {
         signingWindow.location.href = res.signing_url
       } else {
         signingWindow?.close()
+        if (!res.signing_url) alert(`The offer was accepted. ${NOT_A_SIGNER}`)
       }
     } catch (err: any) {
       signingWindow?.close()
@@ -610,6 +611,8 @@ const handleAccept = async (offer: ListingOffer) => {
     }
   }
 }
+
+const NOT_A_SIGNER = 'You are not a signer on this purchase agreement.'
 
 // Cancel the open purchase agreement and send a new one (Reozom: admin regenerate)
 const handleResendOfferSigning = async (offer: ListingOffer) => {
@@ -672,13 +675,19 @@ const submitCounter = async () => {
   }
 }
 
+// Opens the current user's own signing page (the seller's for the listing owner)
 const handleEunoSignOffer = async (offer: ListingOffer) => {
+  const signingWindow = window.open('', '_blank')
   try {
     const res = await eunoService.initiateOfferSigning(offer.id)
-    if (res.signing_url) {
-      window.open(res.signing_url, '_blank')
+    if (res.signing_url && signingWindow) {
+      signingWindow.location.href = res.signing_url
+    } else {
+      signingWindow?.close()
+      alert(res.signing_url ? 'Allow pop-ups to open the signing page.' : NOT_A_SIGNER)
     }
   } catch (err: any) {
+    signingWindow?.close()
     alert(err?.response?.data?.message || 'Failed to initiate EunoDoc agreement packet.')
   }
 }

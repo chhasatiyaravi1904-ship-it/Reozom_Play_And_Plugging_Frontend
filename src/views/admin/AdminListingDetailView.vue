@@ -390,7 +390,7 @@ const tabLabels = computed<Record<Tab, string>>(() => ({
           No form step answers have been saved yet.
         </BaseCard>
         <BaseCard v-for="group in answerGroups" :key="group.stepId" class="p-0 overflow-hidden">
-          <div class="px-5 py-3 border-b border-border bg-bg-muted/40 font-semibold text-sm text-primary">{{ group.stepName }}</div>
+          <div class="px-5 py-3 border-b border-border bg-surface-raised/40 font-semibold text-sm text-primary">{{ group.stepName }}</div>
           <table class="w-full text-sm">
             <tbody class="divide-y divide-border">
               <tr v-for="row in group.rows" :key="row.key">
@@ -454,7 +454,7 @@ const tabLabels = computed<Record<Tab, string>>(() => ({
             :href="img.url"
             target="_blank"
             rel="noopener"
-            class="relative rounded overflow-hidden border border-border aspect-video bg-bg-muted block"
+            class="relative rounded overflow-hidden border border-border aspect-video bg-surface-raised block"
           >
             <img :src="img.thumbnail_url || img.url" class="object-cover w-full h-full" alt="Property photo" />
             <span v-if="img.is_primary" class="absolute top-1 left-1 bg-primary text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">Primary</span>

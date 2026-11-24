@@ -253,7 +253,7 @@ onMounted(() => {
 
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left text-sm text-fg">
-          <thead class="border-b border-border bg-bg-muted/50 text-xs uppercase text-fg-muted font-semibold">
+          <thead class="border-b border-border bg-surface-raised/50 text-xs uppercase text-fg-muted font-semibold">
             <tr>
               <th class="px-6 py-4">Ref Code</th>
               <th class="px-6 py-4">Property Address</th>
@@ -268,7 +268,7 @@ onMounted(() => {
             <tr
               v-for="listing in (listings || [])"
               :key="listing.id"
-              class="transition-colors hover:bg-bg-muted/30"
+              class="transition-colors hover:bg-surface-raised/30"
             >
               <td class="px-6 py-4 font-mono font-medium text-primary">
                 <router-link :to="`/admin/listings/${listing.id}`" class="hover:underline">{{ listing.reference_code || `REO-${listing.id}` }}</router-link>

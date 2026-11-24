@@ -401,7 +401,7 @@ onMounted(() => {
           <div
             v-for="section in step.sections"
             :key="section.id"
-            class="space-y-4 rounded-lg bg-bg-muted/20 p-4"
+            class="space-y-4 rounded-lg bg-surface-raised/20 p-4"
           >
             <h3 class="text-sm font-semibold uppercase tracking-wider text-primary">
               {{ section.name }}

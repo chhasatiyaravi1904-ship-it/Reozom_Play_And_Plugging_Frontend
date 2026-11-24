@@ -38,7 +38,8 @@ const { steps } = useListingSteps(0)
 const nextStep = computed(() => steps.value.find((s) => s.status === 'current'))
 
 onMounted(async () => {
-  await listingStore.fetchListings()
+  // Only the user's own listings: the dashboard must never show another user's listing process
+  await listingStore.fetchListings('my')
   if (listing.value) workflowStore.fetchWorkflow(listing.value.id)
 })
 </script>
@@ -85,7 +86,7 @@ onMounted(async () => {
       :description="listingStore.error || undefined"
     >
       <template #action>
-        <BaseButton size="sm" @click="listingStore.fetchListings">Try Again</BaseButton>
+        <BaseButton size="sm" @click="listingStore.fetchListings('my')">Try Again</BaseButton>
       </template>
     </ErrorState>
 

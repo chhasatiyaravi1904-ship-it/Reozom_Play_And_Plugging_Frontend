@@ -318,7 +318,7 @@ async function handleDownload(doc: any) {
       </div>
 
       <!-- Listing Steps Overview -->
-      <div class="rounded-xl border border-border bg-bg-muted/10 p-4">
+      <div class="rounded-xl border border-border bg-surface-raised/10 p-4">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-primary mb-3">Listing Workflow Sections</h2>
         <ul class="divide-y divide-border">
           <li
@@ -338,7 +338,7 @@ async function handleDownload(doc: any) {
       </div>
 
       <!-- Statutory Agreements & Disclosures Status (Reozom Standard) -->
-      <div class="rounded-xl border border-border bg-bg-muted/10 p-4">
+      <div class="rounded-xl border border-border bg-surface-raised/10 p-4">
         <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
             <h2 class="text-sm font-semibold uppercase tracking-wider text-primary">Statutory Documents & Signatures</h2>
